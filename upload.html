@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload via QR Code - SoundHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .upload-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            color: #3b82f6;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .header p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        .file-input-label {
+            display: block;
+            padding: 2rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+        .file-input-label:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+        }
+        .file-input-label.has-file {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+        .file-info {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #f0f9ff;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+        .btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .success {
+            color: #10b981;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="upload-container">
+        <div class="header">
+            <h1>Upload via QR Code</h1>
+            <p>Envie seu arquivo para o SoundHub</p>
+        </div>
+
+        <form id="uploadForm">
+            <div class="form-group">
+                <label for="nome">Seu Nome</label>
+                <input type="text" id="nome" name="nome" required placeholder="Digite seu nome">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Seu E-mail</label>
+                <input type="email" id="email" name="email" required placeholder="seu@email.com">
+            </div>
+
+            <div class="form-group">
+                <label for="descricao">Descrição (opcional)</label>
+                <textarea id="descricao" name="descricao" rows="3" placeholder="Descreva o arquivo que está enviando..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Arquivo</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="arquivo" name="arquivo" required accept="image/*,video/*,.pdf">
+                    <label for="arquivo" class="file-input-label" id="fileLabel">
+                        <div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                            <div>Clique para selecionar um arquivo</div>
+                            <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+                                Imagens, vídeos ou PDF (máx 50MB)
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div id="fileInfo" class="file-info" style="display: none;"></div>
+            </div>
+
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                Enviando arquivo...
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                Enviar Arquivo
+            </button>
+
+            <div id="message"></div>
+        </form>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        
+        if (!token) {
+            document.getElementById('message').innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        // Verificar se o QR code é válido
+        async function verifyQRCode() {
+            if (!token) return;
+            
+            try {
+                const response = await fetch(`/api/qr/verify/${token}`);
+                const data = await response.json();
+                
+                if (!data.valid) {
+                    document.getElementById('message').innerHTML = `<div class="error">${data.reason}</div>`;
+                    document.getElementById('submitBtn').disabled = true;
+                }
+            } catch (error) {
+                document.getElementById('message').innerHTML = '<div class="error">Erro ao verificar QR Code</div>';
+                document.getElementById('submitBtn').disabled = true;
+            }
+        }
+
+        // Verificar QR code ao carregar
+        verifyQRCode();
+
+        // Manipulação de arquivo
+        const fileInput = document.getElementById('arquivo');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileInfo = document.getElementById('fileInfo');
+        const submitBtn = document.getElementById('submitBtn');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (file) {
+                // Verificar tamanho do arquivo (50MB)
+                const maxSize = 50 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    document.getElementById('message').innerHTML = '<div class="error">Arquivo muito grande. Tamanho máximo: 50MB</div>';
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Verificar tipo do arquivo
+                const allowedTypes = ['image/', 'video/', 'application/pdf'];
+                const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
+                
+                if (!isAllowed) {
+                    document.getElementById('message').innerHTML = '<div class="error">Tipo de arquivo não permitido. Apenas imagens, vídeos e PDF.</div>';
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Atualizar UI
+                fileLabel.classList.add('has-file');
+                fileLabel.innerHTML = `
+                    <div>
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">${getFileIcon(file.type)}</div>
+                        <div>${file.name}</div>
+                        <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+                            ${formatFileSize(file.size)}
+                        </div>
+                    </div>
+                `;
+                
+                fileInfo.innerHTML = `
+                    <strong>Arquivo selecionado:</strong> ${file.name}<br>
+                    <strong>Tamanho:</strong> ${formatFileSize(file.size)}<br>
+                    <strong>Tipo:</strong> ${file.type}
+                `;
+                fileInfo.style.display = 'block';
+                
+                // Habilitar botão se todos os campos estiverem preenchidos
+                checkFormValidity();
+            } else {
+                resetFileInput();
+            }
+        });
+
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return '';
+            if (fileType.startsWith('video/')) return '';
+            if (fileType === 'application/pdf') return '';
+            return '';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function resetFileInput() {
+            fileLabel.classList.remove('has-file');
+            fileLabel.innerHTML = `
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
+                    <div>Clique para selecionar um arquivo</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+                        Imagens, vídeos ou PDF (máx 50MB)
+                    </div>
+                </div>
+            `;
+            fileInfo.style.display = 'none';
+            checkFormValidity();
+        }
+
+        function checkFormValidity() {
+            const nome = document.getElementById('nome').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const arquivo = fileInput.files[0];
+            
+            submitBtn.disabled = !(nome && email && arquivo && token);
+        }
+
+        // Verificar validade do formulário
+        document.getElementById('nome').addEventListener('input', checkFormValidity);
+        document.getElementById('email').addEventListener('input', checkFormValidity);
+
+        // Envio do formulário
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!token) {
+                document.getElementById('message').innerHTML = '<div class="error">QR Code inválido</div>';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('nome', document.getElementById('nome').value);
+            formData.append('email', document.getElementById('email').value);
+            formData.append('descricao', document.getElementById('descricao').value);
+            formData.append('arquivo', fileInput.files[0]);
+            formData.append('token', token);
+            
+            // Marcar QR code como utilizado
+            try {
+                await fetch(`/api/qr/use/${token}`, { method: 'POST' });
+            } catch (error) {
+                console.error('Erro ao marcar QR code como utilizado:', error);
+            }
+            
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'block';
+            submitBtn.disabled = true;
+            document.getElementById('message').innerHTML = '';
+            
+            try {
+                const xhr = new XMLHttpRequest();
+                
+                // Progress upload
+                xhr.upload.addEventListener('progress', function(e) {
+                    if (e.lengthComputable) {
+                        const percentComplete = (e.loaded / e.total) * 100;
+                        document.getElementById('progressFill').style.width = percentComplete + '%';
+                    }
+                });
+                
+                xhr.addEventListener('load', function() {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('progressBar').style.display = 'none';
+                    
+                    if (xhr.status === 200) {
+                        const response = JSON.parse(xhr.responseText);
+                        document.getElementById('message').innerHTML = '<div class="success">Arquivo enviado com sucesso! Aguardando aprovação.</div>';
+                        document.getElementById('uploadForm').reset();
+                        resetFileInput();
+                        
+                        // Redirecionar após 3 segundos
+                        setTimeout(() => {
+                            window.close();
+                        }, 3000);
+                    } else {
+                        const error = JSON.parse(xhr.responseText);
+                        document.getElementById('message').innerHTML = `<div class="error">${error.error || 'Erro ao enviar arquivo'}</div>`;
+                        submitBtn.disabled = false;
+                    }
+                });
+                
+                xhr.addEventListener('error', function() {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('progressBar').style.display = 'none';
+                    document.getElementById('message').innerHTML = '<div class="error">Erro de conexão. Tente novamente.</div>';
+                    submitBtn.disabled = false;
+                });
+                
+                xhr.open('POST', '/api/files/upload');
+                xhr.send(formData);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('progressBar').style.display = 'none';
+                document.getElementById('message').innerHTML = '<div class="error">Erro ao enviar arquivo</div>';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

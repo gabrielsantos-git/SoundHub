@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contas - SoundHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f9fafb;
+            color: #1f2937;
+        }
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            color: #374151;
+        }
+        .sidebar-item:hover {
+            background: #f3f4f6;
+        }
+        .sidebar-item.active {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #374151;
+        }
+        .main-content {
+            margin-left: 0;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        .btn-xs {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 50vh;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        .empty-state h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .table th,
+        .table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .table tbody tr:hover {
+            background: #f9fafb;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border-radius: 9999px;
+        }
+        .badge-green {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge-yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge-red {
+            background: #fecaca;
+            color: #991b1b;
+        }
+        .badge-purple {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        .badge-blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .badge-gray {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .user-info-cell {
+            display: flex;
+            flex-direction: column;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .user-email {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        select {
+            padding: 0.25rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        .overlay.show {
+            display: block;
+        }
+        .auth-required {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .auth-required h2 {
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+        .auth-required p {
+            margin-bottom: 1.5rem;
+            color: #6b7280;
+        }
+        @media (max-width: 768px) {
+            .table-container {
+                overflow-x: auto;
+            }
+            .actions {
+                flex-direction: column;
+            }
+        }
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 250px;
+            }
+            .menu-toggle {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div style="margin-bottom: 2rem;">
+            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">🎵</div>
+            <h1 style="text-align: center; color: #3b82f6; font-size: 1.5rem;">SoundHub</h1>
+        </div>
+        
+        <nav>
+            <a href="/" class="sidebar-item">
+                <span style="margin-right: 0.75rem;">🏠</span>
+                Início
+            </a>
+            <a href="/receive" class="sidebar-item" id="receiveLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📥</span>
+                Receber
+            </a>
+            <a href="/project" class="sidebar-item" id="projectLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">🎥</span>
+                Projetar
+            </a>
+            <a href="/accounts" class="sidebar-item active">
+                <span style="margin-right: 0.75rem;">👤</span>
+                Contas
+            </a>
+        </nav>
+        
+        <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
+            <button class="btn btn-secondary" onclick="logout()" style="width: 100%;">
+                Sair
+            </button>
+        </div>
+    </div>
+
+    <!-- Overlay para mobile -->
+    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+    <!-- Header -->
+    <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="logo">🎵 SoundHub</div>
+        <div class="user-info">
+            <span id="userName">Carregando...</span>
+            <span id="userRole" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.875rem;"></span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Gerenciar Contas</h1>
+                <button class="btn btn-primary" onclick="refreshUsers()">
+                    🔄 Atualizar
+                </button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Cargo</th>
+                            <th>Status</th>
+                            <th>Data</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem;">
+                                <div class="loading">
+                                    <div class="spinner"></div>
+                                    <div>Carregando usuários...</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Autenticação -->
+    <div class="overlay" id="authOverlay">
+        <div class="auth-required">
+            <h2>🔐 Acesso Restrito</h2>
+            <p>Apenas Diretores podem acessar esta página.</p>
+            <a href="/auth" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
+                Fazer Login
+            </a>
+            <a href="/" class="btn btn-secondary" style="width: 100%;">
+                Voltar ao Início
+            </a>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        
+        // Verificar autenticação ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+        
+        async function checkAuth() {
+            const token = localStorage.getItem('token');
+            const authOverlay = document.getElementById('authOverlay');
+            
+            if (!token) {
+                // Redirecionar automaticamente para página de autenticação
+                window.location.href = '/auth';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    updateUserInterface();
+                    
+                    // Verificar permissão
+                    if (currentUser.cargo !== 'DIRETOR') {
+                        showAuthRequired();
+                        return;
+                    }
+                    
+                    loadUsers();
+                } else {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                }
+            } catch (error) {
+                showAuthRequired();
+            }
+        }
+        
+        function showAuthRequired() {
+            // Redirecionar automaticamente para página de autenticação
+            window.location.href = '/auth';
+        }
+        
+        function updateUserInterface() {
+            if (!currentUser) return;
+            
+            document.getElementById('userName').textContent = currentUser.nome;
+            document.getElementById('userRole').textContent = currentUser.cargo;
+            
+            // Mostrar itens do menu baseado no cargo
+            const receiveLink = document.getElementById('receiveLink');
+            const projectLink = document.getElementById('projectLink');
+            
+            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') {
+                receiveLink.style.display = 'block';
+                projectLink.style.display = 'block';
+            }
+        }
+        
+        async function loadUsers() {
+            const usersTableBody = document.getElementById('usersTableBody');
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch('/api/users', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    displayUsers(users);
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    throw new Error('Erro ao carregar usuários');
+                }
+            } catch (error) {
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem;">
+                            <div class="empty-state">
+                                <h3>❌ Erro ao Carregar</h3>
+                                <p>Não foi possível carregar os usuários.</p>
+                                <button class="btn btn-primary" onclick="refreshUsers()">Tentar Novamente</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function displayUsers(users) {
+            const usersTableBody = document.getElementById('usersTableBody');
+            
+            if (users.length === 0) {
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem;">
+                            <div class="empty-state">
+                                <h3>👥 Nenhum Usuário</h3>
+                                <p>Nenhum usuário encontrado.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const usersHTML = users.map(user => {
+                const statusBadge = getStatusBadge(user.status);
+                const roleBadge = getRoleBadge(user.cargo);
+                const formattedDate = new Date(user.created_at).toLocaleDateString('pt-BR');
+                
+                return `
+                    <tr>
+                        <td>
+                            <div class="user-info-cell">
+                                <div class="user-name">${user.nome}</div>
+                                <div class="user-email">${user.email}</div>
+                            </div>
+                        </td>
+                        <td>${roleBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${formattedDate}</td>
+                        <td>
+                            <div class="actions">
+                                ${user.status === 'PENDING' ? `
+                                    <button class="btn btn-success btn-xs" onclick="approveUser(${user.id})">
+                                        ✅ Aprovar
+                                    </button>
+                                    <button class="btn btn-danger btn-xs" onclick="rejectUser(${user.id})">
+                                        ❌ Rejeitar
+                                    </button>
+                                ` : ''}
+                                
+                                ${user.status === 'APPROVED' ? `
+                                    <select onchange="updateRole(${user.id}, this.value)" class="btn-xs">
+                                        <option value="USER" ${user.cargo === 'USER' ? 'selected' : ''}>Usuário</option>
+                                        <option value="SONOPLASTA" ${user.cargo === 'SONOPLASTA' ? 'selected' : ''}>Sonoplasta</option>
+                                        <option value="DIRETOR" ${user.cargo === 'DIRETOR' ? 'selected' : ''}>Diretor</option>
+                                    </select>
+                                ` : ''}
+                                
+                                ${user.id !== currentUser.id ? `
+                                    <button class="btn btn-danger btn-xs" onclick="deleteUser(${user.id})">
+                                        🗑️ Excluir
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            usersTableBody.innerHTML = usersHTML;
+        }
+        
+        function getStatusBadge(status) {
+            switch (status) {
+                case 'APPROVED':
+                    return '<span class="badge badge-green">Aprovado</span>';
+                case 'PENDING':
+                    return '<span class="badge badge-yellow">Pendente</span>';
+                case 'REJECTED':
+                    return '<span class="badge badge-red">Rejeitado</span>';
+                default:
+                    return '<span class="badge badge-gray">Desconhecido</span>';
+            }
+        }
+        
+        function getRoleBadge(role) {
+            switch (role) {
+                case 'DIRETOR':
+                    return '<span class="badge badge-purple">Diretor</span>';
+                case 'SONOPLASTA':
+                    return '<span class="badge badge-blue">Sonoplasta</span>';
+                default:
+                    return '<span class="badge badge-gray">Usuário</span>';
+            }
+        }
+        
+        async function approveUser(userId) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch(`/api/users/${userId}/approve`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    loadUsers();
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    alert('Erro ao aprovar usuário');
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+            }
+        }
+        
+        async function rejectUser(userId) {
+            if (!confirm('Tem certeza que deseja rejeitar este usuário?')) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch(`/api/users/${userId}/reject`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    loadUsers();
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    alert('Erro ao rejeitar usuário');
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+            }
+        }
+        
+        async function updateRole(userId, newRole) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch(`/api/users/${userId}/role`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ cargo: newRole })
+                });
+                
+                if (response.ok) {
+                    loadUsers();
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    alert('Erro ao atualizar cargo');
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+            }
+        }
+        
+        async function deleteUser(userId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    loadUsers();
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    alert('Erro ao excluir usuário');
+                }
+            } catch (error) {
+                alert('Erro de conexão');
+            }
+        }
+        
+        function refreshUsers() {
+            const usersTableBody = document.getElementById('usersTableBody');
+            usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Atualizando...</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            loadUsers();
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Projeção - SoundHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .media-panel {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .controls-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .media-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .media-item {
+            background: #f8fafc;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .media-item:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        .media-item.active {
+            border-color: #3b82f6;
+            background: #dbeafe;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+
+        .media-icon {
+            font-size: 2rem;
+            width: 3rem;
+            height: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border-radius: 0.5rem;
+        }
+
+        .media-info {
+            flex: 1;
+        }
+
+        .media-title {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .meta {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .control-button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .control-button:hover {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .control-button.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .control-button.danger:hover {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .control-button.secondary {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .control-button.secondary:hover {
+            background: linear-gradient(135deg, #4b5563, #374151);
+            box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+        }
+
+        .navigation-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .current-media {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .current-media-title {
+            font-weight: 600;
+            color: #0c4a6e;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .progress-bar {
+            background: #e5e7eb;
+            height: 0.5rem;
+            border-radius: 0.25rem;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #3b82f6, #2563eb);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 0.5rem;
+            background: #e5e7eb;
+            border-radius: 0.25rem;
+            appearance: none;
+            outline: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 1rem;
+            height: 1rem;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .controls-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <span>?? SoundHub</span>
+            <span style="font-size: 0.875rem; opacity: 0.8;">Controle de Projeção</span>
+        </div>
+        <div class="status" id="connectionStatus">
+            ?? Conectando...
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="media-panel">
+            <div class="panel-title">
+                <span>??</span>
+                <span>Mídia Disponível</span>
+            </div>
+            <div class="media-list" id="mediaList">
+                <div class="loading">
+                    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                        <div>Carregando mídias...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-panel">
+            <div class="current-media" id="currentMedia" style="display: none;">
+                <div class="current-media-title" id="currentMediaTitle">Nenhuma mídia selecionada</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="panel-title">
+                <span>??</span>
+                <span>Navegação</span>
+            </div>
+            <div class="navigation-controls">
+                <button class="control-button secondary" id="prevBtn" onclick="previousMedia()">
+                    ?? Anterior
+                </button>
+                <button class="control-button secondary" id="nextBtn" onclick="nextMedia()">
+                    Próximo ??
+                </button>
+            </div>
+
+            <button class="control-button" id="playPauseBtn" onclick="togglePlayPause()">
+                ?? Pausar
+            </button>
+
+            <button class="control-button danger" id="stopBtn" onclick="stopProjection()">
+                ?? Parar Projeção
+            </button>
+
+            <div class="volume-control">
+                <span>??</span>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" onchange="changeVolume(this.value)">
+                <span id="volumeValue">100%</span>
+            </div>
+
+            <button class="control-button secondary" onclick="refreshMedia()">
+                ?? Atualizar Lista
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let mediaList = [];
+        let currentMediaIndex = 0;
+        let isPlaying = false;
+        let projectionScreenId = null;
+        let controlChannel = null;
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', function() {
+            initCommunication();
+            loadMediaList();
+        });
+
+        // Inicializar comunicação via BroadcastChannel
+        function initCommunication() {
+            try {
+                controlChannel = new BroadcastChannel('soundhub-projection');
+                console.log('Controle: Canal de comunicação criado');
+                
+                controlChannel.onmessage = (event) => {
+                    console.log('Controle: Mensagem recebida:', event.data);
+                    const { type, data } = event.data;
+                    
+                    switch (type) {
+                        case 'SCREEN_READY':
+                            console.log('Controle: Tela de projeção pronta');
+                            updateConnectionStatus('?? Conectado', 'success');
+                            break;
+                        case 'MEDIA_CHANGED':
+                            console.log('Controle: Mídia alterada:', data);
+                            updateCurrentMedia(data.media);
+                            currentMediaIndex = data.index;
+                            renderMediaList();
+                            break;
+                        case 'DISCONNECT':
+                            console.log('Controle: Desconectado');
+                            updateConnectionStatus('?? Desconectado', 'error');
+                            break;
+                    }
+                };
+                
+                // Notificar que o controle está pronto
+                controlChannel.postMessage({
+                    type: 'CONTROL_READY',
+                    data: { screen: 'control' }
+                });
+                console.log('Controle: Mensagem CONTROL_READY enviada');
+                
+            } catch (error) {
+                console.error('Erro ao inicializar comunicação:', error);
+                updateConnectionStatus('?? Erro de comunicação', 'error');
+            }
+        }
+
+        // Carregar lista de mídias
+        async function loadMediaList() {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = '/auth';
+                    return;
+                }
+                
+                const response = await fetch('/api/files/approved', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const files = await response.json();
+                    mediaList = files;
+                    renderMediaList();
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    window.location.href = '/auth';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar mídias:', error);
+            }
+        }
+
+        // Renderizar lista de mídias
+        function renderMediaList() {
+            const mediaListElement = document.getElementById('mediaList');
+            
+            // Mídias de teste para demonstração
+            const testMediaList = [
+                {
+                    id: 'test1',
+                    nome: 'Captura de Tela (1)',
+                    tipo: 'image/png',
+                    url: `${window.location.origin}/uploads/Captura de Tela (1).png`,
+                    usuario_nome: 'Teste'
+                },
+                {
+                    id: 'test2',
+                    nome: 'ChatGPT Image 4 de abr. de 2025, 09_19_11.png',
+                    tipo: 'image/png',
+                    url: `${window.location.origin}/uploads/ChatGPT Image 4 de abr. de 2025, 09_19_11.png`,
+                    usuario_nome: 'Teste'
+                },
+                {
+                    id: 'test3',
+                    nome: 'arte_base_ss2026_artboard1.jpg',
+                    tipo: 'image/jpeg',
+                    url: `${window.location.origin}/uploads/arte_base_ss2026_artboard1.jpg`,
+                    usuario_nome: 'Teste'
+                }
+            ];
+            
+            mediaList = testMediaList;
+            
+            if (mediaList.length === 0) {
+                mediaListElement.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">??</div>
+                        <div>Nenhuma mídia encontrada</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const mediaHTML = mediaList.map((media, index) => {
+                const icon = media.tipo.includes('image') ? '??' : 
+                           media.tipo.includes('video') ? '??' : '??';
+                           
+                return `
+                    <div class="media-item ${index === currentMediaIndex ? 'active' : ''}" 
+                         onclick="selectMedia(${index})">
+                        <div class="media-icon">${icon}</div>
+                        <div class="media-info">
+                            <div class="media-title">${media.nome}</div>
+                            <div class="meta">${media.usuario_nome} ?? ${media.tipo}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            mediaListElement.innerHTML = mediaHTML;
+        }
+
+        // Selecionar mídia
+        function selectMedia(index) {
+            currentMediaIndex = index;
+            const media = mediaList[index];
+            console.log('Controle: Selecionando mídia:', media);
+            
+            // Atualizar UI
+            renderMediaList();
+            updateCurrentMedia(media);
+            
+            // Enviar para projeção via BroadcastChannel
+            if (controlChannel) {
+                // Mapear ID para nome de arquivo real
+                const fileNameMap = {
+                    'test1': 'Captura de Tela (1).png',
+                    'test2': 'ChatGPT Image 4 de abr. de 2025, 09_19_11.png',
+                    'test3': 'arte_base_ss2026_artboard1.jpg'
+                };
+                
+                const actualFileName = fileNameMap[media.id] || media.id;
+                
+                const mediaData = {
+                    id: media.id,
+                    name: media.nome,
+                    type: media.tipo.includes('image') ? 'image' : 
+                          media.tipo.includes('video') ? 'video' : 'audio',
+                    url: `${window.location.origin}/uploads/${actualFileName}`,
+                    mimeType: media.tipo
+                };
+                
+                console.log('Controle: Enviando LOAD_MEDIA:', mediaData);
+                controlChannel.postMessage({
+                    type: 'LOAD_MEDIA',
+                    data: mediaData
+                });
+            } else {
+                console.error('Controle: Canal de comunicação não disponível');
+            }
+        }
+
+        // Atualizar mídia atual
+        function updateCurrentMedia(media) {
+            const currentMediaElement = document.getElementById('currentMedia');
+            const currentMediaTitle = document.getElementById('currentMediaTitle');
+            
+            if (media) {
+                currentMediaElement.style.display = 'block';
+                currentMediaTitle.textContent = media.name || media.nome;
+            } else {
+                currentMediaElement.style.display = 'none';
+                currentMediaTitle.textContent = 'Nenhuma mídia selecionada';
+            }
+        }
+
+        // Navegação
+        function previousMedia() {
+            if (mediaList.length === 0) return;
+            
+            currentMediaIndex = (currentMediaIndex - 1 + mediaList.length) % mediaList.length;
+            selectMedia(currentMediaIndex);
+            
+            // Enviar comando para projeção
+            if (controlChannel) {
+                controlChannel.postMessage({
+                    type: 'PREVIOUS_MEDIA',
+                    data: {}
+                });
+            }
+        }
+
+        function nextMedia() {
+            if (mediaList.length === 0) return;
+            
+            currentMediaIndex = (currentMediaIndex + 1) % mediaList.length;
+            selectMedia(currentMediaIndex);
+            
+            // Enviar comando para projeção
+            if (controlChannel) {
+                controlChannel.postMessage({
+                    type: 'NEXT_MEDIA',
+                    data: {}
+                });
+            }
+        }
+
+        // Controles de reprodução
+        function togglePlayPause() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playPauseBtn');
+            
+            if (isPlaying) {
+                btn.innerHTML = '?? Pausar';
+            } else {
+                btn.innerHTML = '?? Reproduzir';
+            }
+            
+            // Enviar comando para projeção
+            if (controlChannel) {
+                controlChannel.postMessage({
+                    type: 'PAUSE_PLAY',
+                    data: {}
+                });
+            }
+        }
+
+        function stopProjection() {
+            console.log('Controle: Parando projeção');
+            isPlaying = false;
+            const btn = document.getElementById('playPauseBtn');
+            btn.innerHTML = '?? Reproduzir';
+            
+            updateCurrentMedia(null);
+            
+            // Enviar comando para projeção
+            if (controlChannel) {
+                console.log('Controle: Enviando STOP_PROJECTION');
+                controlChannel.postMessage({
+                    type: 'STOP_PROJECTION',
+                    data: {}
+                });
+            } else {
+                console.error('Controle: Canal não disponível para parar projeção');
+            }
+        }
+
+        // Controle de volume
+        function changeVolume(value) {
+            document.getElementById('volumeValue').textContent = value + '%';
+            
+            // Enviar comando para projeção
+            if (controlChannel) {
+                controlChannel.postMessage({
+                    type: 'VOLUME_CHANGE',
+                    data: { volume: value }
+                });
+            }
+        }
+
+        // Atualizar lista
+        function refreshMedia() {
+            loadMediaList();
+        }
+
+        // Atualizar status de conexão
+        function updateConnectionStatus(text, type) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.textContent = text;
+            
+            if (type === 'success') {
+                statusElement.style.background = 'rgba(16, 185, 129, 0.2)';
+                statusElement.style.color = '#10b981';
+            } else {
+                statusElement.style.background = 'rgba(239, 68, 68, 0.2)';
+                statusElement.style.color = '#ef4444';
+            }
+        }
+
+        // Atualizar status da projeção
+        function updateProjectionStatus(data) {
+            if (data.isPlaying !== undefined) {
+                isPlaying = data.isPlaying;
+                const btn = document.getElementById('playPauseBtn');
+                btn.innerHTML = isPlaying ? '?? Pausar' : '?? Reproduzir';
+            }
+            
+            if (data.progress !== undefined) {
+                document.getElementById('progressFill').style.width = data.progress + '%';
+            }
+        }
+
+        // Obter ID da tela de projeção da URL
+        function getProjectionScreenId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('screenId');
+        }
+
+        // Inicializar com ID da tela
+        projectionScreenId = getProjectionScreenId();
+        if (!projectionScreenId) {
+            projectionScreenId = 'default';
+        }
+    </script>
+</body>
+</html>
