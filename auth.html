@@ -404,21 +404,26 @@
                     body: JSON.stringify(data),
                 });
                 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Store token and user data
-                    localStorage.setItem('token', result.token);
-                    localStorage.setItem('user', JSON.stringify(result.user));
+                try {
+                    const result = await response.json();
                     
-                    showMessage('Login realizado com sucesso! Redirecionando...', 'success');
-                    
-                    // Redirect to home after 1 second
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1000);
-                } else {
-                    showMessage(result.message || 'Erro ao fazer login', 'error');
+                    if (response.ok) {
+                        // Store token and user data
+                        localStorage.setItem('token', result.token);
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        
+                        showMessage('Login realizado com sucesso! Redirecionando...', 'success');
+                        
+                        // Redirect to home after 1 second
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 1000);
+                    } else {
+                        showMessage(result.message || 'Erro ao fazer login', 'error');
+                    }
+                } catch (parseError) {
+                    console.error('Erro ao processar resposta de login:', parseError);
+                    showMessage('Erro ao processar resposta do servidor', 'error');
                 }
             } catch (error) {
                 showMessage('Erro de conexão. Tente novamente.', 'error');
@@ -450,30 +455,43 @@
             setLoading(form, true);
             
             try {
+                // Verifique se os nomes batem exatamente com o que o backend espera
+                const payload = {
+                    nome: data.nome,
+                    email: data.email,
+                    senha: data.senha // O backend espera 'senha', certifique-se que o input tem name="senha"
+                };
+                
+                console.log('Payload enviado no registro:', payload);
+                
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        nome: data.nome,
-                        email: data.email,
-                        senha: data.senha
-                    }),
+                    body: JSON.stringify(payload),
                 });
                 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showMessage('Cadastro realizado com sucesso! Aguarde aprovação para acessar.', 'success');
-                    form.reset();
+                try {
+                    const result = await response.json();
                     
-                    // Switch to login tab after 2 seconds
-                    setTimeout(() => {
-                        switchTab('login');
-                    }, 2000);
-                } else {
-                    showMessage(result.message || 'Erro ao fazer cadastro', 'error');
+                    if (response.ok) {
+                        showMessage('Cadastro realizado com sucesso! Aguarde aprovação para acessar.', 'success');
+                        form.reset();
+                        
+                        // Switch to login tab after 2 seconds
+                        setTimeout(() => {
+                            switchTab('login');
+                        }, 2000);
+                    } else {
+                        // Se o servidor retornar 500, pegamos a mensagem que enviamos no passo 1
+                        const errorMessage = result.detalhe ? `${result.message}: ${result.detalhe}` : result.message;
+                        showMessage(errorMessage || 'Erro crítico no servidor', 'error');
+                    }
+                } catch (parseError) {
+                    // Se o servidor retornar erro 500 mas não for JSON
+                    console.error('Erro ao processar resposta de cadastro:', parseError);
+                    showMessage('Erro no servidor (Resposta inválida). Verifique o console do Node.', 'error');
                 }
             } catch (error) {
                 showMessage('Erro de conexão. Tente novamente.', 'error');
@@ -484,31 +502,49 @@
 
         // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('token');
-            
-            if (token) {
-                // Verify token is still valid
-                fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
+            // Usar setTimeout para evitar erros de message channel
+            setTimeout(() => {
+                try {
+                    const token = localStorage.getItem('token');
+                    
+                    if (token) {
+                        // Verify token is still valid
+                        fetch('/api/auth/me', {
+                            headers: {
+                                'Authorization': 'Bearer ' + token
+                            }
+                        })
+                        .then(response => {
+                            try {
+                                if (response.ok) {
+                                    // User is logged in, redirect to home
+                                    window.location.href = '/';
+                                } else {
+                                    // Token is invalid, remove it
+                                    localStorage.removeItem('token');
+                                    localStorage.removeItem('user');
+                                }
+                            } catch (redirectError) {
+                                console.warn('Erro ao verificar token:', redirectError);
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('user');
+                            }
+                        })
+                        .catch((tokenError) => {
+                            try {
+                                console.warn('Erro na verificação de token:', tokenError);
+                                // Error checking token, remove it
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('user');
+                            } catch (cleanupError) {
+                                console.warn('Erro ao limpar token:', cleanupError);
+                            }
+                        });
                     }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        // User is logged in, redirect to home
-                        window.location.href = '/';
-                    } else {
-                        // Token is invalid, remove it
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                    }
-                })
-                .catch(() => {
-                    // Error checking token, remove it
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('user');
-                });
-            }
+                } catch (domError) {
+                    console.warn('Erro no DOMContentLoaded:', domError);
+                }
+            }, 100); // Pequeno delay para evitar race conditions
         });
     </script>
 </body>

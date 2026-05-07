@@ -10,19 +10,27 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
             background: #000;
             color: #fff;
             overflow: hidden;
+            position: relative;
+        }
+        
+        /* Container principal */
+        .projection-container {
+            width: 100vw;
             height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
-
-        .projection-container {
+        
+        /* Container da mídia */
+        .media-container {
             width: 100%;
             height: 100%;
             display: flex;
@@ -30,289 +38,591 @@
             justify-content: center;
             position: relative;
         }
-
-        .projection-content {
-            max-width: 100%;
-            max-height: 100%;
-            position: relative;
-        }
-
-        .projection-content img {
+        
+        /* Imagem */
+        .media-image {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            display: block;
         }
-
-        .projection-content video {
+        
+        /* Vídeo */
+        .media-video {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
+            display: block;
         }
-
-        .projection-content iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-
-        .loading {
-            text-align: center;
-            color: #666;
-        }
-
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid #333;
-            border-top: 3px solid #666;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .status-overlay {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .controls-overlay {
+        
+        /* Controles */
+        .controls {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border-radius: 10px;
-            display: none;
-            gap: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem 2rem;
+            border-radius: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-
+        
+        .controls:hover {
+            opacity: 1;
+        }
+        
+        .controls.show {
+            opacity: 1;
+        }
+        
+        /* Botões */
         .control-btn {
-            background: rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #fff;
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
             cursor: pointer;
-            font-size: 14px;
+            transition: all 0.2s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
-
+        
         .control-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
         }
-
+        
+        .control-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        /* Info da mídia */
         .media-info {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 15px;
-            border-radius: 5px;
-            font-size: 14px;
-            display: none;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
         }
-
-        .progress-bar {
+        
+        .media-info h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        
+        .media-info p {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* Estado inicial */
+        .initial-state {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .initial-state h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .initial-state p {
+            font-size: 1.125rem;
+        }
+        
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Fullscreen */
+        :fullscreen {
+            background: #000;
+        }
+        
+        :-webkit-full-screen {
+            background: #000;
+        }
+        
+        :-moz-full-screen {
+            background: #000;
+        }
+        
+        :-ms-fullscreen {
+            background: #000;
+        }
+        
+        /* Controles de vídeo */
+        .video-controls {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .video-controls.show {
+            display: flex;
+        }
+        
+        .progress-bar {
+            width: 200px;
             height: 4px;
             background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            cursor: pointer;
         }
-
+        
         .progress-fill {
             height: 100%;
             background: #3b82f6;
+            border-radius: 2px;
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.1s ease;
+        }
+        
+        .time-display {
+            font-size: 0.875rem;
+            color: #fff;
+            min-width: 100px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="projection-container">
-        <div class="projection-content" id="projectionContent">
-            <div class="loading">
-                <div class="loading-spinner"></div>
-                <div>Aguardando conteúdo...</div>
+    <div class="projection-container" id="projectionContainer">
+        <div class="media-container" id="mediaContainer">
+            <!-- Estado inicial -->
+            <div class="initial-state" id="initialState">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <h2>🎥 SoundHub</h2>
+                    <p>Aguardando mídia para projeção...</p>
+                </div>
+            </div>
+            
+            <!-- Mídia será inserida aqui dinamicamente -->
+            <div id="mediaWrapper" style="display: none;">
+                <!-- Imagem ou vídeo -->
             </div>
         </div>
-        <div class="status-overlay" id="statusOverlay">
-            <span id="statusText">Pronto</span>
+        
+        <!-- Controles -->
+        <div class="controls" id="controls">
+            <button class="control-btn" onclick="previousMedia()">
+                ⏮️ Anterior
+            </button>
+            <button class="control-btn" onclick="togglePlayPause()" id="playPauseBtn">
+                ⏸️ Pausar
+            </button>
+            <button class="control-btn" onclick="nextMedia()">
+                ⏭️ Próximo
+            </button>
+            <button class="control-btn" onclick="toggleFullscreen()">
+                🖥️ Tela Cheia
+            </button>
+            <button class="control-btn" onclick="stopProjection()">
+                ⏹️ Parar
+            </button>
         </div>
-        <div class="media-info" id="mediaInfo">
-            <div id="mediaTitle">Nenhuma mídia</div>
+        
+        <!-- Controles de vídeo -->
+        <div class="video-controls" id="videoControls">
+            <div class="progress-bar" onclick="seekVideo(event)">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
         </div>
-        <div class="controls-overlay" id="controlsOverlay">
-            <button class="control-btn" onclick="toggleFullscreen()">Tela Cheia</button>
-            <button class="control-btn" onclick="stopProjection()">Parar</button>
-        </div>
-        <div class="progress-bar" id="progressBar">
-            <div class="progress-fill" id="progressFill"></div>
+        
+        <!-- Info da mídia -->
+        <div class="media-info" id="mediaInfo" style="display: none;">
+            <h3 id="mediaTitle">Carregando...</h3>
+            <p id="mediaDescription">Aguardando informações...</p>
         </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
     <script>
-        let socket = null;
+        // Variáveis globais
         let currentMedia = null;
-        let isProjecting = false;
+        let mediaList = [];
+        let currentVideo = null;
         let isPlaying = false;
-        let currentVolume = 100;
-
-        // Inicializar
+        let projectionActive = false;
+        
+        // Canal de comunicação
+        const canal = new BroadcastChannel('canal_projecao');
+        
+        // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
-            initSocket();
+            console.log('Tela de projeção inicializada');
             
-            // Verificar se deve iniciar em tela cheia
+            // Verificar se deve entrar em fullscreen automaticamente
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('fullscreen') === 'true') {
                 requestFullscreen();
             }
             
             // Mostrar controles ao mover o mouse
-            let hideControlsTimeout;
-            document.addEventListener('mousemove', showControls);
+            let controlsTimeout;
             document.addEventListener('mousemove', () => {
-                clearTimeout(hideControlsTimeout);
-                hideControlsTimeout = setTimeout(hideControls, 3000);
+                showControls();
+                clearTimeout(controlsTimeout);
+                controlsTimeout = setTimeout(hideControls, 3000);
             });
             
             // Teclas de atalho
             document.addEventListener('keydown', handleKeyPress);
+            
+            // Escutar mensagens do canal
+            canal.addEventListener('message', handleChannelMessage);
         });
-
-        // Conectar ao WebSocket
-        function initSocket() {
-            socket = io();
+        
+        // Tratar mensagens do canal
+        function handleChannelMessage(event) {
+            const { type, data } = event.data;
             
-            socket.on('connect', () => {
-                console.log('Conectado ao WebSocket');
-                updateStatus('Conectado');
-                const screenId = getScreenId();
-                socket.emit('join-display', screenId);
-            });
-            
-            socket.on('disconnect', () => {
-                console.log('Desconectado do WebSocket');
-                updateStatus('Desconectado');
-            });
-            
-            socket.on('project-file', (data) => {
-                displayMedia(data.file);
-            });
-            
-            socket.on('stop-display', () => {
-                stopProjection();
-            });
+            switch (type) {
+                case 'LOAD_MEDIA':
+                    loadMedia(data);
+                    break;
+                    
+                case 'MEDIA_LIST':
+                    mediaList = data || [];
+                    console.log('Lista de mídias recebida:', mediaList);
+                    break;
+                    
+                case 'STOP_PROJECTION':
+                    stopProjection();
+                    break;
+            }
         }
-
-        function updateStatus(connected, message) {
-            const statusDot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
-            const debugStatus = document.getElementById('debugStatus');
-
-            if (connected) {
-                statusDot.classList.remove('disconnected');
-                statusText.textContent = message;
-                debugStatus.textContent = message;
+        
+        // Carregar mídia
+        function loadMedia(media) {
+            console.log('Carregando mídia:', media);
+            
+            currentMedia = media;
+            projectionActive = true;
+            
+            // Esconder estado inicial
+            document.getElementById('initialState').style.display = 'none';
+            
+            // Limpar mídia anterior
+            const mediaWrapper = document.getElementById('mediaWrapper');
+            mediaWrapper.innerHTML = '';
+            
+            if (media.type === 'image') {
+                loadImage(media);
+            } else if (media.type === 'video') {
+                loadVideo(media);
+            }
+            
+            // Atualizar informações
+            updateMediaInfo(media);
+            
+            // Mostrar controles
+            showControls();
+        }
+        
+        // Carregar imagem
+        function loadImage(media) {
+            const img = document.createElement('img');
+            img.src = media.url;
+            img.className = 'media-image';
+            img.alt = media.name;
+            
+            img.onload = () => {
+                console.log('Imagem carregada:', media.name);
+                document.getElementById('mediaWrapper').appendChild(img);
+                document.getElementById('mediaWrapper').style.display = 'block';
+                document.getElementById('mediaInfo').style.display = 'block';
+                
+                // Esconder controles de vídeo
+                document.getElementById('videoControls').classList.remove('show');
+            };
+            
+            img.onerror = () => {
+                console.error('Erro ao carregar imagem:', media.url);
+                showError('Erro ao carregar imagem');
+            };
+        }
+        
+        // Carregar vídeo
+        function loadVideo(media) {
+            const video = document.createElement('video');
+            video.src = media.url;
+            video.className = 'media-video';
+            video.controls = false;
+            video.autoplay = true;
+            video.loop = true;
+            
+            video.onloadedmetadata = () => {
+                console.log('Vídeo carregado:', media.name);
+                currentVideo = video;
+                document.getElementById('mediaWrapper').appendChild(video);
+                document.getElementById('mediaWrapper').style.display = 'block';
+                document.getElementById('mediaInfo').style.display = 'block';
+                
+                // Mostrar controles de vídeo
+                document.getElementById('videoControls').classList.add('show');
+                
+                // Atualizar tempo
+                updateVideoTime();
+                
+                // Iniciar atualização do progresso
+                setInterval(updateVideoTime, 1000);
+            };
+            
+            video.onerror = () => {
+                console.error('Erro ao carregar vídeo:', media.url);
+                showError('Erro ao carregar vídeo');
+            };
+            
+            video.onplay = () => {
+                isPlaying = true;
+                updatePlayPauseButton();
+            };
+            
+            video.onpause = () => {
+                isPlaying = false;
+                updatePlayPauseButton();
+            };
+        }
+        
+        // Atualizar informações da mídia
+        function updateMediaInfo(media) {
+            document.getElementById('mediaTitle').textContent = media.name || 'Mídia';
+            document.getElementById('mediaDescription').textContent = 
+                media.type === 'image' ? 'Imagem' : 'Vídeo';
+        }
+        
+        // Mostrar erro
+        function showError(message) {
+            document.getElementById('mediaWrapper').innerHTML = `
+                <div class="initial-state">
+                    <h2>❌ Erro</h2>
+                    <p>${message}</p>
+                </div>
+            `;
+            document.getElementById('mediaWrapper').style.display = 'block';
+        }
+        
+        // Controles de mídia
+        function previousMedia() {
+            if (!mediaList.length) return;
+            
+            const currentIndex = mediaList.findIndex(m => m.id === currentMedia.id);
+            const prevIndex = currentIndex > 0 ? currentIndex - 1 : mediaList.length - 1;
+            
+            if (mediaList[prevIndex]) {
+                loadMedia(mediaList[prevIndex]);
+            }
+        }
+        
+        function nextMedia() {
+            if (!mediaList.length) return;
+            
+            const currentIndex = mediaList.findIndex(m => m.id === currentMedia.id);
+            const nextIndex = currentIndex < mediaList.length - 1 ? currentIndex + 1 : 0;
+            
+            if (mediaList[nextIndex]) {
+                loadMedia(mediaList[nextIndex]);
+            }
+        }
+        
+        function togglePlayPause() {
+            if (!currentVideo) return;
+            
+            if (isPlaying) {
+                currentVideo.pause();
             } else {
-                statusDot.classList.add('disconnected');
-                statusText.textContent = message;
-                debugStatus.textContent = message;
+                currentVideo.play();
             }
         }
-
-        function displayContent(file) {
-            const waitingScreen = document.getElementById('waitingScreen');
-            const contentContainer = document.getElementById('contentContainer');
-            const debugFile = document.getElementById('debugFile');
-
-            // Atualizar debug
-            debugFile.textContent = file.name;
-
-            // Limpar conteúdo anterior
-            contentContainer.innerHTML = '';
-
-            // Determinar tipo de conteúdo
-            if (file.type.includes('image')) {
-                contentContainer.innerHTML = `<img src="${file.url}" alt="${file.name}" />`;
-            } else if (file.type.includes('video')) {
-                contentContainer.innerHTML = `
-                    <video controls autoplay>
-                        <source src="${file.url}" type="${file.type}">
-                        Seu navegador não suporta reprodução de vídeo.
-                    </video>
-                `;
-            } else if (file.type.includes('pdf')) {
-                contentContainer.innerHTML = `<iframe src="${file.url}" />`;
+        
+        function updatePlayPauseButton() {
+            const btn = document.getElementById('playPauseBtn');
+            btn.textContent = isPlaying ? '⏸️ Pausar' : '▶️ Play';
+        }
+        
+        function seekVideo(event) {
+            if (!currentVideo) return;
+            
+            const progressBar = event.currentTarget;
+            const clickX = event.offsetX;
+            const width = progressBar.offsetWidth;
+            const percentage = clickX / width;
+            
+            currentVideo.currentTime = percentage * currentVideo.duration;
+        }
+        
+        function updateVideoTime() {
+            if (!currentVideo) return;
+            
+            const current = formatTime(currentVideo.currentTime);
+            const duration = formatTime(currentVideo.duration);
+            
+            document.getElementById('timeDisplay').textContent = `${current} / ${duration}`;
+            
+            // Atualizar barra de progresso
+            const percentage = (currentVideo.currentTime / currentVideo.duration) * 100;
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+        }
+        
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '00:00';
+            
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Controles de tela
+        function showControls() {
+            document.getElementById('controls').classList.add('show');
+        }
+        
+        function hideControls() {
+            if (!isPlaying) return;
+            document.getElementById('controls').classList.remove('show');
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                requestFullscreen();
             } else {
-                contentContainer.innerHTML = `
-                    <div class="error-message">
-                        <h2>❌ Tipo Não Suportado</h2>
-                        <p>Tipo de arquivo não suportado para projeção</p>
-                    </div>
-                `;
+                exitFullscreen();
             }
-
-            // Mostrar conteúdo e esconder tela de espera
-            waitingScreen.style.display = 'none';
-            contentContainer.style.display = 'flex';
-
-            updateStatus(true, 'Exibindo conteúdo');
         }
-
-        function stopDisplay() {
-            const waitingScreen = document.getElementById('waitingScreen');
-            const contentContainer = document.getElementById('contentContainer');
-            const debugFile = document.getElementById('debugFile');
-
-            // Limpar debug
-            debugFile.textContent = 'Nenhum';
-
-            // Esconder conteúdo e mostrar tela de espera
-            contentContainer.style.display = 'none';
-            waitingScreen.style.display = 'block';
-
-            updateStatus(true, 'Aguardando conteúdo...');
-        }
-
-        // Tratar erros de carregamento de mídia
-        document.addEventListener('error', function(e) {
-            if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
-                console.error('Erro ao carregar mídia:', e.target.src);
-                stopDisplay();
+        
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
             }
-        }, true);
-
+        }
+        
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+        
+        // Parar projeção
+        function stopProjection() {
+            console.log('Parando projeção...');
+            
+            // Pausar vídeo se estiver tocando
+            if (currentVideo) {
+                currentVideo.pause();
+            }
+            
+            // Limpar mídia
+            document.getElementById('mediaWrapper').innerHTML = '';
+            document.getElementById('mediaWrapper').style.display = 'none';
+            
+            // Mostrar estado inicial
+            document.getElementById('initialState').style.display = 'flex';
+            document.getElementById('mediaInfo').style.display = 'none';
+            
+            // Esconder controles
+            document.getElementById('controls').classList.remove('show');
+            document.getElementById('videoControls').classList.remove('show');
+            
+            // Resetar variáveis
+            currentMedia = null;
+            currentVideo = null;
+            isPlaying = false;
+            projectionActive = false;
+            
+            // Enviar mensagem de volta
+            canal.postMessage({
+                type: 'PROJECTION_STOPPED',
+                data: {}
+            });
+            
+            // Fechar janela após 2 segundos
+            setTimeout(() => {
+                window.close();
+            },2000);
+        }
+        
         // Teclas de atalho
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                // ESC para parar projeção (em desenvolvimento)
-                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                    stopDisplay();
-                }
+        function handleKeyPress(event) {
+            switch(event.key) {
+                case ' ':
+                    event.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'ArrowLeft':
+                    previousMedia();
+                    break;
+                case 'ArrowRight':
+                    nextMedia();
+                    break;
+                case 'f':
+                case 'F':
+                    toggleFullscreen();
+                    break;
+                case 'Escape':
+                    stopProjection();
+                    break;
             }
-        });
-
+        }
+        
         // Prevenir menu de contexto
-        document.addEventListener('contextmenu', function(e) {
+        document.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
-
+        
         // Prevenir seleção de texto
-        document.addEventListener('selectstart', function(e) {
+        document.addEventListener('selectstart', (e) => {
             e.preventDefault();
         });
     </script>

@@ -296,6 +296,111 @@
                 flex-direction: column;
             }
         }
+        .tab-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6b7280;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover {
+            color: #3b82f6;
+            background: #f9fafb;
+        }
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        .tab-content {
+            display: block;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 0.25rem;
+        }
+        .close-btn:hover {
+            color: #374151;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .cargo-clickable {
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s;
+        }
+        .cargo-clickable:hover {
+            background: #f3f4f6;
+        }
         @media (min-width: 768px) {
             .sidebar {
                 transform: translateX(0);
@@ -334,6 +439,10 @@
                 <span style="margin-right: 0.75rem;">👤</span>
                 Contas
             </a>
+            <a href="/schedule" class="sidebar-item" id="scheduleLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📅</span>
+                Escalas
+            </a>
         </nav>
         
         <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
@@ -353,6 +462,9 @@
         <div class="user-info">
             <span id="userName">Carregando...</span>
             <span id="userRole" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.875rem;"></span>
+            <button class="btn btn-secondary" onclick="editProfile()" style="margin-left: 1rem;">
+                ✏️ Editar Perfil
+            </button>
         </div>
     </header>
 
@@ -360,39 +472,162 @@
     <main class="main-content">
         <div class="card">
             <div class="card-header">
-                <h1 class="card-title">Gerenciar Contas</h1>
+                <h1 class="card-title" id="pageTitle">Gerenciar Contas</h1>
                 <button class="btn btn-primary" onclick="refreshUsers()">
                     🔄 Atualizar
+                </button>
+                <button class="btn btn-secondary" onclick="showProfileSection()">
+                    👤 Meu Perfil
                 </button>
             </div>
         </div>
 
+        <!-- Abas -->
         <div class="card">
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Usuário</th>
-                            <th>Cargo</th>
-                            <th>Status</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 2rem;">
-                                <div class="loading">
-                                    <div class="spinner"></div>
-                                    <div>Carregando usuários...</div>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div style="display: flex; gap: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                <button class="tab-btn active" onclick="switchTab('active')" id="activeTab">
+                    Contas Ativas
+                </button>
+                <button class="tab-btn" onclick="switchTab('pending')" id="pendingTab">
+                    Contas Pendentes
+                </button>
+                <button class="tab-btn" onclick="switchTab('profile')" id="profileTab">
+                    Meu Perfil
+                </button>
+            </div>
+
+            <!-- Tabela de Contas Ativas -->
+            <div id="activeContent" class="tab-content">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Cargo</th>
+                                <th>Status</th>
+                                <th>Data</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem;">
+                                    <div class="loading">
+                                        <div class="spinner"></div>
+                                        <div>Carregando usuários...</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tabela de Contas Pendentes -->
+            <div id="pendingContent" class="tab-content" style="display: none;">
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Data do Pedido</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingUsersTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 2rem;">
+                                    <div class="loading">
+                                        <div class="spinner"></div>
+                                        <div>Carregando pendências...</div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Seção de Perfil -->
+            <div id="profileContent" class="tab-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Meu Perfil</h2>
+                    </div>
+                    <div class="table-container">
+                        <form id="profileForm">
+                            <div class="form-group">
+                                <label for="profileNome">Nome Completo</label>
+                                <input type="text" id="profileNome" name="nome" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profileEmail">Email</label>
+                                <input type="email" id="profileEmail" name="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profileSenha">Nova Senha (deixe em branco para manter atual)</label>
+                                <input type="password" id="profileSenha" name="senha" placeholder="Digite nova senha ou deixe em branco">
+                            </div>
+                            <div class="form-group">
+                                <label for="profileConfirmSenha">Confirmar Nova Senha</label>
+                                <input type="password" id="profileConfirmSenha" name="confirmSenha" placeholder="Confirme sua nova senha">
+                            </div>
+                            <div class="form-group">
+                                <label>Cargo Atual</label>
+                                <input type="text" id="profileCargo" readonly style="background: #f3f4f6; padding: 0.5rem; border-radius: 4px;">
+                            </div>
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary">
+                                    🔄 Atualizar Meu Perfil
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
+
+    <!-- Modal de Edição de Usuário -->
+    <div class="modal" id="editUserModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Usuário</h2>
+                <button class="close-btn" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editUserForm">
+                <div class="form-group">
+                    <label for="editNome">Nome</label>
+                    <input type="text" id="editNome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="editSenha">Nova Senha (deixe em branco para manter atual)</label>
+                    <input type="password" id="editSenha" name="senha" placeholder="Nova senha">
+                </div>
+                <div class="form-group">
+                    <label for="editCargo">Cargo</label>
+                    <select id="editCargo" name="cargo">
+                        <option value="USUARIO">Sonoplasta</option>
+                        <option value="DIRETOR">Diretor</option>
+                        <option value="ADMIN">Administrador</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal de Autenticação -->
     <div class="overlay" id="authOverlay">
@@ -402,9 +637,9 @@
             <a href="/auth" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
                 Fazer Login
             </a>
-            <a href="/" class="btn btn-secondary" style="width: 100%;">
+            <button class="btn btn-secondary" onclick="window.location.href='/'">
                 Voltar ao Início
-            </a>
+            </button>
         </div>
     </div>
 
@@ -417,128 +652,311 @@
         });
         
         async function checkAuth() {
+            console.log('🔍 accounts.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
             const authOverlay = document.getElementById('authOverlay');
             
+            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
+            console.log('Token completo:', token);
+            
             if (!token) {
+                console.log('❌ Token não encontrado, redirecionando para /auth');
                 // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
             
             try {
+                console.log('🔍 Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
                     headers: {
                         'Authorization': 'Bearer ' + token
                     }
                 });
                 
+                console.log('Status da resposta:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('✅ Usuário autenticado:', data.user);
                     currentUser = data.user;
                     updateUserInterface();
                     
                     // Verificar permissão
-                    if (currentUser.cargo !== 'DIRETOR') {
+                    console.log('🔍 Verificando permissão para cargo:', currentUser.cargo);
+                    console.log('🔍 Cargo é SONOPLASTA?', currentUser.cargo === 'SONOPLASTA');
+                    console.log('🔍 Cargo é DIRETOR?', currentUser.cargo === 'DIRETOR');
+                    console.log('🔍 Cargo é ADMIN?', currentUser.cargo === 'ADMIN');
+                    
+                    if (currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN' && currentUser.cargo !== 'SONOPLASTA') {
+                        console.log('❌ Permissão negada para cargo:', currentUser.cargo);
                         showAuthRequired();
                         return;
                     }
                     
-                    loadUsers();
+                    console.log('✅ Permissão concedida, carregando...');
+                    
+                    // Ajustar interface baseado no cargo
+                    if (currentUser.cargo === 'SONOPLASTA') {
+                        console.log('🔍 Entrando no modo SONOPLASTA...');
+                        // Para SONOPLASTA: mostrar apenas aba de perfil
+                        document.getElementById('pageTitle').textContent = 'Minha Conta';
+                        
+                        // Esconder abas de gerenciamento
+                        const activeTab = document.getElementById('activeTab');
+                        const pendingTab = document.getElementById('pendingTab');
+                        const profileTab = document.getElementById('profileTab');
+                        
+                        console.log('🔍 Elementos das abas encontrados:', {
+                            activeTab: !!activeTab,
+                            pendingTab: !!pendingTab,
+                            profileTab: !!profileTab
+                        });
+                        
+                        if (activeTab) activeTab.style.display = 'none';
+                        if (pendingTab) pendingTab.style.display = 'none';
+                        if (profileTab) profileTab.style.display = 'block';
+                        
+                        // Esconder conteúdos
+                        const activeContent = document.getElementById('activeContent');
+                        const pendingContent = document.getElementById('pendingContent');
+                        const profileContent = document.getElementById('profileContent');
+                        
+                        console.log('🔍 Elementos dos conteúdos encontrados:', {
+                            activeContent: !!activeContent,
+                            pendingContent: !!pendingContent,
+                            profileContent: !!profileContent
+                        });
+                        
+                        if (activeContent) activeContent.style.display = 'none';
+                        if (pendingContent) pendingContent.style.display = 'none';
+                        if (profileContent) profileContent.style.display = 'block';
+                        
+                        if (profileTab) profileTab.classList.add('active');
+                        
+                        console.log('🔍 Carregando dados do perfil...');
+                        loadProfileData();
+                    } else {
+                        console.log('🔍 Entrando no modo ADMIN/DIRETOR...');
+                        // Para ADMIN/DIRETOR: mostrar todas as funcionalidades
+                        loadUsers();
+                    }
                 } else {
+                    console.log('❌ Resposta não OK:', response.status);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 }
             } catch (error) {
+                console.error('❌ Erro na verificação:', error);
                 showAuthRequired();
             }
         }
         
         function showAuthRequired() {
+            console.log('❌ showAuthRequired chamado - redirecionando para /auth');
             // Redirecionar automaticamente para página de autenticação
             window.location.href = '/auth';
         }
         
-        function updateUserInterface() {
-            if (!currentUser) return;
+        function showProfileSection() {
+            console.log('🔍 showProfileSection chamado');
             
-            document.getElementById('userName').textContent = currentUser.nome;
-            document.getElementById('userRole').textContent = currentUser.cargo;
+            // Atualizar abas
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('profileTab').classList.add('active');
             
-            // Mostrar itens do menu baseado no cargo
-            const receiveLink = document.getElementById('receiveLink');
-            const projectLink = document.getElementById('projectLink');
+            // Atualizar conteúdo
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            document.getElementById('profileContent').style.display = 'block';
             
-            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') {
-                receiveLink.style.display = 'block';
-                projectLink.style.display = 'block';
-            }
+            // Carregar dados do perfil
+            loadProfileData();
         }
         
-        async function loadUsers() {
-            const usersTableBody = document.getElementById('usersTableBody');
+        function loadProfileData() {
+            console.log('🔍 loadProfileData chamado para currentUser:', currentUser);
             
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
-                const response = await fetch('/api/users', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    const users = await response.json();
-                    displayUsers(users);
-                } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                } else {
-                    throw new Error('Erro ao carregar usuários');
-                }
-            } catch (error) {
-                usersTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 2rem;">
-                            <div class="empty-state">
-                                <h3>❌ Erro ao Carregar</h3>
-                                <p>Não foi possível carregar os usuários.</p>
-                                <button class="btn btn-primary" onclick="refreshUsers()">Tentar Novamente</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-        }
-        
-        function displayUsers(users) {
-            const usersTableBody = document.getElementById('usersTableBody');
-            
-            if (users.length === 0) {
-                usersTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 2rem;">
-                            <div class="empty-state">
-                                <h3>👥 Nenhum Usuário</h3>
-                                <p>Nenhum usuário encontrado.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+            if (!currentUser) {
+                console.log('❌ currentUser não disponível');
                 return;
             }
             
-            const usersHTML = users.map(user => {
-                const statusBadge = getStatusBadge(user.status);
-                const roleBadge = getRoleBadge(user.cargo);
-                const formattedDate = new Date(user.created_at).toLocaleDateString('pt-BR');
+            try {
+                // Preencher formulário de perfil
+                const profileNome = document.getElementById('profileNome');
+                const profileEmail = document.getElementById('profileEmail');
+                const profileCargo = document.getElementById('profileCargo');
                 
-                return `
+                console.log('🔍 Elementos do perfil encontrados:', {
+                    profileNome: !!profileNome,
+                    profileEmail: !!profileEmail,
+                    profileCargo: !!profileCargo
+                });
+                
+                if (profileNome) profileNome.value = currentUser.nome || '';
+                if (profileEmail) profileEmail.value = currentUser.email || '';
+                if (profileCargo) profileCargo.value = getCargoDisplay(currentUser.cargo) || '';
+                
+                console.log('✅ Dados do perfil carregados com sucesso');
+            } catch (error) {
+                console.error('❌ Erro ao carregar dados do perfil:', error);
+            }
+        }
+        
+        function getCargoDisplay(cargo) {
+            console.log('🔍 getCargoDisplay chamado com cargo:', cargo);
+            switch (cargo) {
+                case 'ADMIN':
+                    return 'Administrador';
+                case 'DIRETOR':
+                    return 'Diretor';
+                case 'SONOPLASTA':
+                    return 'Sonoplasta';
+                case 'USUARIO':
+                    return 'Usuário';
+                default:
+                    console.log('⚠️ Cargo não reconhecido:', cargo);
+                    return cargo || 'Desconhecido';
+            }
+        }
+        
+        function getStatusDisplay(status) {
+            console.log('🔍 getStatusDisplay chamado com status:', status);
+            switch (status) {
+                case 'APPROVED':
+                    return 'Aprovado';
+                case 'PENDING':
+                    return 'Pendente';
+                case 'REJECTED':
+                    return 'Rejeitado';
+                default:
+                    console.log('⚠️ Status não reconhecido:', status);
+                    return status || 'Desconhecido';
+            }
+        }
+        
+        function updateUserInterface() {
+            console.log('🔍 updateUserInterface chamado com currentUser:', currentUser);
+            
+            if (!currentUser) {
+                console.log('❌ currentUser é null/undefined');
+                return;
+            }
+            
+            console.log('✅ Atualizando interface com usuário:', currentUser.nome, currentUser.cargo);
+            
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            
+            if (userNameEl) {
+                userNameEl.textContent = currentUser.nome;
+                console.log('✅ Nome do usuário atualizado:', currentUser.nome);
+            } else {
+                console.log('❌ Elemento userName não encontrado');
+            }
+            
+            if (userRoleEl) {
+                userRoleEl.textContent = getCargoDisplay(currentUser.cargo);
+                console.log('✅ Cargo do usuário atualizado:', getCargoDisplay(currentUser.cargo));
+            } else {
+                console.log('❌ Elemento userRole não encontrado');
+            }
+            
+            // Verificar se o botão de editar perfil existe
+            const editProfileBtn = document.querySelector('button[onclick="editProfile()"]');
+            if (editProfileBtn) {
+                console.log('✅ Botão de editar perfil encontrado:', editProfileBtn);
+                console.log('✅ Botão visível:', editProfileBtn.style.display !== 'none');
+            } else {
+                console.log('❌ Botão de editar perfil NÃO encontrado');
+            }
+            
+            // Ajustar título da página baseado no cargo
+            if (currentUser.cargo === 'USUARIO') {
+                document.getElementById('pageTitle').textContent = 'Minha Conta';
+                document.getElementById('receiveLink').style.display = 'block';
+                document.getElementById('projectLink').style.display = 'block';
+                // Ocultar aba de pendentes para sonoplastas
+                document.getElementById('pendingTab').style.display = 'none';
+            } else {
+                document.getElementById('pageTitle').textContent = 'Gerenciar Contas';
+                document.getElementById('receiveLink').style.display = 'block';
+                document.getElementById('projectLink').style.display = 'block';
+            }
+            
+            // Mostrar link de escalas para todos os usuários logados
+            const scheduleLink = document.getElementById('scheduleLink');
+            if (scheduleLink) {
+                scheduleLink.style.display = 'block';
+                console.log('Menu Escalas mostrado para usuário:', currentUser.cargo);
+            }
+        }
+        
+        function getCargoDisplay(cargo) {
+            const cargoMap = {
+                'ADMIN': 'Administrador',
+                'DIRETOR': 'Diretor',
+                'USUARIO': 'Sonoplasta'
+            };
+            return cargoMap[cargo] || cargo;
+        }
+        
+        function switchTab(tab) {
+            // Atualizar botões das abas
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Atualizar conteúdo das abas
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            document.getElementById(tab + 'Content').style.display = 'block';
+            
+            // Carregar dados da aba selecionada
+            if (tab === 'active') {
+                loadUsers();
+            } else if (tab === 'pending') {
+                loadPendingUsers();
+            } else if (tab === 'profile') {
+                loadProfileData();
+            }
+        }
+        
+        function loadUsers() {
+            const token = localStorage.getItem('token');
+            const usersTableBody = document.getElementById('usersTableBody');
+            
+            usersTableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 2rem;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Carregando usuários...</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            fetch('/api/users', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(users => {
+                if (users.length === 0) {
+                    usersTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem;">
+                                <div class="empty-state">
+                                    <h3>Nenhum usuário encontrado</h3>
+                                    <p>Nenhum usuário cadastrado no sistema.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                const usersHTML = users.map(user => `
                     <tr>
                         <td>
                             <div class="user-info-cell">
@@ -546,42 +964,468 @@
                                 <div class="user-email">${user.email}</div>
                             </div>
                         </td>
-                        <td>${roleBadge}</td>
-                        <td>${statusBadge}</td>
-                        <td>${formattedDate}</td>
+                        <td>
+                            <span class="badge badge-${getCargoBadgeClass(user.cargo)} cargo-clickable" 
+                                  onclick="changeCargo(${user.id}, '${user.cargo}')" 
+                                  title="Clique para alterar">
+                                ${getCargoDisplay(user.cargo)}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge badge-${getStatusBadgeClass(user.status)}">
+                                ${getStatusDisplay(user.status)}
+                            </span>
+                        </td>
+                        <td>${new Date(user.data_cadastro).toLocaleDateString('pt-BR')}</td>
                         <td>
                             <div class="actions">
-                                ${user.status === 'PENDING' ? `
-                                    <button class="btn btn-success btn-xs" onclick="approveUser(${user.id})">
-                                        ✅ Aprovar
+                                ${currentUser.cargo === 'USUARIO' ? '' : `
+                                    <button class="btn btn-secondary" onclick="editUser(${user.id})">
+                                        ✏️ Editar
                                     </button>
-                                    <button class="btn btn-danger btn-xs" onclick="rejectUser(${user.id})">
-                                        ❌ Rejeitar
-                                    </button>
-                                ` : ''}
-                                
-                                ${user.status === 'APPROVED' ? `
-                                    <select onchange="updateRole(${user.id}, this.value)" class="btn-xs">
-                                        <option value="USER" ${user.cargo === 'USER' ? 'selected' : ''}>Usuário</option>
-                                        <option value="SONOPLASTA" ${user.cargo === 'SONOPLASTA' ? 'selected' : ''}>Sonoplasta</option>
-                                        <option value="DIRETOR" ${user.cargo === 'DIRETOR' ? 'selected' : ''}>Diretor</option>
-                                    </select>
-                                ` : ''}
-                                
-                                ${user.id !== currentUser.id ? `
-                                    <button class="btn btn-danger btn-xs" onclick="deleteUser(${user.id})">
+                                `}
+                                ${currentUser.cargo === 'USUARIO' || (currentUser.cargo === 'ADMIN' && user.id === currentUser.id) ? '' : `
+                                    <button class="btn btn-danger" onclick="deleteUser(${user.id})">
                                         🗑️ Excluir
                                     </button>
-                                ` : ''}
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                usersTableBody.innerHTML = usersHTML;
+            })
+            .catch(error => {
+                console.error('Erro ao carregar usuários:', error);
+                usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 2rem;">
+                            <div class="empty-state">
+                                <h3>❌ Erro ao Carregar</h3>
+                                <p>Não foi possível carregar os usuários.</p>
+                                <button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button>
                             </div>
                         </td>
                     </tr>
                 `;
-            }).join('');
-            
-            usersTableBody.innerHTML = usersHTML;
+            });
         }
         
+        function loadPendingUsers() {
+            const token = localStorage.getItem('token');
+            const pendingTableBody = document.getElementById('pendingUsersTableBody');
+            
+            pendingTableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 2rem;">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Carregando pendências...</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
+            fetch('/api/users/pending', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(users => {
+                if (!Array.isArray(users) || users.length === 0) {
+                    pendingTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 2rem;">
+                                <div class="empty-state">
+                                    <h3>Nenhuma conta pendente</h3>
+                                    <p>Nenhuma conta aguardando aprovação.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                const usersHTML = users.map(user => `
+                    <tr>
+                        <td>${user.nome}</td>
+                        <td>${user.email}</td>
+                        <td>${new Date(user.data_cadastro).toLocaleDateString('pt-BR')}</td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-success" onclick="approveUser(${user.id})">
+                                    ✅ Aprovar
+                                </button>
+                                <button class="btn btn-danger" onclick="rejectUser(${user.id})">
+                                    ❌ Recusar
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+                
+                pendingTableBody.innerHTML = usersHTML;
+            })
+            .catch(error => {
+                console.error('Erro ao carregar usuários pendentes:', error);
+                pendingTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 2rem;">
+                            <div class="empty-state">
+                                <h3>❌ Erro ao Carregar</h3>
+                                <p>Não foi possível carregar as contas pendentes.</p>
+                                <button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        function getCargoBadgeClass(cargo) {
+            const classMap = {
+                'ADMIN': 'purple',
+                'DIRETOR': 'blue',
+                'USUARIO': 'green'
+            };
+            return classMap[cargo] || 'gray';
+        }
+        
+        function getStatusBadgeClass(status) {
+            const classMap = {
+                'APPROVED': 'green',
+                'PENDING': 'yellow',
+                'REJECTED': 'red'
+            };
+            return classMap[status] || 'gray';
+        }
+        
+        function getStatusDisplay(status) {
+            const statusMap = {
+                'APPROVED': 'Aprovado',
+                'PENDING': 'Pendente',
+                'REJECTED': 'Recusado'
+            };
+            return statusMap[status] || status;
+        }
+        
+        function changeCargo(userId, currentCargo) {
+            if (currentUser.cargo === 'USUARIO') {
+                alert('Você não tem permissão para alterar cargos.');
+                return;
+            }
+            
+            // ADMIN não pode alterar seu próprio cargo para evitar problemas
+            if (currentUser.cargo === 'ADMIN' && userId === currentUser.id) {
+                alert('ADMIN não pode alterar seu próprio cargo.');
+                return;
+            }
+            
+            const newCargo = prompt('Novo cargo (USUARIO, DIRETOR, ADMIN):', currentCargo);
+            if (!newCargo) return;
+            
+            const validCargos = ['USUARIO', 'DIRETOR', 'ADMIN'];
+            if (!validCargos.includes(newCargo)) {
+                alert('Cargo inválido. Use: USUARIO, DIRETOR ou ADMIN');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            fetch(`/api/users/${userId}/cargo`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ cargo: newCargo })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (response.ok) {
+                    alert('Cargo atualizado com sucesso!');
+                    loadUsers();
+                } else {
+                    alert(data.error || 'Erro ao atualizar cargo');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar cargo:', error);
+                alert('Erro de conexão ao atualizar cargo');
+            });
+        }
+        
+        function editUser(userId) {
+            console.log('🔍 editUser chamado para userId:', userId);
+            console.log('🔍 currentUser:', currentUser);
+            
+            const token = localStorage.getItem('token');
+            
+            fetch(`/api/users/${userId}`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(user => {
+                console.log('✅ Usuário carregado para edição:', user);
+                
+                // Preencher formulário
+                document.getElementById('editNome').value = user.nome;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editSenha').value = '';
+                document.getElementById('editCargo').value = user.cargo;
+                
+                // Armazenar ID do usuário
+                document.getElementById('editUserForm').dataset.userId = userId;
+                
+                // Mostrar modal
+                document.getElementById('editUserModal').classList.add('show');
+                console.log('✅ Modal de edição aberto');
+            })
+            .catch(error => {
+                console.error('Erro ao carregar usuário:', error);
+                alert('Erro ao carregar dados do usuário');
+            });
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editUserModal').classList.remove('show');
+        }
+        
+        function editProfile() {
+            console.log('🔍 editProfile chamado para currentUser:', currentUser);
+            
+            if (!currentUser) {
+                alert('Usuário não encontrado!');
+                return;
+            }
+            
+            // Preencher formulário com dados do usuário atual
+            document.getElementById('editNome').value = currentUser.nome;
+            document.getElementById('editEmail').value = currentUser.email;
+            document.getElementById('editSenha').value = '';
+            document.getElementById('editCargo').value = currentUser.cargo;
+            
+            // Armazenar ID do usuário
+            document.getElementById('editUserForm').dataset.userId = currentUser.id;
+            
+            // Mostrar modal
+            document.getElementById('editUserModal').classList.add('show');
+            console.log('✅ Modal de edição de perfil aberto');
+        }
+        
+        function deleteUser(userId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            fetch(`/api/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (response.ok) {
+                    alert('Usuário excluído com sucesso!');
+                    loadUsers();
+                } else {
+                    alert(data.error || 'Erro ao excluir usuário');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao excluir usuário:', error);
+                alert('Erro de conexão ao excluir usuário');
+            });
+        }
+        
+        function approveUser(userId) {
+            console.log('🔍 approveUser chamado para userId:', userId);
+            const token = localStorage.getItem('token');
+            console.log('🔍 Token encontrado:', token ? 'SIM' : 'NÃO');
+            
+            fetch(`/api/users/${userId}/approve`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('🔍 Status da resposta approve:', response.status);
+                if (response.ok) {
+                    alert('Usuário aprovado com sucesso!');
+                    // Recarrega as duas listas para garantir sincronia
+                    loadPendingUsers();
+                    loadUsers(); 
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Erro ao aprovar usuário');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao aprovar usuário:', error);
+                alert(error.message || 'Erro de conexão ao aprovar usuário');
+            });
+        }
+        
+        function rejectUser(userId) {
+            console.log('🔍 rejectUser chamado para userId:', userId);
+            if (!confirm('Tem certeza que deseja recusar este usuário?')) {
+                console.log('❌ Usuário cancelou a rejeição');
+                return;
+            }
+            
+            const token = localStorage.getItem('token');
+            console.log('🔍 Token encontrado:', token ? 'SIM' : 'NÃO');
+            
+            fetch(`/api/users/${userId}/reject`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('🔍 Status da resposta reject:', response.status);
+                if (response.ok) {
+                    alert('Usuário recusado com sucesso!');
+                    loadPendingUsers();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Erro ao recusar usuário');
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao recusar usuário:', error);
+                alert(error.message || 'Erro de conexão ao recusar usuário');
+            });
+        }
+        
+        function refreshUsers() {
+            const activeTab = document.querySelector('.tab-btn.active').id.replace('Tab', '');
+            if (activeTab === 'active') {
+                loadUsers();
+            } else {
+                loadPendingUsers();
+            }
+        }
+        
+        // Event listener para formulário de edição
+        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userId = this.dataset.userId;
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Remover senha se estiver vazia
+            if (!data.senha) {
+                delete data.senha;
+            }
+            
+            const token = localStorage.getItem('token');
+            fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (response.ok) {
+                    alert('Usuário atualizado com sucesso!');
+                    closeEditModal();
+                    loadUsers();
+                    
+                    // Se editando o próprio usuário, atualizar interface
+                    if (userId == currentUser.id) {
+                        currentUser = result.user;
+                        updateUserInterface();
+                    }
+                } else {
+                    alert(result.error || 'Erro ao atualizar usuário');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar usuário:', error);
+                alert('Erro de conexão ao atualizar usuário');
+            });
+        });
+
+        // Event listener para formulário de perfil
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            console.log('🔍 Dados do formulário de perfil:', data);
+            
+            // Validações
+            if (!data.nome || !data.email) {
+                alert('Nome e email são obrigatórios.');
+                return;
+            }
+            
+            if (data.senha && data.senha.length < 6) {
+                alert('A senha deve ter pelo menos 6 caracteres.');
+                return;
+            }
+            
+            if (data.senha && data.senha !== data.confirmSenha) {
+                alert('As senhas não coincidem.');
+                return;
+            }
+            
+            // Remover confirmação de senha do payload
+            delete data.confirmSenha;
+            
+            // Se senha estiver vazia, remover do payload
+            if (!data.senha) {
+                delete data.senha;
+            }
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/users/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('Perfil atualizado com sucesso!');
+                    
+                    // Atualizar dados do usuário atual
+                    if (result.user) {
+                        currentUser = result.user;
+                        localStorage.setItem('user', JSON.stringify(currentUser));
+                        loadProfileData();
+                    }
+                } else {
+                    alert(result.error || 'Erro ao atualizar perfil');
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar perfil:', error);
+                alert('Erro de conexão. Tente novamente.');
+            }
+        });
+        
+                
         function getStatusBadge(status) {
             switch (status) {
                 case 'APPROVED':
@@ -606,66 +1450,7 @@
             }
         }
         
-        async function approveUser(userId) {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
                 
-                const response = await fetch(`/api/users/${userId}/approve`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    loadUsers();
-                } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                } else {
-                    alert('Erro ao aprovar usuário');
-                }
-            } catch (error) {
-                alert('Erro de conexão');
-            }
-        }
-        
-        async function rejectUser(userId) {
-            if (!confirm('Tem certeza que deseja rejeitar este usuário?')) return;
-            
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
-                const response = await fetch(`/api/users/${userId}/reject`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    loadUsers();
-                } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                } else {
-                    alert('Erro ao rejeitar usuário');
-                }
-            } catch (error) {
-                alert('Erro de conexão');
-            }
-        }
-        
         async function updateRole(userId, newRole) {
             try {
                 const token = localStorage.getItem('token');
@@ -727,40 +1512,6 @@
             }
         }
         
-        function refreshUsers() {
-            const usersTableBody = document.getElementById('usersTableBody');
-            usersTableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 2rem;">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <div>Atualizando...</div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            loadUsers();
-        }
-        
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-        }
-        
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
-        }
-        
-        function closeSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.remove('open');
-            overlay.classList.remove('show');
-        }
-    </script>
+            </script>
 </body>
 </html>

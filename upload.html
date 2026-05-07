@@ -168,6 +168,48 @@
             background: #3b82f6;
             transition: width 0.3s ease;
         }
+        .file-list {
+            margin-top: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            background: #f9fafb;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-icon {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+        }
+        .file-info {
+            flex: 1;
+        }
+        .file-name {
+            font-weight: 500;
+            color: #374151;
+        }
+        .file-size {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .file-remove {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .file-remove:hover {
+            background: #dc2626;
+        }
     </style>
 </head>
 <body>
@@ -184,30 +226,25 @@
             </div>
 
             <div class="form-group">
-                <label for="email">Seu E-mail</label>
-                <input type="email" id="email" name="email" required placeholder="seu@email.com">
-            </div>
-
-            <div class="form-group">
                 <label for="descricao">Descrição (opcional)</label>
-                <textarea id="descricao" name="descricao" rows="3" placeholder="Descreva o arquivo que está enviando..."></textarea>
+                <textarea id="descricao" name="descricao" rows="3" placeholder="Descreva os arquivos que está enviando..."></textarea>
             </div>
 
             <div class="form-group">
-                <label>Arquivo</label>
+                <label>Arquivos (selecione múltiplos)</label>
                 <div class="file-input-wrapper">
-                    <input type="file" id="arquivo" name="arquivo" required accept="image/*,video/*,.pdf">
+                    <input type="file" id="arquivo" name="arquivo" required accept="image/*,video/*,.pdf" multiple>
                     <label for="arquivo" class="file-input-label" id="fileLabel">
                         <div>
-                            <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
-                            <div>Clique para selecionar um arquivo</div>
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                            <div>Clique para selecionar arquivos</div>
                             <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                                Imagens, vídeos ou PDF (máx 50MB)
+                                Imagens, vídeos ou PDF (máx 50MB por arquivo)
                             </div>
                         </div>
                     </label>
                 </div>
-                <div id="fileInfo" class="file-info" style="display: none;"></div>
+                <div id="fileList" class="file-list" style="display: none;"></div>
             </div>
 
             <div class="progress-bar" id="progressBar" style="display: none;">
@@ -216,11 +253,11 @@
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                Enviando arquivo...
+                Enviando arquivos...
             </div>
 
             <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
-                Enviar Arquivo
+                Enviar Arquivos
             </button>
 
             <div id="message"></div>
@@ -228,6 +265,7 @@
     </div>
 
     <script>
+        // === FUNÇÕES QR CODE ===
         const urlParams = new URLSearchParams(window.location.search);
         const token = urlParams.get('token');
         
@@ -236,7 +274,6 @@
             document.getElementById('submitBtn').disabled = true;
         }
 
-        // Verificar se o QR code é válido
         async function verifyQRCode() {
             if (!token) return;
             
@@ -245,10 +282,13 @@
                 const data = await response.json();
                 
                 if (!data.valid) {
-                    document.getElementById('message').innerHTML = `<div class="error">${data.reason}</div>`;
+                    document.getElementById('message').innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
                     document.getElementById('submitBtn').disabled = true;
+                } else {
+                    document.getElementById('message').innerHTML = '<div class="success">QR Code válido! Você pode enviar seus arquivos.</div>';
                 }
             } catch (error) {
+                console.error('Erro ao verificar QR Code:', error);
                 document.getElementById('message').innerHTML = '<div class="error">Erro ao verificar QR Code</div>';
                 document.getElementById('submitBtn').disabled = true;
             }
@@ -257,65 +297,123 @@
         // Verificar QR code ao carregar
         verifyQRCode();
 
-        // Manipulação de arquivo
+        // Manipulação de arquivos (múltiplos)
         const fileInput = document.getElementById('arquivo');
         const fileLabel = document.getElementById('fileLabel');
-        const fileInfo = document.getElementById('fileInfo');
+        const fileList = document.getElementById('fileList');
         const submitBtn = document.getElementById('submitBtn');
+        let selectedFiles = [];
 
         fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
+            const files = Array.from(e.target.files);
+            selectedFiles = [];
             
-            if (file) {
-                // Verificar tamanho do arquivo (50MB)
-                const maxSize = 50 * 1024 * 1024;
-                if (file.size > maxSize) {
-                    document.getElementById('message').innerHTML = '<div class="error">Arquivo muito grande. Tamanho máximo: 50MB</div>';
-                    fileInput.value = '';
-                    return;
-                }
-                
-                // Verificar tipo do arquivo
-                const allowedTypes = ['image/', 'video/', 'application/pdf'];
-                const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
-                
-                if (!isAllowed) {
-                    document.getElementById('message').innerHTML = '<div class="error">Tipo de arquivo não permitido. Apenas imagens, vídeos e PDF.</div>';
-                    fileInput.value = '';
-                    return;
-                }
-                
-                // Atualizar UI
-                fileLabel.classList.add('has-file');
-                fileLabel.innerHTML = `
-                    <div>
-                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">${getFileIcon(file.type)}</div>
-                        <div>${file.name}</div>
-                        <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                            ${formatFileSize(file.size)}
-                        </div>
-                    </div>
-                `;
-                
-                fileInfo.innerHTML = `
-                    <strong>Arquivo selecionado:</strong> ${file.name}<br>
-                    <strong>Tamanho:</strong> ${formatFileSize(file.size)}<br>
-                    <strong>Tipo:</strong> ${file.type}
-                `;
-                fileInfo.style.display = 'block';
-                
-                // Habilitar botão se todos os campos estiverem preenchidos
-                checkFormValidity();
-            } else {
-                resetFileInput();
+            if (files.length === 0) {
+                resetFileSelection();
+                return;
             }
+            
+            // Validar todos os arquivos
+            const maxSize = 50 * 1024 * 1024;
+            const allowedTypes = ['image/', 'video/', 'application/pdf'];
+            let invalidFiles = [];
+            
+            files.forEach(file => {
+                if (file.size > maxSize) {
+                    invalidFiles.push(`${file.name} (muito grande)`);
+                } else {
+                    const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
+                    if (!isAllowed) {
+                        invalidFiles.push(`${file.name} (tipo não permitido)`);
+                    } else {
+                        selectedFiles.push(file);
+                    }
+                }
+            });
+            
+            if (invalidFiles.length > 0) {
+                document.getElementById('message').innerHTML = `<div class="error">Arquivos inválidos: ${invalidFiles.join(', ')}</div>`;
+                if (selectedFiles.length === 0) {
+                    resetFileSelection();
+                    return;
+                }
+            }
+            
+            // Atualizar UI
+            updateFileList();
+            submitBtn.disabled = selectedFiles.length === 0;
         });
 
+        function resetFileSelection() {
+            selectedFiles = [];
+            fileLabel.classList.remove('has-file');
+            fileLabel.innerHTML = `
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                    <div>Clique para selecionar arquivos</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+                        Imagens, vídeos ou PDF (máx 50MB por arquivo)
+                    </div>
+                </div>
+            `;
+            fileList.style.display = 'none';
+            submitBtn.disabled = true;
+        }
+
+        function updateFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.style.display = 'none';
+                return;
+            }
+            
+            // Atualizar label
+            fileLabel.classList.add('has-file');
+            fileLabel.innerHTML = `
+                <div>
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
+                    <div>${selectedFiles.length} arquivo(s) selecionado(s)</div>
+                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
+                        Clique para alterar seleção
+                    </div>
+                </div>
+            `;
+            
+            // Criar lista de arquivos
+            let html = '';
+            selectedFiles.forEach((file, index) => {
+                html += `
+                    <div class="file-item">
+                        <div class="file-icon">${getFileIcon(file.type)}</div>
+                        <div class="file-info">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                        <button type="button" class="file-remove" onclick="removeFile(${index})">Remover</button>
+                    </div>
+                `;
+            });
+            
+            fileList.innerHTML = html;
+            fileList.style.display = 'block';
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            
+            // Atualizar o input file
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+            
+            updateFileList();
+            submitBtn.disabled = selectedFiles.length === 0;
+        }
+
         function getFileIcon(fileType) {
-            if (fileType.startsWith('image/')) return '';
-            if (fileType.startsWith('video/')) return '';
-            if (fileType === 'application/pdf') return '';
-            return '';
+            if (fileType.startsWith('image/')) return '🖼️';
+            if (fileType.startsWith('video/')) return '🎥';
+            if (fileType === 'application/pdf') return '📄';
+            return '📁';
         }
 
         function formatFileSize(bytes) {
@@ -337,21 +435,18 @@
                     </div>
                 </div>
             `;
-            fileInfo.style.display = 'none';
+            fileList.style.display = 'none';
             checkFormValidity();
         }
 
         function checkFormValidity() {
             const nome = document.getElementById('nome').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const arquivo = fileInput.files[0];
             
-            submitBtn.disabled = !(nome && email && arquivo && token);
+            submitBtn.disabled = !(nome && selectedFiles.length > 0 && token);
         }
 
         // Verificar validade do formulário
         document.getElementById('nome').addEventListener('input', checkFormValidity);
-        document.getElementById('email').addEventListener('input', checkFormValidity);
 
         // Envio do formulário
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
@@ -364,10 +459,13 @@
             
             const formData = new FormData();
             formData.append('nome', document.getElementById('nome').value);
-            formData.append('email', document.getElementById('email').value);
             formData.append('descricao', document.getElementById('descricao').value);
-            formData.append('arquivo', fileInput.files[0]);
             formData.append('token', token);
+            
+            // Adicionar múltiplos arquivos
+            selectedFiles.forEach(file => {
+                formData.append('arquivos', file);
+            });
             
             // Marcar QR code como utilizado
             try {
@@ -387,38 +485,106 @@
                 
                 // Progress upload
                 xhr.upload.addEventListener('progress', function(e) {
-                    if (e.lengthComputable) {
-                        const percentComplete = (e.loaded / e.total) * 100;
-                        document.getElementById('progressFill').style.width = percentComplete + '%';
+                    try {
+                        if (e.lengthComputable) {
+                            const percentComplete = (e.loaded / e.total) * 100;
+                            const progressFill = document.getElementById('progressFill');
+                            if (progressFill) {
+                                progressFill.style.width = percentComplete + '%';
+                            }
+                        }
+                    } catch (progressError) {
+                        console.warn('Erro no progresso do upload:', progressError);
                     }
                 });
                 
                 xhr.addEventListener('load', function() {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('progressBar').style.display = 'none';
-                    
-                    if (xhr.status === 200) {
-                        const response = JSON.parse(xhr.responseText);
-                        document.getElementById('message').innerHTML = '<div class="success">Arquivo enviado com sucesso! Aguardando aprovação.</div>';
-                        document.getElementById('uploadForm').reset();
-                        resetFileInput();
+                    try {
+                        const loading = document.getElementById('loading');
+                        const progressBar = document.getElementById('progressBar');
+                        if (loading) loading.style.display = 'none';
+                        if (progressBar) progressBar.style.display = 'none';
                         
-                        // Redirecionar após 3 segundos
-                        setTimeout(() => {
-                            window.close();
-                        }, 3000);
-                    } else {
-                        const error = JSON.parse(xhr.responseText);
-                        document.getElementById('message').innerHTML = `<div class="error">${error.error || 'Erro ao enviar arquivo'}</div>`;
-                        submitBtn.disabled = false;
+                        if (xhr.status === 200) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                const message = document.getElementById('message');
+                                if (message) {
+                                    message.innerHTML = `<div class="success">${response.message || 'Arquivos enviados com sucesso! Aguardando aprovação.'}</div>`;
+                                }
+                                
+                                const uploadForm = document.getElementById('uploadForm');
+                                if (uploadForm) uploadForm.reset();
+                                resetFileInput();
+                                
+                                // Limpar seleção de arquivos
+                                selectedFiles = [];
+                                updateFileList();
+                                if (submitBtn) submitBtn.disabled = true;
+                            } catch (parseError) {
+                                console.error('Erro ao parsear resposta sucesso:', parseError);
+                                const message = document.getElementById('message');
+                                if (message) {
+                                    message.innerHTML = '<div class="error">Erro ao processar resposta do servidor</div>';
+                                }
+                                if (submitBtn) submitBtn.disabled = false;
+                            }
+                        } else {
+                            try {
+                                const error = JSON.parse(xhr.responseText);
+                                const message = document.getElementById('message');
+                                if (message) {
+                                    message.innerHTML = `<div class="error">${error.error || 'Erro ao enviar arquivos'}</div>`;
+                                }
+                            } catch (parseError) {
+                                console.error('Erro ao parsear resposta erro:', parseError);
+                                const message = document.getElementById('message');
+                                if (message) {
+                                    message.innerHTML = '<div class="error">Erro ao enviar arquivos</div>';
+                                }
+                            }
+                            if (submitBtn) submitBtn.disabled = false;
+                        }
+                    } catch (loadError) {
+                        console.error('Erro no listener de load:', loadError);
+                        const loading = document.getElementById('loading');
+                        const progressBar = document.getElementById('progressBar');
+                        if (loading) loading.style.display = 'none';
+                        if (progressBar) progressBar.style.display = 'none';
+                        if (submitBtn) submitBtn.disabled = false;
                     }
                 });
                 
                 xhr.addEventListener('error', function() {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('progressBar').style.display = 'none';
-                    document.getElementById('message').innerHTML = '<div class="error">Erro de conexão. Tente novamente.</div>';
-                    submitBtn.disabled = false;
+                    try {
+                        const loading = document.getElementById('loading');
+                        const progressBar = document.getElementById('progressBar');
+                        const message = document.getElementById('message');
+                        
+                        if (loading) loading.style.display = 'none';
+                        if (progressBar) progressBar.style.display = 'none';
+                        if (message) {
+                            message.innerHTML = '<div class="error">Erro de conexão. Tente novamente.</div>';
+                        }
+                        if (submitBtn) submitBtn.disabled = false;
+                    } catch (errorError) {
+                        console.error('Erro no listener de error:', errorError);
+                        if (submitBtn) submitBtn.disabled = false;
+                    }
+                });
+                
+                // Adicionar listener para abort para limpeza completa
+                xhr.addEventListener('abort', function() {
+                    try {
+                        const loading = document.getElementById('loading');
+                        const progressBar = document.getElementById('progressBar');
+                        
+                        if (loading) loading.style.display = 'none';
+                        if (progressBar) progressBar.style.display = 'none';
+                        if (submitBtn) submitBtn.disabled = false;
+                    } catch (abortError) {
+                        console.error('Erro no listener de abort:', abortError);
+                    }
                 });
                 
                 xhr.open('POST', '/api/files/upload');

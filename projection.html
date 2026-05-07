@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeção - SoundHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .projection-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .media-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .media-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .media-video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(255, 255, 255, 0.1);
+            border-top: 6px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1.5rem 2rem;
+            border-radius: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .controls:hover {
+            opacity: 1;
+        }
+
+        .controls.show {
+            opacity: 1;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+
+        .media-info {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 400px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .media-info.show {
+            opacity: 1;
+        }
+
+        .media-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .media-info p {
+            font-size: 0.875rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .video-controls.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .progress-bar {
+            width: 300px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .time-display {
+            font-size: 0.875rem;
+            color: #fff;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 0.5rem;
+            max-width: 400px;
+        }
+
+        .error-message h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #ef4444;
+        }
+
+        .error-message p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Fullscreen */
+        :fullscreen {
+            background: #000;
+        }
+
+        :-webkit-full-screen {
+            background: #000;
+        }
+
+        :-moz-full-screen {
+            background: #000;
+        }
+
+        :-ms-fullscreen {
+            background: #000;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .controls {
+                bottom: 20px;
+                padding: 1rem;
+                gap: 0.5rem;
+            }
+
+            .control-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+
+            .media-info {
+                top: 20px;
+                left: 20px;
+                padding: 1rem;
+            }
+
+            .video-controls {
+                bottom: 100px;
+            }
+
+            .progress-bar {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="projection-container">
+        <div class="media-container" id="mediaContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <h2>🎥 SoundHub</h2>
+                <p>Preparando projeção...</p>
+            </div>
+        </div>
+
+        <!-- Controles -->
+        <div class="controls" id="controls">
+            <button class="control-btn" onclick="previousMedia()">
+                ⏮️ Anterior
+            </button>
+            <button class="control-btn" onclick="togglePlayPause()" id="playPauseBtn">
+                ⏸️ Pausar
+            </button>
+            <button class="control-btn" onclick="nextMedia()">
+                ⏭️ Próximo
+            </button>
+            <button class="control-btn" onclick="toggleFullscreen()">
+                🖥️ Tela Cheia
+            </button>
+        </div>
+
+        <!-- Controles de vídeo -->
+        <div class="video-controls" id="videoControls">
+            <div class="progress-bar" onclick="seekVideo(event)">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
+        </div>
+
+        <!-- Informações da mídia -->
+        <div class="media-info" id="mediaInfo">
+            <h3 id="mediaTitle">Carregando...</h3>
+            <p id="mediaDescription">Aguardando informações...</p>
+        </div>
+    </div>
+
+    <script>
+        // Estado da Projeção
+        const ProjectionState = {
+            mediaList: [],
+            currentMediaIndex: 0,
+            currentMedia: null,
+            isPlaying: false,
+            broadcastChannel: null,
+            controlsTimeout: null
+        };
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeProjection();
+        });
+
+        function initializeProjection() {
+            // Inicializar canal de comunicação
+            ProjectionState.broadcastChannel = new BroadcastChannel('soundhub-projection');
+            ProjectionState.broadcastChannel.onmessage = handleControlMessage;
+            
+            // ESSENCIAL: Avisa ao painel que pode enviar os dados
+            ProjectionState.broadcastChannel.postMessage({ type: 'PROJECTION_READY' });
+            
+            setupMouseControls();
+            setupKeyboardControls();
+        }
+
+        function handleControlMessage(event) {
+            console.log('Mensagem recebida na projeção:', event.data); // <-- DEBUG
+            const { type, data } = event.data;
+            
+            switch (type) {
+                case 'INITIALIZE_PROJECTION':
+                    initializeMedia(data.mediaList, data.currentMediaIndex);
+                    break;
+                    
+                case 'CHANGE_MEDIA':
+                    changeMedia(data.mediaIndex, data.media);
+                    break;
+                    
+                case 'TOGGLE_PLAY_PAUSE':
+                    togglePlayPause();
+                    break;
+            }
+        }
+
+        function initializeMedia(mediaList, currentIndex) {
+            ProjectionState.mediaList = mediaList;
+            ProjectionState.currentMediaIndex = currentIndex;
+            
+            if (mediaList.length > 0) {
+                loadMedia(mediaList[currentIndex]);
+            } else {
+                showError('Nenhuma mídia disponível para projeção.');
+            }
+        }
+
+        function changeMedia(mediaIndex, media) {
+            ProjectionState.currentMediaIndex = mediaIndex;
+            loadMedia(media);
+        }
+
+        function loadMedia(media) {
+            console.log('Carregando mídia na projeção:', media);
+            
+            ProjectionState.currentMedia = media;
+            
+            // Limpar container
+            const container = document.getElementById('mediaContainer');
+            container.innerHTML = '';
+            
+            // Esconder controles de vídeo
+            document.getElementById('videoControls').classList.remove('show');
+            
+            if (media.tipo === 'image') {
+                loadImage(media);
+            } else if (media.tipo === 'video') {
+                loadVideo(media);
+            }
+            
+            // Atualizar informações
+            updateMediaInfo(media);
+        }
+
+        function loadImage(media) {
+            const img = document.createElement('img');
+            img.src = media.url;
+            img.className = 'media-image';
+            img.alt = media.nome;
+            
+            img.onload = () => {
+                console.log('Imagem carregada:', media.nome);
+                document.getElementById('mediaContainer').appendChild(img);
+                showMediaInfo();
+            };
+            
+            img.onerror = () => {
+                console.error('Erro ao carregar imagem:', media.url);
+                showError('Erro ao carregar imagem: ' + media.nome);
+            };
+        }
+
+        function loadVideo(media) {
+            const video = document.createElement('video');
+            video.src = media.url;
+            video.className = 'media-video';
+            video.controls = false;
+            video.autoplay = true;
+            video.loop = false;
+            
+            video.onloadedmetadata = () => {
+                console.log('Vídeo carregado:', media.nome);
+                document.getElementById('mediaContainer').appendChild(video);
+                
+                // Mostrar controles de vídeo
+                document.getElementById('videoControls').classList.add('show');
+                
+                // Configurar eventos do vídeo
+                setupVideoEvents(video);
+                
+                // Iniciar atualização do progresso
+                startProgressUpdate(video);
+                
+                showMediaInfo();
+            };
+            
+            video.onerror = () => {
+                console.error('Erro ao carregar vídeo:', media.url);
+                showError('Erro ao carregar vídeo: ' + media.nome);
+            };
+            
+            video.onplay = () => {
+                ProjectionState.isPlaying = true;
+                updatePlayPauseButton();
+            };
+            
+            video.onpause = () => {
+                ProjectionState.isPlaying = false;
+                updatePlayPauseButton();
+            };
+            
+            video.onended = () => {
+                // Avançar automaticamente para próxima mídia
+                setTimeout(() => {
+                    nextMedia();
+                }, 1000);
+            };
+        }
+
+        function setupVideoEvents(video) {
+            // Click para play/pause
+            video.addEventListener('click', () => {
+                togglePlayPause();
+            });
+        }
+
+        function startProgressUpdate(video) {
+            const updateInterval = setInterval(() => {
+                if (video && !video.paused && !video.ended) {
+                    updateVideoProgress(video);
+                } else {
+                    clearInterval(updateInterval);
+                }
+            }, 100);
+        }
+
+        function updateVideoProgress(video) {
+            const current = formatTime(video.currentTime);
+            const duration = formatTime(video.duration);
+            
+            document.getElementById('timeDisplay').textContent = current + ' / ' + duration;
+            
+            // Atualizar barra de progresso
+            const percentage = (video.currentTime / video.duration) * 100;
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return '00:00';
+            
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            return minutes.toString().padStart(2, '0') + ':' + secs.toString().padStart(2, '0');
+        }
+
+        function updateMediaInfo(media) {
+            document.getElementById('mediaTitle').textContent = media.nome || 'Mídia';
+            document.getElementById('mediaDescription').textContent = 
+                media.tipo === 'image' ? 'Imagem' : 'Vídeo';
+        }
+
+        function showMediaInfo() {
+            const infoEl = document.getElementById('mediaInfo');
+            infoEl.classList.add('show');
+            
+            setTimeout(() => {
+                infoEl.classList.remove('show');
+            }, 3000);
+        }
+
+        function showError(message) {
+            const container = document.getElementById('mediaContainer');
+            container.innerHTML = `
+                <div class="error-message">
+                    <h2>❌ Erro</h2>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        // Controles de Mídia
+        function previousMedia() {
+            if (ProjectionState.mediaList.length === 0) return;
+            
+            const newIndex = ProjectionState.currentMediaIndex === 0 ? 
+                ProjectionState.mediaList.length - 1 : 
+                ProjectionState.currentMediaIndex - 1;
+            
+            ProjectionState.currentMediaIndex = newIndex;
+            loadMedia(ProjectionState.mediaList[newIndex]);
+        }
+
+        function nextMedia() {
+            if (ProjectionState.mediaList.length === 0) return;
+            
+            const newIndex = (ProjectionState.currentMediaIndex + 1) % ProjectionState.mediaList.length;
+            ProjectionState.currentMediaIndex = newIndex;
+            loadMedia(ProjectionState.mediaList[newIndex]);
+        }
+
+        function togglePlayPause() {
+            const video = document.querySelector('.media-video');
+            if (!video) return;
+            
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        function updatePlayPauseButton() {
+            const btn = document.getElementById('playPauseBtn');
+            btn.textContent = ProjectionState.isPlaying ? '⏸️ Pausar' : '▶️ Play';
+            btn.className = ProjectionState.isPlaying ? 'control-btn active' : 'control-btn';
+        }
+
+        function seekVideo(event) {
+            const video = document.querySelector('.media-video');
+            if (!video) return;
+            
+            const progressBar = event.currentTarget;
+            const clickX = event.offsetX;
+            const width = progressBar.offsetWidth;
+            const percentage = clickX / width;
+            
+            video.currentTime = percentage * video.duration;
+        }
+
+        // Controles de Tela
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                requestFullscreen();
+            } else {
+                exitFullscreen();
+            }
+        }
+
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+        }
+
+        // Controles de Mouse
+        function setupMouseControls() {
+            document.addEventListener('mousemove', () => {
+                showControls();
+                resetControlsTimeout();
+            });
+            
+            document.addEventListener('click', () => {
+                showControls();
+                resetControlsTimeout();
+            });
+        }
+
+        function showControls() {
+            document.getElementById('controls').classList.add('show');
+            
+            const video = document.querySelector('.media-video');
+            if (video) {
+                document.getElementById('videoControls').classList.add('show');
+            }
+        }
+
+        function hideControls() {
+            if (!ProjectionState.isPlaying) return;
+            
+            document.getElementById('controls').classList.remove('show');
+            document.getElementById('videoControls').classList.remove('show');
+        }
+
+        function resetControlsTimeout() {
+            clearTimeout(ProjectionState.controlsTimeout);
+            ProjectionState.controlsTimeout = setTimeout(hideControls, 3000);
+        }
+
+        // Controles de Teclado
+        function setupKeyboardControls() {
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function handleKeyPress(event) {
+            switch (event.key) {
+                case 'ArrowLeft':
+                    event.preventDefault();
+                    previousMedia();
+                    break;
+                case 'ArrowRight':
+                    event.preventDefault();
+                    nextMedia();
+                    break;
+                case ' ':
+                    event.preventDefault();
+                    togglePlayPause();
+                    break;
+                case 'f':
+                case 'F':
+                    event.preventDefault();
+                    toggleFullscreen();
+                    break;
+                case 'Escape':
+                    event.preventDefault();
+                    // Fechar janela de projeção
+                    window.close();
+                    break;
+            }
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (ProjectionState.broadcastChannel) {
+                ProjectionState.broadcastChannel.postMessage({
+                    type: 'PROJECTION_CLOSED'
+                });
+                ProjectionState.broadcastChannel.close();
+            }
+        });
+    </script>
+</body>
+</html>

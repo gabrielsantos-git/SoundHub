@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escalas - SoundHub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .user-role {
+            padding: 0.25rem 0.75rem;
+            background: #f1f5f9;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            color: #64748b;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-item:hover {
+            background: #f8fafc;
+            color: #3b82f6;
+        }
+
+        .sidebar-item.active {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+
+        .menu-toggle {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .main-content {
+            margin-left: 0;
+            margin-top: 60px;
+            padding: 2rem;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Tabs */
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: none;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Schedule */
+        .schedule-day {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #f8fafc;
+        }
+
+        .schedule-day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .schedule-day-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .schedule-user {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #64748b;
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 250px;
+            }
+
+            .menu-toggle {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-green {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-yellow {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: none;
+            color: #6b7280;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .schedule-day {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .schedule-day-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .schedule-day-title {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .schedule-user {
+            background: #f3f4f6;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div style="margin-bottom: 2rem;">
+            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">🎵</div>
+            <h1 style="text-align: center; color: #3b82f6; font-size: 1.5rem;">SoundHub</h1>
+        </div>
+        
+        <nav>
+            <a href="/" class="sidebar-item">
+                <span style="margin-right: 0.75rem;">🏠</span>
+                Início
+            </a>
+            <a href="/receive" class="sidebar-item" id="receiveLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📥</span>
+                Receber
+            </a>
+            <a href="/project" class="sidebar-item" id="projectLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">🎥</span>
+                Projetar
+            </a>
+            <a href="/accounts" class="sidebar-item" id="accountsLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">👤</span>
+                Contas
+            </a>
+            <a href="/schedule" class="sidebar-item active" id="scheduleLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📅</span>
+                Escalas
+            </a>
+        </nav>
+        
+        <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
+            <button class="btn btn-secondary" onclick="logout()" style="width: 100%;">
+                Sair
+            </button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="logo">🎵 SoundHub</div>
+        <div class="user-info">
+            <span id="userName">Carregando...</span>
+            <span id="userRole" class="user-role">...</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Abas -->
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Gerenciar Escalas</h1>
+                <div id="adminActions" style="display: none;">
+                    <button class="btn btn-primary" onclick="openCreateScheduleModal()">
+                        ➕ Nova Escala
+                    </button>
+                    <button class="btn btn-success" onclick="openCreateEventModal()">
+                        🎉 Novo Evento
+                    </button>
+                </div>
+            </div>
+            <div class="card-content">
+                <div style="display: flex; gap: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
+                    <button class="tab-btn active" onclick="switchTab('schedules')" id="schedulesTab">
+                        Escalas Semanais
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('events')" id="eventsTab">
+                        Escalas de Eventos
+                    </button>
+                </div>
+
+                <!-- Conteúdo das Abas -->
+                <div id="schedulesContent" class="tab-content active">
+                    <div id="schedulesList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Carregando escalas...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="eventsContent" class="tab-content">
+                    <div id="eventsList">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                            <div>Carregando eventos...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Criar Escala -->
+    <div class="modal" id="createScheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Criar Nova Escala</h2>
+                <button class="close-btn" onclick="closeCreateScheduleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createScheduleForm">
+                    <div class="form-group">
+                        <label class="form-label">Selecione os Dias da Semana</label>
+                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">
+                            A escala será gerada automaticamente para o mês atual nos dias selecionados.
+                        </p>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="segunda" name="dias" value="segunda">
+                                <label for="segunda">Segunda-feira</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="terca" name="dias" value="terca">
+                                <label for="terca">Terça-feira</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="quarta" name="dias" value="quarta">
+                                <label for="quarta">Quarta-feira</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="quinta" name="dias" value="quinta">
+                                <label for="quinta">Quinta-feira</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="sexta" name="dias" value="sexta">
+                                <label for="sexta">Sexta-feira</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="sabado" name="dias" value="sabado">
+                                <label for="sabado">Sábado</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="domingo" name="dias" value="domingo">
+                                <label for="domingo">Domingo</label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateScheduleModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createSchedule()">
+                    Criar Escala
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Criar Evento -->
+    <div class="modal" id="createEventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Criar Novo Evento</h2>
+                <button class="close-btn" onclick="closeCreateEventModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="createEventForm">
+                    <div class="form-group">
+                        <label class="form-label" for="eventName">Nome do Evento</label>
+                        <input type="text" id="eventName" name="nome" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventDescription">Descrição</label>
+                        <textarea id="eventDescription" name="descricao" class="form-input" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventStartDate">Data de Início</label>
+                        <input type="date" id="eventStartDate" name="data_inicio" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="eventEndDate">Data de Término</label>
+                        <input type="date" id="eventEndDate" name="data_fim" class="form-input" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateEventModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="createEvent()">
+                    Criar Evento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Escala -->
+    <div class="modal" id="editScheduleModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Escala</h2>
+                <button class="close-btn" onclick="closeEditScheduleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="editScheduleContent">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Carregando escala...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditScheduleModal()">
+                    Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">
+                    Salvar Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navigation.js"></script>
+    <script>
+        let currentUser = null;
+        let currentSchedule = null;
+        let availableUsers = [];
+
+        // Verificar autenticação ao carregar
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+        });
+
+        async function checkAuth() {
+            console.log('🔍 schedule.html - Verificando autenticação...');
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                window.location.href = '/auth';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser = data.user;
+                    updateUserInterface();
+                    
+                    // Verificar permissão
+                    if (currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN' && currentUser.cargo !== 'SONOPLASTA') {
+                        window.location.href = '/auth';
+                        return;
+                    }
+                    
+                    // Mostrar ações de admin apenas para ADMIN/DIRETOR
+                    if (currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR') {
+                        document.getElementById('adminActions').style.display = 'flex';
+                    }
+                    
+                    // Carregar dados
+                    loadSchedules();
+                    loadEvents();
+                    loadAvailableUsers();
+                } else {
+                    localStorage.removeItem('token');
+                    window.location.href = '/auth';
+                }
+            } catch (error) {
+                console.error('Erro ao verificar autenticação:', error);
+                window.location.href = '/auth';
+            }
+        }
+
+        function updateUserInterface() {
+            if (!currentUser) return;
+            
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+            
+            if (userNameEl) {
+                userNameEl.textContent = currentUser.nome;
+            }
+            
+            if (userRoleEl) {
+                userRoleEl.textContent = getCargoDisplay(currentUser.cargo);
+            }
+            
+            // Atualizar navegação
+            if (typeof updateNavigationUI === 'function') {
+                updateNavigationUI(currentUser);
+            }
+        }
+
+        function getCargoDisplay(cargo) {
+            switch (cargo) {
+                case 'ADMIN':
+                    return 'Administrador';
+                case 'DIRETOR':
+                    return 'Diretor';
+                case 'SONOPLASTA':
+                    return 'Sonoplasta';
+                case 'USUARIO':
+                    return 'Usuário';
+                default:
+                    return cargo;
+            }
+        }
+
+        function switchTab(tab) {
+            // Atualizar botões das abas
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            
+            // Atualizar conteúdo das abas
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tab + 'Content').classList.add('active');
+        }
+
+        // Funções de Modal
+        function openCreateScheduleModal() {
+            document.getElementById('createScheduleModal').classList.add('open');
+        }
+
+        function closeCreateScheduleModal() {
+            document.getElementById('createScheduleModal').classList.remove('open');
+            document.getElementById('createScheduleForm').reset();
+        }
+
+        function openCreateEventModal() {
+            document.getElementById('createEventModal').classList.add('open');
+        }
+
+        function closeCreateEventModal() {
+            document.getElementById('createEventModal').classList.remove('open');
+            document.getElementById('createEventForm').reset();
+        }
+
+        function openEditScheduleModal(scheduleId) {
+            currentSchedule = scheduleId;
+            document.getElementById('editScheduleModal').classList.add('open');
+            loadScheduleForEdit(scheduleId);
+        }
+
+        function closeEditScheduleModal() {
+            document.getElementById('editScheduleModal').classList.remove('open');
+            currentSchedule = null;
+        }
+
+        // Funções de Carregamento
+        async function loadSchedules() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/schedules', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const schedules = await response.json();
+                    displaySchedules(schedules);
+                } else {
+                    console.error('Erro ao carregar escalas:', response.status);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar escalas:', error);
+            }
+        }
+
+        async function loadEvents() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/events', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const events = await response.json();
+                    displayEvents(events);
+                } else {
+                    console.error('Erro ao carregar eventos:', response.status);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar eventos:', error);
+            }
+        }
+
+        async function loadAvailableUsers() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/users', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    availableUsers = users.filter(user => user.status === 'APPROVED');
+                }
+            } catch (error) {
+                console.error('Erro ao carregar usuários:', error);
+            }
+        }
+
+        // Funções de Exibição
+        function displaySchedules(schedules) {
+            const container = document.getElementById('schedulesList');
+            
+            if (schedules.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Nenhuma escala encontrada</h3>
+                        <p>Crie sua primeira escala para começar.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const schedulesHTML = schedules.map(schedule => `
+                <div class="schedule-day">
+                    <div class="schedule-day-header">
+                        <div class="schedule-day-title">
+                            <strong>${schedule.nome}</strong>
+                            <span class="badge badge-blue">${schedule.tipo}</span>
+                        </div>
+                        <div>
+                            ${currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR' ? 
+                                `<button class="btn btn-secondary" onclick="openEditScheduleModal(${schedule.id})">
+                                    ✏️ Editar
+                                </button>` : ''}
+                        </div>
+                    </div>
+                    <div>
+                        <p><strong>Período:</strong> ${formatDate(schedule.data_inicio)} a ${formatDate(schedule.data_fim)}</p>
+                        <div id="scheduleDays-${schedule.id}">
+                            <div class="loading">Carregando dias...</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = schedulesHTML;
+            
+            // Carregar dias de cada escala
+            schedules.forEach(schedule => {
+                loadScheduleDays(schedule.id);
+            });
+        }
+
+        function displayEvents(events) {
+            const container = document.getElementById('eventsList');
+            
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Nenhum evento encontrado</h3>
+                        <p>Crie seu primeiro evento para começar.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const eventsHTML = events.map(event => `
+                <div class="schedule-day">
+                    <div class="schedule-day-header">
+                        <div class="schedule-day-title">
+                            <strong>${event.nome}</strong>
+                            <span class="badge badge-green">Evento</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p><strong>Período:</strong> ${formatDate(event.data_inicio)} a ${formatDate(event.data_fim)}</p>
+                        ${event.descricao ? `<p><strong>Descrição:</strong> ${event.descricao}</p>` : ''}
+                        <div id="eventDays-${event.id}">
+                            <div class="loading">Carregando dias...</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = eventsHTML;
+            
+            // Carregar dias de cada evento
+            events.forEach(event => {
+                loadEventDays(event.id);
+            });
+        }
+
+        async function loadScheduleDays(scheduleId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/schedules/${scheduleId}/days`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const days = await response.json();
+                    displayScheduleDays(scheduleId, days);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dias da escala:', error);
+            }
+        }
+
+        async function loadEventDays(eventId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/events/${eventId}/days`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const days = await response.json();
+                    displayEventDays(eventId, days);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dias do evento:', error);
+            }
+        }
+
+        function displayScheduleDays(scheduleId, days) {
+            const container = document.getElementById(`scheduleDays-${scheduleId}`);
+            
+            if (days.length === 0) {
+                container.innerHTML = '<p><em>Nenhum dia configurado</em></p>';
+                return;
+            }
+            
+            const daysHTML = days.map(day => `
+                <div class="schedule-user">
+                    <strong>${getDayDisplay(day.dia_semana)}${day.data_especifica ? ` (${formatDate(day.data_especifica)})` : ''}:</strong>
+                    ${day.usuario_nome}
+                </div>
+            `).join('');
+            
+            container.innerHTML = daysHTML;
+        }
+
+        function displayEventDays(eventId, days) {
+            const container = document.getElementById(`eventDays-${eventIdId}`);
+            
+            if (days.length === 0) {
+                container.innerHTML = '<p><em>Nenhum dia configurado</em></p>';
+                return;
+            }
+            
+            const daysHTML = days.map(day => `
+                <div class="schedule-user">
+                    <strong>${formatDate(day.data_especifica)}:</strong>
+                    ${day.usuario_nome}
+                </div>
+            `).join('');
+            
+            container.innerHTML = daysHTML;
+        }
+
+        // Funções de Criação
+        async function createSchedule() {
+            // Obter dias selecionados
+            const dias = [];
+            document.querySelectorAll('input[name="dias"]:checked').forEach(checkbox => {
+                dias.push(checkbox.value);
+            });
+            
+            if (dias.length === 0) {
+                alert('Selecione pelo menos um dia da semana.');
+                return;
+            }
+            
+            const data = { dias };
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/schedules', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Escala mensal criada com sucesso!');
+                    closeCreateScheduleModal();
+                    loadSchedules();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Erro ao criar escala');
+                }
+            } catch (error) {
+                console.error('Erro ao criar escala:', error);
+                alert('Erro de conexão ao criar escala');
+            }
+        }
+
+        async function createEvent() {
+            const form = document.getElementById('createEventForm');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/events', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    alert('Evento criado com sucesso!');
+                    closeCreateEventModal();
+                    loadEvents();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Erro ao criar evento');
+                }
+            } catch (error) {
+                console.error('Erro ao criar evento:', error);
+                alert('Erro de conexão ao criar evento');
+            }
+        }
+
+        // Funções de Edição
+        async function loadScheduleForEdit(scheduleId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/schedules/${scheduleId}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                if (response.ok) {
+                    const schedule = await response.json();
+                    displayEditSchedule(schedule);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar escala para edição:', error);
+            }
+        }
+
+        function displayEditSchedule(schedule) {
+            const container = document.getElementById('editScheduleContent');
+            
+            const daysHTML = schedule.dias.map(day => `
+                <div class="form-group">
+                    <label class="form-label">${getDayDisplay(day.dia_semana)}${day.data_especifica ? ` (${formatDate(day.data_especifica)})` : ''}</label>
+                    <select class="form-input" data-day-id="${day.id}" data-dia="${day.dia_semana}">
+                        <option value="">Selecione um usuário</option>
+                        ${availableUsers.map(user => `
+                            <option value="${user.id}" ${user.id === day.usuario_id ? 'selected' : ''}>
+                                ${user.nome}
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+            `).join('');
+            
+            container.innerHTML = daysHTML;
+        }
+
+        async function saveSchedule() {
+            if (!currentSchedule) return;
+            
+            const selects = document.querySelectorAll('#editScheduleContent select');
+            const updates = [];
+            
+            selects.forEach(select => {
+                const dayId = select.dataset.dayId;
+                const userId = select.value;
+                
+                if (userId) {
+                    updates.push({
+                        id: dayId,
+                        usuario_id: userId
+                    });
+                }
+            });
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/schedules/${currentSchedule}/days`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ days: updates })
+                });
+                
+                if (response.ok) {
+                    alert('Escala atualizada com sucesso!');
+                    closeEditScheduleModal();
+                    loadSchedules();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Erro ao atualizar escala');
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar escala:', error);
+                alert('Erro de conexão ao atualizar escala');
+            }
+        }
+
+        // Funções Utilitárias
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('pt-BR');
+        }
+
+        function getDayDisplay(day) {
+            const days = {
+                'segunda': 'Segunda-feira',
+                'terca': 'Terça-feira',
+                'quarta': 'Quarta-feira',
+                'quinta': 'Quinta-feira',
+                'sexta': 'Sexta-feira',
+                'sabado': 'Sábado',
+                'domingo': 'Domingo'
+            };
+            return days[day] || day;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.remove('open');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth';
+        }
+    </script>
+</body>
+</html>

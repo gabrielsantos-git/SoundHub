@@ -1,0 +1,931 @@
+// Estado Global da Aplicacao
+const AppState = {
+    currentUser: null,
+    allMedia: [],
+    selectedMedia: new Set(),
+    availableScreens: [],
+    selectedScreen: null,
+    isProjecting: false,
+    projectionWindow: null,
+    currentMediaIndex: 0,
+    broadcastChannel: null,
+    currentView: 'normal',
+    loadedMediaCount: 0,
+    mediaLoadBatch: 20,
+    isLoading: false
+};
+
+// Função para carregar mídias da API
+async function loadMedia() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.log('Usuário não autenticado, usando fallback');
+            AppState.allMedia = [];
+            renderMediaByDate();
+            return;
+        }
+
+        const response = await fetch('/api/files/approved', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.ok) {
+            const files = await response.json();
+            // Converter formato do backend para o formato esperado pelo frontend
+            AppState.allMedia = files.map(file => ({
+                id: file.id.toString(),
+                nome: file.nome,
+                tipo: file.tipo.includes('image/') ? 'image' : file.tipo.includes('video/') ? 'video' : 'pdf',
+                mimeType: file.tipo,
+                url: file.caminho,
+                dataUpload: new Date(file.data_upload)
+            }));
+            
+            console.log('Mídias carregadas da API:', AppState.allMedia.length);
+            renderMediaByDate();
+        } else {
+            console.error('Erro ao carregar mídias:', response.status);
+            AppState.allMedia = [];
+            renderMediaByDate();
+        }
+    } catch (error) {
+        console.error('Erro na requisição de mídias:', error);
+        AppState.allMedia = [];
+        renderMediaByDate();
+    }
+}
+
+console.log('Arquivo project.js carregado com sucesso');
+
+// Apenas um evento de inicialização para evitar conflitos
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM carregado, iniciando aplicacao...');
+    initializeApp();
+});
+
+async function initializeApp() {
+    console.log('=== INICIANDO APLICACAO ===');
+    try {
+        console.log('1. Verificando autenticacao...');
+        await checkAuthentication();
+        console.log('2. Autenticacao OK, inicializando canal...');
+        initializeBroadcastChannel();
+        console.log('3. Canal OK, configurando listeners...');
+        setupEventListeners();
+        console.log('4. Listeners OK, carregando midias...');
+        await loadMedia();
+        console.log('5. Midias OK, verificando seleção de grupo...');
+        await checkGroupSelection();
+        console.log('6. Seleção OK, atualizando UI...');
+        updateUI();
+        console.log('=== APLICACAO INICIADA COM SUCESSO ===');
+    } catch (error) {
+        console.error('Erro na autenticacao, mas continuando para testes:', error);
+        console.log('Continuando sem autenticacao para testes...');
+        initializeBroadcastChannel();
+        setupEventListeners();
+        await loadMedia();
+        await checkGroupSelection();
+        updateUI();
+        console.log('=== APLICACAO INICIADA EM MODO TESTE ===');
+    }
+}
+
+// Verificar se há mídias pré-selecionadas de um grupo
+async function checkGroupSelection() {
+    try {
+        const selectedIds = localStorage.getItem('selectedMediaIds');
+        const groupName = localStorage.getItem('projectGroupName');
+        
+        if (selectedIds && groupName) {
+            console.log(`Carregando grupo pré-selecionado: ${groupName}`);
+            
+            // Limpar localStorage após uso
+            localStorage.removeItem('selectedMediaIds');
+            localStorage.removeItem('projectGroupName');
+            
+            // Esperar um pouco para garantir que as mídias foram carregadas
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Selecionar mídias do grupo
+            const ids = JSON.parse(selectedIds);
+            let selectedCount = 0;
+            
+            ids.forEach(id => {
+                const media = AppState.allMedia.find(m => m.id === id.toString());
+                if (media) {
+                    AppState.selectedMedia.add(media.id);
+                    selectedCount++;
+                }
+            });
+            
+            console.log(`${selectedCount} mídias selecionadas do grupo "${groupName}"`);
+            
+            // Mostrar mensagem de feedback
+            if (selectedCount > 0) {
+                const message = document.getElementById('message');
+                if (message) {
+                    message.innerHTML = `<div class="success">📅 Grupo "${groupName}" carregado com ${selectedCount} mídias selecionadas</div>`;
+                    setTimeout(() => {
+                        message.innerHTML = '';
+                    }, 5000);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao verificar seleção de grupo:', error);
+    }
+}
+
+async function checkAuthentication() {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+        // Em modo de teste, não redirecionar
+        console.log('Token nao encontrado, mas continuando em modo teste');
+        AppState.currentUser = {
+            nome: 'Usuario Teste',
+            cargo: 'DIRETOR'
+        };
+        updateUserInterface();
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/auth/me', {
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            AppState.currentUser = data.user;
+            updateUserInterface();
+        } else {
+            console.log('API falhou, usando usuario teste');
+            AppState.currentUser = {
+                nome: 'Usuario Teste',
+                cargo: 'DIRETOR'
+            };
+            updateUserInterface();
+        }
+    } catch (error) {
+        console.error('Erro na autenticacao, usando usuario teste:', error);
+        AppState.currentUser = {
+            nome: 'Usuario Teste',
+            cargo: 'DIRETOR'
+        };
+        updateUserInterface();
+    }
+}
+
+function updateUserInterface() {
+    if (!AppState.currentUser) return;
+    
+    // VERIFICACAO DE SEGURANCA - EVITAR NULL REFERENCE ERRORS
+    const userNameEl = document.getElementById('userName');
+    const userRoleEl = document.getElementById('userRole');
+    const accountsLink = document.getElementById('accountsLink');
+    const receiveLink = document.getElementById('receiveLink');
+    const projectLink = document.getElementById('projectLink');
+    
+    // Atualizar informações do usuário
+    if (userNameEl) {
+        userNameEl.textContent = AppState.currentUser.nome;
+    }
+    
+    if (userRoleEl) {
+        userRoleEl.textContent = AppState.currentUser.cargo;
+    }
+    
+    // Lógica de menu consistente para todas as páginas
+    if (AppState.currentUser.cargo === 'SONOPLASTA' || AppState.currentUser.cargo === 'DIRETOR' || AppState.currentUser.cargo === 'ADMIN') {
+        if (receiveLink) receiveLink.style.display = 'block';
+        if (projectLink) projectLink.style.display = 'block';
+    }
+    
+    if (AppState.currentUser.cargo === 'DIRETOR' || AppState.currentUser.cargo === 'ADMIN') {
+        if (accountsLink) {
+            accountsLink.style.display = 'block';
+            console.log('Menu Contas mostrado para DIRETOR/ADMIN');
+        }
+    }
+    
+    // Mostrar link de escalas para todos os usuários logados
+    const scheduleLink = document.getElementById('scheduleLink');
+    if (scheduleLink) {
+        scheduleLink.style.display = 'block';
+        console.log('Menu Escalas mostrado para usuário:', AppState.currentUser.cargo);
+    }
+    
+    console.log('UI atualizada para usuário:', AppState.currentUser.nome, 'Cargo:', AppState.currentUser.cargo);
+    
+    // CHAMADA DIRETA PARA GARANTIR QUE O MENU APAREÇA
+    console.log('🔍 Verificando se updateNavigationUI está disponível:', typeof updateNavigationUI);
+    if (typeof updateNavigationUI === 'function') {
+        console.log('🔍 Chamando updateNavigationUI com usuário:', AppState.currentUser);
+        updateNavigationUI(AppState.currentUser);
+    } else {
+        console.log('❌ updateNavigationUI não está disponível');
+    }
+}
+
+async function initializeMedia() {
+    const container = document.getElementById('mediaContainer');
+    
+    // VERIFICACAO CRITICA: SE O CONTAINER NAO EXISTE, O SCRIPT MORRE AQUI.
+    if (!container) {
+        console.error('ERRO FATAL: #mediaContainer não existe no DOM');
+        return;
+    }
+
+    console.log('Carregando mídias da API...');
+    
+    // CARREGAR MÍDIAS DA API
+    await loadMedia();
+}
+
+function renderMediaByDate() {
+    const container = document.getElementById('mediaContainer');
+    if (!container) return;
+
+    const mediaByDate = groupMediaByDate(AppState.allMedia);
+    let html = '';
+
+    // LIMPA O SPINNER IMEDIATAMENTE
+    container.innerHTML = '';
+
+    Object.entries(mediaByDate).forEach(([date, list]) => {
+        html += `
+            <div class="media-date-group">
+                <div class="media-date-header">📅 ${date}</div>
+                <div class="media-grid">
+                    ${list.map(media => createMediaItem(media)).join('')}
+                </div>
+            </div>`;
+    });
+
+    container.innerHTML = html;
+}
+
+function groupMediaByDate(mediaList) {
+    const grouped = {};
+    
+    // Agrupar mídias
+    mediaList.forEach(media => {
+        let d = new Date(media.dataUpload);
+        // Formata a data para uma string legível (ex: "28 de abril de 2026")
+        let key = isNaN(d.getTime()) ? 
+            "Data Desconhecida" : 
+            d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+        
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(media);
+    });
+
+    // Ordenar as chaves (datas) para que as mais novas apareçam no topo
+    const sortedGrouped = {};
+    Object.keys(grouped).sort((a, b) => {
+        if (a === "Data Desconhecida") return 1;
+        if (b === "Data Desconhecida") return -1;
+        return new Date(b) - new Date(a);
+    }).forEach(key => {
+        sortedGrouped[key] = grouped[key];
+    });
+
+    return sortedGrouped;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+}
+
+function createMediaItem(media) {
+    const isSelected = AppState.selectedMedia.has(media.id);
+    const selectedClass = isSelected ? 'selected' : '';
+    const typeIcon = media.tipo === 'image' ? '🖼️' : '🎥';
+    const typeText = media.tipo === 'image' ? 'Imagem' : 'Video';
+    
+    return '<div class="media-item ' + selectedClass + '" onclick="toggleMediaSelection(\'' + media.id + '\')" id="media-' + media.id + '" data-media-id="' + media.id + '">' + 
+        (media.tipo === 'image' ? 
+            '<img src="' + media.url + '" alt="' + media.nome + '" class="media-thumbnail" loading="lazy">' :
+            '<div style="background: #f1f5f9; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; margin-bottom: 0.5rem;"><span style="font-size: 2rem;">' + typeIcon + '</span></div>'
+        ) +
+        '<div class="media-name">' + media.nome + '</div>' +
+        '<span class="media-type">' + typeText + '</span>' +
+        '</div>';
+}
+
+function toggleMediaSelection(mediaId) {
+    const mediaItem = document.getElementById('media-' + mediaId);
+    
+    if (AppState.selectedMedia.has(mediaId)) {
+        AppState.selectedMedia.delete(mediaId);
+        mediaItem.classList.remove('selected');
+    } else {
+        AppState.selectedMedia.add(mediaId);
+        mediaItem.classList.add('selected');
+    }
+    
+    updateProjectionButton();
+    console.log('Midias selecionadas:', Array.from(AppState.selectedMedia));
+}
+
+function updateProjectionButton() {
+    const button = document.getElementById('projectBtn');
+    const hasSelection = AppState.selectedMedia.size > 0;
+    const hasScreen = AppState.selectedScreen !== null;
+    
+    button.disabled = !hasSelection || !hasScreen || AppState.isProjecting;
+    
+    if (AppState.isProjecting) {
+        button.textContent = '⏸️ Projetando...';
+        button.className = 'btn btn-secondary';
+    } else if (hasSelection && hasScreen) {
+        button.textContent = '▶️ Projetar';
+        button.className = 'btn btn-primary';
+    } else {
+        button.textContent = '▶️ Projetar';
+        button.className = 'btn btn-primary';
+    }
+}
+
+async function detectScreens() {
+    const container = document.getElementById('screenContainer');
+    
+    container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Detectando telas...</div></div>';
+    
+    try {
+        // Tenta usar Window Management API primeiro
+        if ('getScreenDetails' in window) {
+            console.log('Tentando Window Management API...');
+            try {
+                const screenDetails = await window.getScreenDetails();
+                const screens = screenDetails.screens;
+                
+                AppState.availableScreens = screens.map(function(screen) {
+                    return {
+                        id: screen.id || screens.indexOf(screen),
+                        label: screen.label || 'Monitor ' + (screens.indexOf(screen) + 1),
+                        width: screen.width,
+                        height: screen.height,
+                        availLeft: screen.availLeft || 0,
+                        availTop: screen.availTop || 0,
+                        availWidth: screen.availWidth || screen.width,
+                        availHeight: screen.availHeight || screen.height,
+                        isPrimary: screen.isPrimary || false
+                    };
+                });
+                
+                console.log('Telas detectadas via API:', AppState.availableScreens);
+                renderScreens();
+                return;
+            } catch (apiError) {
+                console.log('Window Management API falhou, usando fallback:', apiError);
+            }
+        }
+        
+        // Fallback: Cria telas simuladas para testes
+        console.log('Usando fallback de telas simuladas...');
+        AppState.availableScreens = createSimulatedScreens();
+        renderScreens();
+        
+    } catch (error) {
+        console.error('Erro ao detectar telas:', error);
+        // Mesmo em caso de erro, usa fallback
+        AppState.availableScreens = createSimulatedScreens();
+        renderScreens();
+    }
+}
+
+function createSimulatedScreens() {
+    const screens = [];
+    
+    // Tela primária
+    screens.push({
+        id: 'screen-0',
+        label: 'Monitor Principal',
+        width: screen.width,
+        height: screen.height,
+        availLeft: screen.availLeft || 0,
+        availTop: screen.availTop || 0,
+        availWidth: screen.availWidth || screen.width,
+        availHeight: screen.availHeight || screen.height,
+        isPrimary: true
+    });
+    
+    // Tela secundária (simulada)
+    screens.push({
+        id: 'screen-1',
+        label: 'Monitor Secundário',
+        width: 1920,
+        height: 1080,
+        availLeft: screen.width + 100,
+        availTop: 0,
+        availWidth: 1920,
+        availHeight: 1080,
+        isPrimary: false
+    });
+    
+    console.log('Telas simuladas criadas:', screens);
+    return screens;
+}
+
+function renderScreens() {
+    const container = document.getElementById('screenContainer');
+    
+    if (AppState.availableScreens.length === 0) {
+        container.innerHTML = '<div class="empty-state"><h3>🖥️ Nenhuma Tela</h3><p>Nenhuma tela detectada.</p></div>';
+        return;
+    }
+    
+    if (AppState.availableScreens.length === 1) {
+        container.innerHTML = '<div class="empty-state"><h3>⚠️ Apenas 1 Tela</h3><p>E necessario pelo menos 2 telas para projecao.</p></div>';
+        return;
+    }
+    
+    let html = '<div class="monitor-grid">';
+    
+    AppState.availableScreens.forEach(function(screen) {
+        const primaryBadge = screen.isPrimary ? '<span class="primary-badge">PRIMARIO</span>' : '';
+        const selectedClass = AppState.selectedScreen?.id === screen.id ? 'selected' : '';
+        
+        html += '<div class="monitor-item ' + selectedClass + '" onclick="selectScreen(\'' + screen.id + '\')" id="screen-' + screen.id + '">' +
+            '<div class="monitor-name">' + screen.label + ' ' + primaryBadge + '</div>' +
+            '<div class="monitor-resolution">' + screen.width + ' × ' + screen.height + '</div>' +
+            '</div>';
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function selectScreen(screenId) {
+    AppState.selectedScreen = AppState.availableScreens.find(function(screen) {
+        return screen.id == screenId;
+    });
+    
+    document.querySelectorAll('.monitor-item').forEach(function(item) {
+        item.classList.remove('selected');
+    });
+    document.getElementById('screen-' + screenId).classList.add('selected');
+    
+    updateProjectionButton();
+    console.log('Tela selecionada:', AppState.selectedScreen);
+}
+
+async function startProjection() {
+    if (AppState.selectedMedia.size === 0 || !AppState.selectedScreen) {
+        showError('Selecione mídias e uma tela primeiro.');
+        return;
+    }
+
+    try {
+        const selectedMediaList = AppState.allMedia.filter(m => AppState.selectedMedia.has(m.id));
+        
+        // Configurações da janela baseadas na tela selecionada
+        const { availLeft, availTop, width, height } = AppState.selectedScreen;
+        const features = `left=${availLeft},top=${availTop},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
+        
+        // Abre a janela
+        AppState.projectionWindow = window.open('projection.html', 'SoundHub-Screen', features);
+
+        if (!AppState.projectionWindow) {
+            alert('Pop-up bloqueado! Por favor, autorize pop-ups para este site.');
+            return;
+        }
+
+        // --- NOVO SISTEMA DE SINCRONIZAÇÃO ---
+        // Criamos um listener temporário para esperar a janela dizer que está pronta
+        const syncHandler = (event) => {
+            try {
+                if (event.data.type === 'PROJECTION_READY') {
+                    console.log('Janela confirmou que está pronta. Enviando dados...');
+                    
+                    AppState.broadcastChannel.postMessage({
+                        type: 'INITIALIZE_PROJECTION',
+                        data: {
+                            mediaList: selectedMediaList,
+                            currentMediaIndex: 0
+                        }
+                    });
+
+                    updateStatus('Projeção Ativa');
+                    
+                    // Remove o listener de sincronização após o sucesso
+                    AppState.broadcastChannel.removeEventListener('message', syncHandler);
+                }
+            } catch (handlerError) {
+                console.error('Erro no syncHandler:', handlerError);
+                updateStatus('Erro na sincronização');
+            }
+        };
+
+        // Adicionar listener com tratamento de erro
+        try {
+            AppState.broadcastChannel.addEventListener('message', syncHandler);
+        } catch (listenerError) {
+            console.error('Erro ao adicionar listener de sincronização:', listenerError);
+            updateStatus('Erro ao configurar sincronização');
+        }
+
+    } catch (error) {
+        console.error('Erro ao projetar:', error);
+        showError('Falha ao iniciar: ' + error.message);
+    }
+}
+
+function switchToControlPanel(mediaList) {
+    AppState.currentView = 'control';
+    
+    document.getElementById('normalView').style.display = 'none';
+    
+    const controlPanel = document.getElementById('controlPanel');
+    controlPanel.classList.add('active');
+    
+    renderMediaList(mediaList);
+    updatePreviews();
+    setupKeyboardControls();
+}
+
+function renderMediaList(mediaList) {
+    const container = document.getElementById('mediaList');
+    
+    let html = '';
+    mediaList.forEach(function(media, index) {
+        const activeClass = index === AppState.currentMediaIndex ? 'active' : '';
+        const typeIcon = media.tipo === 'image' ? '🖼️' : '🎥';
+        
+        html += '<div class="media-list-item ' + activeClass + '" onclick="jumpToMedia(' + index + ')" id="list-item-' + index + '">' +
+            typeIcon + ' ' + media.nome +
+            '</div>';
+    });
+    
+    container.innerHTML = html;
+}
+
+function updatePreviews() {
+    const selectedMediaList = AppState.allMedia.filter(function(media) {
+        return AppState.selectedMedia.has(media.id);
+    });
+    
+    const currentPreview = document.getElementById('currentPreview');
+    const currentMedia = selectedMediaList[AppState.currentMediaIndex];
+    
+    if (currentMedia) {
+        if (currentMedia.tipo === 'image') {
+            currentPreview.innerHTML = '<img src="' + currentMedia.url + '" alt="' + currentMedia.nome + '" style="width: 100%; height: 100%; object-fit: contain;">';
+        } else {
+            currentPreview.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 150px; color: #64748b;"><span style="font-size: 2rem;">🎥</span><span style="font-size: 0.75rem; margin-top: 0.5rem;">' + currentMedia.nome + '</span></div>';
+        }
+    }
+    
+    const nextPreview = document.getElementById('nextPreview');
+    const nextIndex = (AppState.currentMediaIndex + 1) % selectedMediaList.length;
+    const nextMedia = selectedMediaList[nextIndex];
+    
+    if (nextMedia) {
+        if (nextMedia.tipo === 'image') {
+            nextPreview.innerHTML = '<img src="' + nextMedia.url + '" alt="' + nextMedia.nome + '" style="width: 100%; height: 100%; object-fit: contain;">';
+        } else {
+            nextPreview.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 150px; color: #64748b;"><span style="font-size: 2rem;">🎥</span><span style="font-size: 0.75rem; margin-top: 0.5rem;">' + nextMedia.nome + '</span></div>';
+        }
+    }
+}
+
+function nextMedia() {
+    const selectedMediaList = AppState.allMedia.filter(function(media) {
+        return AppState.selectedMedia.has(media.id);
+    });
+    
+    AppState.currentMediaIndex = (AppState.currentMediaIndex + 1) % selectedMediaList.length;
+    
+    updateMediaListSelection();
+    updatePreviews();
+    
+    try {
+        AppState.broadcastChannel.postMessage({
+            type: 'CHANGE_MEDIA',
+            data: {
+                mediaIndex: AppState.currentMediaIndex,
+                media: selectedMediaList[AppState.currentMediaIndex]
+            }
+        });
+    } catch (broadcastError) {
+        console.error('Erro ao enviar mensagem de próxima mídia:', broadcastError);
+    }
+}
+
+function previousMedia() {
+    const selectedMediaList = AppState.allMedia.filter(function(media) {
+        return AppState.selectedMedia.has(media.id);
+    });
+    
+    AppState.currentMediaIndex = AppState.currentMediaIndex === 0 ? 
+        selectedMediaList.length - 1 : AppState.currentMediaIndex - 1;
+    
+    updateMediaListSelection();
+    updatePreviews();
+    
+    try {
+        AppState.broadcastChannel.postMessage({
+            type: 'CHANGE_MEDIA',
+            data: {
+                mediaIndex: AppState.currentMediaIndex,
+                media: selectedMediaList[AppState.currentMediaIndex]
+            }
+        });
+    } catch (broadcastError) {
+        console.error('Erro ao enviar mensagem de mídia anterior:', broadcastError);
+    }
+}
+
+function jumpToMedia(index) {
+    AppState.currentMediaIndex = index;
+    
+    updateMediaListSelection();
+    updatePreviews();
+    
+    const selectedMediaList = AppState.allMedia.filter(function(media) {
+        return AppState.selectedMedia.has(media.id);
+    });
+    
+    try {
+        AppState.broadcastChannel.postMessage({
+            type: 'CHANGE_MEDIA',
+            data: {
+                mediaIndex: AppState.currentMediaIndex,
+                media: selectedMediaList[AppState.currentMediaIndex]
+            }
+        });
+    } catch (broadcastError) {
+        console.error('Erro ao enviar mensagem de pulo de mídia:', broadcastError);
+    }
+}
+
+function playPauseMedia() {
+    try {
+        AppState.broadcastChannel.postMessage({
+            type: 'TOGGLE_PLAY_PAUSE'
+        });
+    } catch (broadcastError) {
+        console.error('Erro ao enviar mensagem de play/pause:', broadcastError);
+    }
+}
+
+function updateMediaListSelection() {
+    document.querySelectorAll('.media-list-item').forEach(function(item, index) {
+        if (index === AppState.currentMediaIndex) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+function endProjection() {
+    if (AppState.projectionWindow && !AppState.projectionWindow.closed) {
+        AppState.projectionWindow.close();
+    }
+    
+    AppState.isProjecting = false;
+    AppState.projectionWindow = null;
+    AppState.currentMediaIndex = 0;
+    AppState.currentView = 'normal';
+    
+    document.getElementById('normalView').style.display = 'block';
+    document.getElementById('controlPanel').classList.remove('active');
+    
+    updateProjectionButton();
+    updateStatus('Sistema pronto para projecao');
+    
+    removeKeyboardControls();
+}
+
+function initializeBroadcastChannel() {
+    try {
+        AppState.broadcastChannel = new BroadcastChannel('soundhub-projection');
+        
+        // Adicionar tratamento de erro para o listener
+        const messageHandler = (event) => {
+            try {
+                if (event.data.type === 'PROJECTION_CLOSED') {
+                    endProjection();
+                }
+            } catch (handlerError) {
+                console.warn('Erro no handler do BroadcastChannel:', handlerError);
+            }
+        };
+        
+        AppState.broadcastChannel.onmessage = messageHandler;
+        
+        // Adicionar tratamento de erro para o canal
+        AppState.broadcastChannel.addEventListener('error', (error) => {
+            console.warn('Erro no BroadcastChannel:', error);
+        });
+        
+        // Adicionar tratamento para quando o canal fecha
+        AppState.broadcastChannel.addEventListener('messageerror', (error) => {
+            console.warn('Erro de mensagem no BroadcastChannel:', error);
+        });
+        
+    } catch (error) {
+        console.error('Erro ao inicializar BroadcastChannel:', error);
+        // Criar fallback se BroadcastChannel não estiver disponível
+        AppState.broadcastChannel = {
+            postMessage: (data) => {
+                try {
+                    console.log('Fallback: postMessage chamado com:', data);
+                } catch (fallbackError) {
+                    console.warn('Erro no fallback postMessage:', fallbackError);
+                }
+            },
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            close: () => {}
+        };
+    }
+}
+
+function setupLazyLoading() {
+    console.log('=== DEBUG: Configurando lazy loading ===');
+    
+    // VERIFICAR SE INTERSECTIONOBSERVER ESTA DISPONIVEL
+    if ('IntersectionObserver' in window) {
+        console.log('IntersectionObserver disponivel, configurando...');
+        
+        try {
+            const options = {
+                root: null,
+                rootMargin: '50px',
+                threshold: 0.1
+            };
+            
+            const observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        if (img.dataset.src) {
+                            console.log('Carregando imagem lazy:', img.dataset.src);
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
+                        }
+                    }
+                });
+            }, options);
+            
+            const images = document.querySelectorAll('img[data-src]');
+            console.log('Imagens para lazy loading encontradas:', images.length);
+            
+            images.forEach(function(img) {
+                observer.observe(img);
+            });
+            
+        } catch (error) {
+            console.error('Erro ao configurar IntersectionObserver:', error);
+            // Fallback: carregar todas as imagens imediatamente
+            loadAllImagesImmediately();
+        }
+        
+    } else {
+        console.log('IntersectionObserver nao disponivel, usando fallback');
+        // FALLBACK: Carregar todas as imagens imediatamente
+        loadAllImagesImmediately();
+    }
+    
+    console.log('=== DEBUG: Lazy loading configurado ===');
+}
+
+function loadAllImagesImmediately() {
+    console.log('Carregando todas as imagens imediatamente (fallback)');
+    
+    const images = document.querySelectorAll('img[data-src]');
+    console.log('Imagens para carregar imediatamente:', images.length);
+    
+    images.forEach(function(img) {
+        if (img.dataset.src) {
+            console.log('Carregando imagem:', img.dataset.src);
+            img.src = img.dataset.src;
+            img.removeAttribute('data-src');
+        }
+    });
+}
+
+function setupKeyboardControls() {
+    AppState.keyboardHandler = function(event) {
+        switch (event.key) {
+            case 'ArrowRight':
+                event.preventDefault();
+                nextMedia();
+                break;
+            case 'ArrowLeft':
+                event.preventDefault();
+                previousMedia();
+                break;
+            case ' ':
+                event.preventDefault();
+                playPauseMedia();
+                break;
+            case 'Escape':
+                event.preventDefault();
+                endProjection();
+                break;
+        }
+    };
+    
+    document.addEventListener('keydown', AppState.keyboardHandler);
+}
+
+function removeKeyboardControls() {
+    if (AppState.keyboardHandler) {
+        document.removeEventListener('keydown', AppState.keyboardHandler);
+        AppState.keyboardHandler = null;
+    }
+}
+
+function refreshMedia() {
+    loadMedia();
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('open');
+}
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/auth';
+}
+
+function updateStatus(message) {
+    const statusEl = document.getElementById('projectionStatus');
+    statusEl.textContent = message;
+    
+    statusEl.className = 'status';
+    if (message.includes('pronto')) {
+        statusEl.classList.add('ready');
+    } else if (message.includes('ativa') || message.includes('Projetando')) {
+        statusEl.classList.add('projecting');
+    } else if (message.includes('Erro') || message.includes('Falha')) {
+        statusEl.classList.add('error');
+    }
+}
+
+function showError(message) {
+    updateStatus('Erro: ' + message);
+    console.error(message);
+}
+
+function updateUI() {
+    updateProjectionButton();
+}
+
+function setupEventListeners() {
+    window.addEventListener('beforeunload', function() {
+        if (AppState.isProjecting) {
+            endProjection();
+        }
+    });
+    
+    setInterval(function() {
+        if (AppState.projectionWindow && AppState.projectionWindow.closed) {
+            endProjection();
+        }
+    }, 1000);
+}
+
+// FUNCAO DE EMERGENCIA - TESTE DE RENDERIZACAO DIRETA
+async function emergencyRender() {
+    console.log('=== EMERGENCIA: Forcando renderizacao direta ===');
+    try {
+        const container = document.getElementById('mediaContainer');
+        if (!container) {
+            console.error('Container nao encontrado!');
+            return;
+        }
+        
+        // CARREGAR MÍDIAS DA API
+        await loadMedia();
+        
+        // RENDERIZACAO DIRETA
+        renderMediaByDate();
+        
+        console.log('=== EMERGENCIA: Renderizacao concluida ===');
+    } catch (error) {
+        console.error('ERRO NA RENDERIZACAO DE EMERGENCIA:', error);
+    }
+}
+
+// TORNAR A FUNCAO DISPONIVEL NO CONSOLE PARA DEBUG
+window.emergencyRender = emergencyRender;

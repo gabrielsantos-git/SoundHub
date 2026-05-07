@@ -141,51 +141,217 @@ soundhub/
 3. Altere cargos conforme necessário
 4. Exclua usuários inativos
 
-## 🚀 Deploy na Hostinger
+## 🚀 Deploy em Produção
 
 ### Pré-requisitos
-- Plano Hostinger com suporte a Node.js
-- Acesso ao painel de controle Hostinger
+- Node.js 16.0.0 ou superior
+- Servidor de hospedagem (VPS, DigitalOcean, AWS, Heroku, etc.)
+- Acesso SSH ou painel de controle
 
-### Passos para Deploy
+### 1. Preparação para Deploy
 
-#### 1. Preparar o Projeto
+#### Script Automático
 ```bash
-# Build do frontend
-npm run build
+# Executar script de preparação
+npm run deploy:setup
 
-# Testar em modo produção
-NODE_ENV=production npm start
+# Ou manualmente:
+node deploy.js
 ```
 
-#### 2. Configurar no Hostinger
-1. Acesse o painel Hostinger
-2. Vá para "Hospedagem" → "Gerenciador de Arquivos"
-3. Faça upload dos arquivos do projeto
-4. Configure as variáveis de ambiente no painel
+#### Manualmente
+```bash
+# 1. Instalar dependências de produção
+npm install --production
 
-#### 3. Configurar Variáveis de Ambiente
-No painel Hostinger, configure:
-```
+# 2. Configurar ambiente
+cp .env.production .env
+
+# 3. Editar .env com suas configurações
 NODE_ENV=production
 PORT=3000
-JWT_SECRET=sua_chave_secreta_muito_segura
-DB_PATH=/home/u123456789/domains/seusite.com/public_html/database.sqlite
-UPLOAD_DIR=/home/u123456789/domains/seusite.com/public_html/uploads
-MAX_FILE_SIZE=50000000
+HOST=0.0.0.0
+JWT_SECRET=sua_chave_secreta_muito_segura_aqui
+DB_PATH=./database.sqlite
+UPLOAD_DIR=./uploads
+MAX_FILE_SIZE=100MB
+QR_EXPIRY_TIME=3600000
 ```
 
-#### 4. Configurar Aplicação Node.js
-1. No painel Hostinger, vá para "Hospedagem" → "Node.js"
-2. Configure:
+### 2. Deploy em Diferentes Plataformas
+
+#### Heroku
+```bash
+# Instalar Heroku CLI
+# Login no Heroku
+heroku login
+
+# Criar app
+heroku create soundhub-app
+
+# Configurar variáveis
+heroku config:set NODE_ENV=production
+heroku config:set JWT_SECRET=sua_chave_secreta
+heroku config:set PORT=3000
+
+# Deploy
+git add .
+git commit -m "Deploy para produção"
+git push heroku main
+```
+
+#### VPS/DigitalOcean
+```bash
+# 1. Transferir arquivos
+scp -r soundhub/ user@server:/var/www/
+
+# 2. Instalar dependências
+cd /var/www/soundhub
+npm install --production
+
+# 3. Configurar PM2 (process manager)
+npm install -g pm2
+pm2 start server.js --name "soundhub"
+pm2 startup
+pm2 save
+
+# 4. Configurar Nginx (opcional)
+sudo nano /etc/nginx/sites-available/soundhub
+```
+
+#### Hostinger
+1. Acesse o painel Hostinger
+2. Vá para "Hospedagem" → "Node.js"
+3. Configure:
    - **Pasta do projeto**: `/public_html`
    - **Arquivo de inicialização**: `server.js`
    - **Versão do Node**: 18.x ou superior
-3. Inicie a aplicação
+4. Configure variáveis de ambiente no painel
+5. Inicie a aplicação
 
-#### 5. Configurar Domínio
-1. Configure seu domínio para apontar para a aplicação
-2. Configure HTTPS (certificado gratuito Let's Encrypt)
+### 3. Configuração de Produção
+
+#### Variáveis de Ambiente Essenciais
+```bash
+NODE_ENV=production          # Ambiente de produção
+PORT=3000                   # Porta do servidor
+HOST=0.0.0.0               # Escutar em todas as interfaces
+JWT_SECRET=chave_super_secreta  # Segredo para tokens JWT
+DB_PATH=./database.sqlite   # Caminho do banco de dados
+UPLOAD_DIR=./uploads        # Pasta de uploads
+MAX_FILE_SIZE=100MB        # Tamanho máximo de arquivos
+```
+
+#### Segurança em Produção
+```bash
+# 1. Mudar JWT_SECRET para algo seguro
+JWT_SECRET=$(openssl rand -base64 64)
+
+# 2. Configurar HTTPS (recomendado)
+# Use certificado Let's Encrypt ou similar
+
+# 3. Configurar firewall
+sudo ufw allow 3000
+sudo ufw enable
+```
+
+### 4. Iniciar Servidor em Produção
+
+#### Diretamente
+```bash
+NODE_ENV=production node server.js
+```
+
+#### Com PM2 (recomendado)
+```bash
+# Instalar PM2
+npm install -g pm2
+
+# Iniciar com PM2
+pm2 start server.js --name "soundhub" --env production
+
+# Salvar configuração
+pm2 save
+
+# Configurar startup automático
+pm2 startup
+```
+
+#### Com Systemd (Linux)
+```bash
+# Criar serviço
+sudo nano /etc/systemd/system/soundhub.service
+
+# Conteúdo do arquivo:
+[Unit]
+Description=SoundHub Media Server
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/soundhub
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target
+
+# Habilitar e iniciar
+sudo systemctl enable soundhub
+sudo systemctl start soundhub
+```
+
+### 5. Monitoramento e Manutenção
+
+#### Logs
+```bash
+# Com PM2
+pm2 logs soundhub
+
+# Com Systemd
+sudo journalctl -u soundhub -f
+
+# Arquivo de logs
+tail -f /var/log/soundhub.log
+```
+
+#### Backup Automático
+```bash
+# Script de backup (backup.sh)
+#!/bin/bash
+DATE=$(date +%Y%m%d_%H%M%S)
+cp database.sqlite backups/database_$DATE.sqlite
+find backups/ -name "database_*.sqlite" -mtime +7 -delete
+
+# Adicionar ao crontab
+crontab -e
+# Adicionar linha:
+0 2 * * * /path/to/backup.sh
+```
+
+### 6. Troubleshooting de Produção
+
+#### Problemas Comuns
+- **Porta em uso**: Verifique se a porta está disponível
+- **Permissões**: Configure permissões corretas para pastas
+- **Memória**: Monitore uso de memória em produção
+- **SSL**: Configure certificado SSL para HTTPS
+
+#### Saúde da Aplicação
+```bash
+# Verificar se está rodando
+curl http://localhost:3000/api/status
+
+# Verificar processo
+ps aux | grep node
+
+# Verificar porta
+netstat -tlnp | grep :3000
+```
 
 ### Troubleshooting Hostinger
 

@@ -10,6 +10,8 @@ const authRoutes = require('./routes/auth');
 const fileRoutes = require('./routes/files');
 const qrRoutes = require('./routes/qr');
 const userRoutes = require('./routes/users');
+const scheduleRoutes = require('./routes/schedules');
+const eventRoutes = require('./routes/events');
 
 const app = express();
 
@@ -30,34 +32,50 @@ const io = socketIo(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Verificar existência de arquivos HTML essenciais
-const requiredFiles = ['index.html', 'auth.html', 'project.html', 'receive.html', 'accounts.html', 'display.html'];
-const missingFiles = [];
+// Configurações de ambiente
+const isProduction = NODE_ENV === 'production';
 
-requiredFiles.forEach(file => {
-  if (!fs.existsSync(path.join(__dirname, file))) {
-    missingFiles.push(file);
+console.log(`Ambiente: ${NODE_ENV}`);
+console.log(`Servidor SoundHub rodando na porta ${PORT}`);
+
+// Em produção, verificar arquivos essenciais
+if (!isProduction) {
+  const requiredFiles = ['index.html', 'auth.html', 'project.html', 'receive.html', 'accounts.html', 'display.html'];
+  const missingFiles = [];
+
+  requiredFiles.forEach(file => {
+    if (!fs.existsSync(path.join(__dirname, file))) {
+      missingFiles.push(file);
+    }
+  });
+
+  if (missingFiles.length > 0) {
+    console.error('ERRO: Arquivos HTML essenciais não encontrados:', missingFiles);
+    console.error('Por favor, verifique se todos os arquivos existem no diretório.');
+  } else {
+    console.log('Todos os arquivos HTML essenciais encontrados.');
   }
-});
-
-if (missingFiles.length > 0) {
-  console.error('ERRO: Arquivos HTML essenciais não encontrados:', missingFiles);
-  console.error('Por favor, verifique se todos os arquivos existem no diretório.');
-} else {
-  console.log('Todos os arquivos HTML essenciais encontrados.');
 }
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve os arquivos da pasta raiz (onde estão os HTMLs e JS)
+app.use(express.static(path.join(__dirname)));
+
+// Serve a pasta de uploads para que as imagens apareçam
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/qr', qrRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/events', eventRoutes);
 
 // Middleware de logging para debug
 app.use((req, res, next) => {
@@ -109,6 +127,10 @@ app.get('/control', (req, res) => {
 
 app.get('/upload.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'upload.html'));
+});
+
+app.get('/schedule', (req, res) => {
+  res.sendFile(path.join(__dirname, 'schedule.html'));
 });
 
 // Rota de API para verificação de status (deve vir antes do middleware 404)
@@ -236,8 +258,13 @@ server.on('error', (err) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Servidor SoundHub rodando na porta ${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV}`);
-  console.log(`URL: http://localhost:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Servidor SoundHub rodando em ${HOST}:${PORT}`);
+  console.log(`Ambiente: ${NODE_ENV}`);
+  
+  if (!isProduction) {
+    console.log(`URL: http://localhost:${PORT}`);
+  } else {
+    console.log(`Servidor pronto para produção!`);
+  }
 });

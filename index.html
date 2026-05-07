@@ -280,6 +280,10 @@
                 <span style="margin-right: 0.75rem;">👤</span>
                 Contas
             </a>
+            <a href="/schedule" class="sidebar-item" id="scheduleLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📅</span>
+                Escalas
+            </a>
         </nav>
         
         <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
@@ -337,37 +341,62 @@
         
         // Verificar autenticação ao carregar
         document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
+            try {
+                checkAuth();
+            } catch (error) {
+                console.error('Erro no DOMContentLoaded:', error);
+                // Tentar novamente após um pequeno delay
+                setTimeout(() => {
+                    try {
+                        checkAuth();
+                    } catch (retryError) {
+                        console.error('Erro na segunda tentativa:', retryError);
+                    }
+                }, 100);
+            }
         });
         
         async function checkAuth() {
+            console.log('🔍 Verificando autenticação...');
             const token = localStorage.getItem('token');
             const authOverlay = document.getElementById('authOverlay');
             const filesContainer = document.getElementById('filesContainer');
             
+            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
+            console.log('Token completo:', token);
+            
             if (!token) {
+                console.log('❌ Token não encontrado, redirecionando para /auth');
                 // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
             
             try {
+                console.log('🔍 Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
                     headers: {
                         'Authorization': 'Bearer ' + token
                     }
                 });
                 
+                console.log('Status da resposta:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('✅ Usuário autenticado:', data.user);
                     currentUser = data.user;
                     updateUserInterface();
                     loadFiles();
                 } else {
+                    console.log('❌ Falha na autenticação, status:', response.status);
+                    const errorData = await response.json();
+                    console.log('Erro:', errorData);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 }
             } catch (error) {
+                console.log('❌ Erro na requisição:', error);
                 showAuthRequired();
             }
         }
@@ -388,13 +417,20 @@
             const projectLink = document.getElementById('projectLink');
             const accountsLink = document.getElementById('accountsLink');
             
-            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') {
+            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
                 receiveLink.style.display = 'block';
                 projectLink.style.display = 'block';
             }
             
-            if (currentUser.cargo === 'DIRETOR') {
+            if (currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
                 accountsLink.style.display = 'block';
+            }
+            
+            // Mostrar link de escalas para todos os usuários logados
+            const scheduleLink = document.getElementById('scheduleLink');
+            if (scheduleLink) {
+                scheduleLink.style.display = 'block';
+                console.log('Menu Escalas mostrado para usuário:', currentUser.cargo);
             }
         }
         
@@ -447,40 +483,65 @@
                 `;
                 return;
             }
-            
-            const filesHTML = files.map(file => {
-                const fileType = file.tipo.includes('image') ? 'image' : 
-                               file.tipo.includes('video') ? 'video' : 'pdf';
-                
-                const typeClass = `type-${fileType}`;
-                const typeName = fileType === 'image' ? 'Imagem' : 
-                               fileType === 'video' ? 'Vídeo' : 'PDF';
-                
-                const formattedDate = new Date(file.data_upload).toLocaleDateString('pt-BR', {
+
+            // Lógica de agrupamento por data
+            const grouped = files.reduce((acc, file) => {
+                const date = new Date(file.data_upload).toLocaleDateString('pt-BR', {
                     day: 'numeric',
                     month: 'long',
-                    weekday: 'long'
+                    year: 'numeric'
                 });
-                
-                return `
-                    <div class="file-item">
-                        <div class="file-info">
-                            <h3>${file.nome}</h3>
-                            <p>${formattedDate} • ${file.usuario_nome}</p>
-                            <span class="file-type ${typeClass}">${typeName}</span>
+                if (!acc[date]) acc[date] = [];
+                acc[date].push(file);
+                return acc;
+            }, {});
+
+            let html = '';
+            for (const [date, items] of Object.entries(grouped)) {
+                html += `
+                    <div class="media-date-group" style="margin-bottom: 2rem;">
+                        <div class="media-date-header" style="font-weight: bold; padding: 10px; background: #f3f4f6; border-radius: 8px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📅 ${date}</span>
+                            <div class="group-actions" style="display: flex; gap: 0.5rem;">
+                                ${currentUser && (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') ? 
+                                    `<button class="btn btn-primary btn-sm" onclick="projectGroup('${date}', ${JSON.stringify(items.map(f => f.id))})">🎥 Projetar Grupo</button>` : ''}
+                                <button class="btn btn-secondary btn-sm" onclick="downloadGroup('${date}', ${JSON.stringify(items.map(f => f.id))})">📥 Baixar Tudo</button>
+                            </div>
                         </div>
-                        <div class="file-actions">
-                            ${currentUser && (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') ? 
-                                `<a href="/project?file=${file.id}" class="btn btn-primary">Projetar</a>` : ''}
-                            <button class="btn btn-secondary" onclick="downloadFile(${file.id}, '${file.nome}')">
-                                📥 Baixar
-                            </button>
+                        <div class="files-list">
+                            ${items.map(file => renderFileItem(file)).join('')}
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    </div>`;
+            }
             
-            filesContainer.innerHTML = filesHTML;
+            filesContainer.innerHTML = html;
+        }
+
+        // Função auxiliar para manter o layout do item original
+        function renderFileItem(file) {
+            const fileType = file.tipo.includes('image') ? 'image' : file.tipo.includes('video') ? 'video' : 'pdf';
+            const typeClass = `type-${fileType}`;
+            const typeName = fileType === 'image' ? 'Imagem' : fileType === 'video' ? 'Vídeo' : 'PDF';
+            
+            const formattedDate = new Date(file.data_upload).toLocaleDateString('pt-BR', {
+                day: 'numeric',
+                month: 'long',
+                weekday: 'long'
+            });
+            
+            return `
+                <div class="file-item">
+                    <div class="file-info">
+                        <h3>${file.nome}</h3>
+                        <p>${formattedDate} • ${file.usuario_nome}</p>
+                        <span class="file-type ${typeClass}">${typeName}</span>
+                    </div>
+                    <div class="file-actions">
+                        <button class="btn btn-secondary" onclick="downloadFile(${file.id}, '${file.nome}')">
+                            📥 Baixar
+                        </button>
+                    </div>
+                </div>`;
         }
         
         async function downloadFile(fileId, fileName) {
@@ -499,15 +560,28 @@
                 });
                 
                 if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
+                    try {
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = fileName;
+                        document.body.appendChild(a);
+                        a.click();
+                        
+                        // Limpar recursos de forma segura
+                        setTimeout(() => {
+                            try {
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+                            } catch (cleanupError) {
+                                console.warn('Erro ao limpar recursos de download:', cleanupError);
+                            }
+                        }, 100);
+                    } catch (blobError) {
+                        console.error('Erro ao processar blob:', blobError);
+                        alert('Erro ao processar arquivo para download');
+                    }
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
@@ -515,7 +589,82 @@
                     alert('Erro ao baixar arquivo');
                 }
             } catch (error) {
-                alert('Erro de conexão');
+                console.error('Erro de conexão:', error);
+                alert('Erro de conexão ao baixar arquivo');
+            }
+        }
+        
+        // Função para baixar todos os arquivos de um grupo como ZIP
+        async function downloadGroup(date, fileIds) {
+            try {
+                console.log(`Baixando ${fileIds.length} arquivos do grupo ${date} como ZIP`);
+                
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    showAuthRequired();
+                    return;
+                }
+                
+                const response = await fetch('/api/files/download-zip', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileIds: fileIds,
+                        groupName: date
+                    })
+                });
+                
+                if (response.ok) {
+                    // Criar blob e download do ZIP
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${date.replace(/[^a-zA-Z0-9]/g, '_')}_arquivos.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    
+                    // Limpar recursos de forma segura
+                    setTimeout(() => {
+                        try {
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+                        } catch (cleanupError) {
+                            console.warn('Erro ao limpar recursos de download ZIP:', cleanupError);
+                        }
+                    }, 100);
+                    
+                    console.log(`ZIP com ${fileIds.length} arquivos baixado com sucesso!`);
+                } else if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('token');
+                    showAuthRequired();
+                } else {
+                    const error = await response.json();
+                    alert(`Erro ao baixar grupo: ${error.error || 'Erro desconhecido'}`);
+                }
+            } catch (error) {
+                console.error('Erro ao baixar grupo como ZIP:', error);
+                alert('Erro de conexão ao baixar arquivos do grupo');
+            }
+        }
+        
+        // Função para projetar grupo de mídias
+        function projectGroup(date, fileIds) {
+            try {
+                console.log(`Projetando grupo ${date} com ${fileIds.length} arquivos`);
+                
+                // Salvar IDs das mídias no localStorage para o project.html recuperar
+                localStorage.setItem('selectedMediaIds', JSON.stringify(fileIds));
+                localStorage.setItem('projectGroupName', date);
+                
+                // Redirecionar para página de projeção
+                window.location.href = '/project.html';
+            } catch (error) {
+                console.error('Erro ao projetar grupo:', error);
+                alert('Erro ao iniciar projeção do grupo');
             }
         }
         
@@ -550,5 +699,6 @@
             overlay.classList.remove('show');
         }
     </script>
+    <script src="navigation.js"></script>
 </body>
 </html>

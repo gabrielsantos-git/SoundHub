@@ -347,6 +347,14 @@
                 <span style="margin-right: 0.75rem;">👤</span>
                 Contas
             </a>
+            <a href="/profile" class="sidebar-item" id="profileLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">👤</span>
+                Meu Perfil
+            </a>
+            <a href="/schedule" class="sidebar-item" id="scheduleLink" style="display: none;">
+                <span style="margin-right: 0.75rem;">📅</span>
+                Escalas
+            </a>
         </nav>
         
         <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
@@ -387,11 +395,8 @@
                     
                     <div id="qrContainer">
                         <div class="qr-container">
-                            <button class="btn btn-primary" onclick="generateQRCode()">
-                                📱 Gerar QR Code
-                            </button>
                             <p style="margin-top: 1rem; color: #6b7280; font-size: 0.875rem;">
-                                Clique para gerar um QR Code que expira em 10 minutos
+                                Gerando QR Code automático...
                             </p>
                         </div>
                     </div>
@@ -440,34 +445,87 @@
             checkAuth();
         });
         
+        // Gerar QR Code automaticamente após verificação de autenticação
+        async function autoGenerateQR() {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeno delay
+            
+            const token = localStorage.getItem('token');
+            if (!token) return;
+            
+            try {
+                const response = await fetch('/api/qr/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentQRToken = data.token;
+                    
+                    // Exibir QR code automaticamente
+                    const qrContainer = document.getElementById('qrContainer');
+                    qrContainer.innerHTML = `
+                        <div class="qr-container">
+                            <img src="${data.qrCode}" alt="QR Code" />
+                            <div class="qr-status active" id="qrStatus">QR Code ativo - Escaneie para fazer upload</div>
+                            <p style="margin-bottom: 1rem;">Escaneie este QR Code para fazer upload</p>
+                            <button class="btn btn-secondary" onclick="generateQRCode()">
+                                Gerar Novo
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Iniciar verificação de status
+                    startStatusCheck();
+                }
+            } catch (error) {
+                console.error('Erro ao gerar QR Code automático:', error);
+            }
+        }
+        
         async function checkAuth() {
+            console.log('🔍 receive.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
             const authOverlay = document.getElementById('authOverlay');
             
+            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
+            console.log('Token completo:', token);
+            
             if (!token) {
+                console.log('❌ Token não encontrado, redirecionando para /auth');
                 // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
             
             try {
+                console.log('🔍 Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
                     headers: {
                         'Authorization': 'Bearer ' + token
                     }
                 });
                 
+                console.log('Status da resposta:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('✅ Usuário autenticado:', data.user);
                     currentUser = data.user;
                     updateUserInterface();
                     
                     // Verificar permissão
-                    if (currentUser.cargo !== 'SONOPLASTA' && currentUser.cargo !== 'DIRETOR') {
+                    console.log('🔍 Verificando permissão para cargo:', currentUser.cargo);
+                    if (currentUser.cargo !== 'SONOPLASTA' && currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN') {
+                        console.log('❌ Permissão negada para cargo:', currentUser.cargo);
                         showAuthRequired();
                         return;
                     }
                     
+                    console.log('✅ Permissão concedida, carregando arquivos...');
                     loadPendingFiles();
                 } else {
                     localStorage.removeItem('token');
@@ -479,6 +537,7 @@
         }
         
         function showAuthRequired() {
+            console.log('❌ showAuthRequired chamado - redirecionando para /auth');
             // Redirecionar automaticamente para página de autenticação
             window.location.href = '/auth';
         }
@@ -493,15 +552,28 @@
             const projectLink = document.getElementById('projectLink');
             const accountsLink = document.getElementById('accountsLink');
             
-            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') {
+            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
                 projectLink.style.display = 'block';
             }
             
-            if (currentUser.cargo === 'DIRETOR') {
+            if (currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
                 accountsLink.style.display = 'block';
+            }
+            
+            // Mostrar link de escalas para todos os usuários logados
+            const scheduleLink = document.getElementById('scheduleLink');
+            if (scheduleLink) {
+                scheduleLink.style.display = 'block';
+                console.log('Menu Escalas mostrado para usuário:', currentUser.cargo);
+            }
+            
+            // Gerar QR Code automaticamente se tiver permissão
+            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
+                autoGenerateQR();
             }
         }
         
+        // Função generateQRCode manual para o botão "Gerar Novo"
         async function generateQRCode() {
             const qrContainer = document.getElementById('qrContainer');
             
@@ -527,7 +599,7 @@
                     const data = await response.json();
                     currentQRToken = data.token;
                     
-                    // Exibir QR code sem contagem regressiva
+                    // Exibir QR code
                     qrContainer.innerHTML = `
                         <div class="qr-container">
                             <img src="${data.qrCode}" alt="QR Code" />
@@ -539,7 +611,7 @@
                         </div>
                     `;
                     
-                    // Iniciar verificação de status (apenas para detectar uso)
+                    // Iniciar verificação de status
                     startStatusCheck();
                     
                 } else if (response.status === 401 || response.status === 403) {
@@ -701,15 +773,27 @@
                 });
                 
                 if (response.ok) {
+                    try {
+                        const result = await response.json();
+                        console.log('Arquivo aprovado:', result);
+                    } catch (parseError) {
+                        console.warn('Erro ao parsear resposta de aprovação:', parseError);
+                    }
                     loadPendingFiles();
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    alert('Erro ao aprovar arquivo');
+                    try {
+                        const error = await response.json();
+                        alert(`Erro ao aprovar arquivo: ${error.error || 'Erro desconhecido'}`);
+                    } catch (parseError) {
+                        alert('Erro ao aprovar arquivo');
+                    }
                 }
             } catch (error) {
-                alert('Erro de conexão');
+                console.error('Erro de conexão ao aprovar arquivo:', error);
+                alert('Erro de conexão ao aprovar arquivo');
             }
         }
         
@@ -732,15 +816,27 @@
                 });
                 
                 if (response.ok) {
+                    try {
+                        const result = await response.json();
+                        console.log('Arquivo recusado:', result);
+                    } catch (parseError) {
+                        console.warn('Erro ao parsear resposta de rejeição:', parseError);
+                    }
                     loadPendingFiles();
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    alert('Erro ao recusar arquivo');
+                    try {
+                        const error = await response.json();
+                        alert(`Erro ao recusar arquivo: ${error.error || 'Erro desconhecido'}`);
+                    } catch (parseError) {
+                        alert('Erro ao recusar arquivo');
+                    }
                 }
             } catch (error) {
-                alert('Erro de conexão');
+                console.error('Erro de conexão ao recusar arquivo:', error);
+                alert('Erro de conexão ao recusar arquivo');
             }
         }
         
@@ -774,6 +870,25 @@
             sidebar.classList.remove('open');
             overlay.classList.remove('show');
         }
+    </script>
+    <script src="navigation.js"></script>
+    <script>
+        // Debug script para verificar localStorage
+        console.log('=== DEBUG RECEIVE.HTML ===');
+        const debugToken = localStorage.getItem('token');
+        const debugUser = localStorage.getItem('user');
+        console.log('Token no localStorage:', debugToken ? 'EXISTS' : 'NULL');
+        console.log('User no localStorage:', debugUser ? 'EXISTS' : 'NULL');
+        if (debugUser) {
+            try {
+                const userObj = JSON.parse(debugUser);
+                console.log('User object:', userObj);
+                console.log('User cargo:', userObj.cargo);
+            } catch (error) {
+                console.error('❌ Erro ao parsear user:', error);
+            }
+        }
+        console.log('=== FIM DEBUG ===');
     </script>
 </body>
 </html>
