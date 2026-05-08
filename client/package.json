@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Frontend do SoundHub para deploy",
   "scripts": {
-    "build": "cp *.html *.js ../dist/ 2>/dev/null || mkdir -p ../dist && cp *.html *.js ../dist/"
+    "build": "mkdir -p dist && cp *.html *.js dist/"
   },
   "dependencies": {},
   "devDependencies": {}
