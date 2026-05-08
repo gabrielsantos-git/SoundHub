@@ -4,44 +4,28 @@
   "description": "Sistema de organização e projeção de mídia para igrejas",
   "main": "server.js",
   "scripts": {
-    "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
-    "server:dev": "nodemon server.js",
-    "client:dev": "cd client && npm run dev",
-    "build": "cd client && npm run build",
     "start": "node server.js",
-    "install:all": "npm install && cd client && npm install",
-    "deploy": "node deploy.js",
-    "deploy:setup": "node deploy.js",
-    "start:prod": "NODE_ENV=production node server.js",
-    "install:prod": "npm install --production"
+    "dev": "nodemon server.js",
+    "build": "cd client && npm run build",
+    "install-client": "cd client && npm install",
+    "test": "echo 'No tests specified'"
   },
-  "keywords": [
-    "church",
-    "media",
-    "projection",
-    "websocket"
-  ],
+  "keywords": ["sound", "church", "schedule", "escalas"],
   "author": "SoundHub Team",
   "license": "MIT",
   "dependencies": {
-    "archiver": "^7.0.1",
-    "bcrypt": "^6.0.0",
-    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.3",
-    "multer": "^1.4.5-lts.1",
-    "node-fetch": "^3.3.2",
-    "qrcode": "^1.5.4",
-    "socket.io": "^4.7.2",
-    "sqlite3": "^5.1.6",
-    "uuid": "^9.0.0"
+    "nodemailer": "^6.9.7",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "concurrently": "^8.2.0",
-    "nodemon": "^3.0.1"
-  },
+    "nodemon": "^3.0.2"
   "engines": {
     "node": ">=16.0.0"
   }

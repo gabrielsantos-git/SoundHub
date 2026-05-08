@@ -1,0 +1,10 @@
+{
+  "name": "soundhub-client",
+  "version": "1.0.0",
+  "description": "Frontend do SoundHub para deploy",
+  "scripts": {
+    "build": "echo 'Frontend build completed'"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
