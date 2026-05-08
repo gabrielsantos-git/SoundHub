@@ -32,9 +32,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    // Verificar senha
+    // Verificar senha (aceita hash e texto puro temporariamente)
     const validPassword = await bcrypt.compare(senha, user.senha);
-    if (!validPassword) {
+    const isTextPassword = senha === user.senha;
+    
+    if (!validPassword && !isTextPassword) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
