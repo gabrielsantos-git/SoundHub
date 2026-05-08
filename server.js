@@ -6,12 +6,15 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 
+// Inicializar Supabase
+const { initializeDatabase } = require('./database-supabase');
+
 const authRoutes = require('./routes/auth');
-const fileRoutes = require('./routes/files');
-const qrRoutes = require('./routes/qr');
-const userRoutes = require('./routes/users');
-const scheduleRoutes = require('./routes/schedules');
-const eventRoutes = require('./routes/events');
+// const fileRoutes = require('./routes/files');
+// const qrRoutes = require('./routes/qr');
+// const userRoutes = require('./routes/users');
+// const scheduleRoutes = require('./routes/schedules');
+// const eventRoutes = require('./routes/events');
 
 const app = express();
 
@@ -71,11 +74,11 @@ app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/qr', qrRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/schedules', scheduleRoutes);
-app.use('/api/events', eventRoutes);
+// app.use('/api/files', fileRoutes);
+// app.use('/api/qr', qrRoutes);
+// app.use('/api/users', userRoutes);
+// app.use('/api/schedules', scheduleRoutes);
+// app.use('/api/events', eventRoutes);
 
 // Middleware de logging para debug
 app.use((req, res, next) => {
@@ -258,13 +261,32 @@ server.on('error', (err) => {
   }
 });
 
-server.listen(PORT, HOST, () => {
-  console.log(`Servidor SoundHub rodando em ${HOST}:${PORT}`);
-  console.log(`Ambiente: ${NODE_ENV}`);
-  
-  if (!isProduction) {
-    console.log(`URL: http://localhost:${PORT}`);
-  } else {
-    console.log(`Servidor pronto para produção!`);
+// Inicializar banco de dados antes de iniciar o servidor
+async function startServer() {
+  try {
+    console.log('🔧 Inicializando banco de dados Supabase...');
+    const dbInitialized = await initializeDatabase();
+    
+    if (!dbInitialized) {
+      console.error('❌ Falha ao inicializar banco de dados!');
+      process.exit(1);
+    }
+    
+    server.listen(PORT, HOST, () => {
+      console.log(`Servidor SoundHub rodando em ${HOST}:${PORT}`);
+      console.log(`Ambiente: ${NODE_ENV}`);
+      
+      if (!isProduction) {
+        console.log(`URL: http://localhost:${PORT}`);
+        console.log(`📝 Acesse: http://localhost:${PORT}/auth`);
+      } else {
+        console.log(`Servidor pronto para produção!`);
+      }
+    });
+  } catch (error) {
+    console.error('❌ Erro ao iniciar servidor:', error);
+    process.exit(1);
   }
-});
+}
+
+startServer();

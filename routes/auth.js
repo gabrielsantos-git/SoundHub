@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
-const db = require('../database');
+const bcrypt = require('bcryptjs');
+const supabase = require('../supabase');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'soundhub-secret-key';
@@ -15,49 +15,50 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    // Buscar usuário no banco de dados
-    db.get(
-      "SELECT * FROM users WHERE email = ? AND status = 'APPROVED'",
-      [email],
-      async (err, user) => {
-        if (err) {
-          console.error('Erro ao buscar usuário:', err);
-          return res.status(500).json({ error: 'Erro interno do servidor' });
-        }
+    // Buscar usuário no Supabase
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('status', 'APPROVED')
+      .single();
 
-        if (!user) {
-          return res.status(401).json({ error: 'Credenciais inválidas' });
-        }
+    if (error) {
+      console.error('Erro ao buscar usuário:', error);
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
 
-        // Verificar senha
-        const validPassword = await bcrypt.compare(senha, user.senha);
-        if (!validPassword) {
-          return res.status(401).json({ error: 'Credenciais inválidas' });
-        }
+    if (!user) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
 
-        // Gerar token JWT
-        const token = jwt.sign(
-          { 
-            id: user.id, 
-            email: user.email, 
-            cargo: user.cargo 
-          },
-          JWT_SECRET,
-          { expiresIn: '24h' }
-        );
+    // Verificar senha
+    const validPassword = await bcrypt.compare(senha, user.senha);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Credenciais inválidas' });
+    }
 
-        res.json({
-          message: 'Login successful',
-          token,
-          user: {
-            id: user.id,
-            nome: user.nome,
-            email: user.email,
-            cargo: user.cargo
-          }
-        });
-      }
+    // Gerar token JWT
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        cargo: user.cargo 
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
     );
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        cargo: user.cargo
+      }
+    });
 
   } catch (error) {
     console.error('Erro no login:', error);
@@ -76,30 +77,31 @@ router.get('/me', async (req, res) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    // Buscar usuário no banco de dados
-    db.get(
-      "SELECT id, nome, email, cargo FROM users WHERE id = ? AND status = 'APPROVED'",
-      [decoded.id],
-      (err, user) => {
-        if (err) {
-          console.error('Erro ao buscar usuário:', err);
-          return res.status(500).json({ error: 'Erro interno do servidor' });
-        }
-        
-        if (!user) {
-          return res.status(401).json({ error: 'Usuário não encontrado' });
-        }
+    // Buscar usuário no Supabase
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, nome, email, cargo')
+      .eq('id', decoded.id)
+      .eq('status', 'APPROVED')
+      .single();
+    
+    if (error) {
+      console.error('Erro ao buscar usuário:', error);
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
 
-        res.json({
-          user: {
-            id: user.id,
-            nome: user.nome,
-            email: user.email,
-            cargo: user.cargo
-          }
-        });
+    res.json({
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        cargo: user.cargo
       }
-    );
+    });
 
   } catch (error) {
     console.error('Erro ao verificar token:', error);
@@ -116,7 +118,7 @@ router.get('/me', async (req, res) => {
 
 // Registrar usuário
 router.post('/register', async (req, res) => {
-  console.log("Dados recebidos no registro:", req.body); // ADICIONE ISSO
+  console.log("Dados recebidos no registro:", req.body);
   
   try {
     const { nome, email, senha } = req.body;
@@ -128,43 +130,49 @@ router.post('/register', async (req, res) => {
     }
 
     // Verificar se email já existe
-    db.get(
-      "SELECT id FROM users WHERE email = ?",
-      [email],
-      async (err, existingUser) => {
-        if (err) {
-          console.error('Erro ao verificar email existente:', err);
-          return res.status(500).json({ error: 'Erro interno do servidor' });
-        }
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
 
-        if (existingUser) {
-          return res.status(400).json({ error: 'Email já cadastrado' });
-        }
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Erro ao verificar email existente:', checkError);
+      return res.status(500).json({ error: 'Erro interno do servidor' });
+    }
 
-        // Hash da senha
-        const hashedPassword = await bcrypt.hash(senha, 10);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email já cadastrado' });
+    }
 
-        // Inserir novo usuário (aguardando aprovação)
-        db.run(
-          "INSERT INTO users (nome, email, senha, cargo, status, data_cadastro) VALUES (?, ?, ?, ?, ?, ?)",
-          [nome, email, hashedPassword, 'USUARIO', 'PENDING', new Date().toISOString()],
-          function(err) {
-            if (err) {
-              console.error('Erro ao cadastrar usuário:', err);
-              return res.status(500).json({ error: 'Erro interno do servidor' });
-            }
+    // Hash da senha
+    const hashedPassword = await bcrypt.hash(senha, 10);
 
-            res.json({
-              message: 'Cadastro realizado com sucesso! Aguarde aprovação para acessar.',
-              status: 'PENDING'
-            });
-          }
-        );
-      }
-    );
+    // Inserir novo usuário (aguardando aprovação)
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        nome,
+        email,
+        senha: hashedPassword,
+        cargo: 'USUARIO',
+        status: 'PENDING',
+        data_cadastro: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Erro ao cadastrar usuário:', insertError);
+      return res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+
+    res.json({
+      message: 'Cadastro realizado com sucesso! Aguarde aprovação para acessar.',
+      status: 'PENDING'
+    });
 
   } catch (error) {
-    // Isso vai imprimir o erro exato no seu terminal (ex: "User.findByEmail is not a function")
     console.error('--- ERRO CRÍTICO NO REGISTRO ---');
     console.error(error); 
     
