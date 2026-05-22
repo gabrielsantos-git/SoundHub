@@ -17,19 +17,20 @@ const checkAuth = (req, res, next) => {
 };
 
 // Listar todos os usuários (aprovados)
-router.get('/', checkAuth, (req, res) => {
+router.get('/', checkAuth, async (req, res) => {
   try {
-    db.all(
-      "SELECT id, nome, email, cargo, status, data_cadastro FROM users WHERE status = 'APPROVED' ORDER BY data_cadastro DESC",
-      [],
-      (err, users) => {
-        if (err) {
-          console.error('Erro ao listar usuários:', err);
-          return res.status(500).json({ error: 'Erro ao listar usuários' });
-        }
-        res.json(users);
-      }
-    );
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, nome, email, cargo, status, data_cadastro')
+      .eq('status', 'APPROVED')
+      .order('data_cadastro', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao listar usuários:', error);
+      return res.status(500).json({ error: 'Erro ao listar usuários' });
+    }
+    
+    res.json(users || []);
   } catch (error) {
     console.error('Erro ao listar usuários:', error);
     res.status(500).json({ error: 'Erro ao listar usuários' });
@@ -37,19 +38,20 @@ router.get('/', checkAuth, (req, res) => {
 });
 
 // Listar usuários pendentes
-router.get('/pending', checkAuth, (req, res) => {
+router.get('/pending', checkAuth, async (req, res) => {
   try {
-    db.all(
-      "SELECT id, nome, email, cargo, status, data_cadastro FROM users WHERE status = 'PENDING' ORDER BY data_cadastro DESC",
-      [],
-      (err, users) => {
-        if (err) {
-          console.error('Erro ao listar usuários pendentes:', err);
-          return res.status(500).json({ error: 'Erro ao listar usuários pendentes' });
-        }
-        res.json(users);
-      }
-    );
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, nome, email, cargo, status, data_cadastro')
+      .eq('status', 'PENDING')
+      .order('data_cadastro', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao listar usuários pendentes:', error);
+      return res.status(500).json({ error: 'Erro ao listar usuários pendentes' });
+    }
+    
+    res.json(users || []);
   } catch (error) {
     console.error('Erro ao listar usuários pendentes:', error);
     res.status(500).json({ error: 'Erro ao listar usuários pendentes' });

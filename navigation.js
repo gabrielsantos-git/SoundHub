@@ -1,6 +1,8 @@
 // Variáveis globais
-let currentUser = null;
-let currentToken = null;
+if (typeof currentUser === 'undefined') {
+  var currentUser = null;
+  var currentToken = null;
+}
 
 // Funções de navegação
 function updateNavigationUI(user) {
