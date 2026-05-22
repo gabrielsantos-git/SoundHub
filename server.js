@@ -289,4 +289,9 @@ async function startServer() {
   }
 }
 
-startServer();
+// Export para Vercel Serverless Function
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  startServer();
+}
