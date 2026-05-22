@@ -80,6 +80,48 @@ app.use('/api/users', userRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
 
+// Serve arquivos estáticos (HTML, JS, CSS, imagens)
+app.get('/schedule', (req, res) => {
+  res.sendFile(path.join(__dirname, 'schedule.html'));
+});
+
+app.get('/project', (req, res) => {
+  res.sendFile(path.join(__dirname, 'project.html'));
+});
+
+app.get('/receive', (req, res) => {
+  res.sendFile(path.join(__dirname, 'receive.html'));
+});
+
+app.get('/home', (req, res) => {
+  res.sendFile(path.join(__dirname, 'home.html'));
+});
+
+app.get('/display', (req, res) => {
+  res.sendFile(path.join(__dirname, 'display.html'));
+});
+
+// Serve favicon e arquivos estáticos
+app.get('/favicon.ico', (req, res) => {
+  const faviconPath = path.join(__dirname, 'favicon.ico');
+  if (fs.existsSync(faviconPath)) {
+    res.sendFile(faviconPath);
+  } else {
+    res.status(404).end();
+  }
+});
+
+// Serve arquivos JS estáticos
+app.get('/:filename.js', (req, res) => {
+  const filename = req.params.filename + '.js';
+  const filePath = path.join(__dirname, filename);
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).json({ error: 'File not found' });
+  }
+});
+
 // Middleware de logging para debug
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - IP: ${req.ip}`);

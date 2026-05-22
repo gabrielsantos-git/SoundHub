@@ -12,11 +12,8 @@
       "dest": "/server.js"
     },
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/server.js"
     }
   ],
   "env": {
