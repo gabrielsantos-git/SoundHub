@@ -2,7 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const db = require('../database');
+const supabase = require('../supabase');
 const archiver = require('archiver');
 const router = express.Router();
 
@@ -195,19 +195,20 @@ router.get('/pending', (req, res) => {
 });
 
 // Listar arquivos aprovados
-router.get('/approved', (req, res) => {
+router.get('/approved', async (req, res) => {
   try {
-    db.all(
-      "SELECT * FROM files WHERE status = 'APPROVED' ORDER BY data_upload DESC",
-      (err, files) => {
-        if (err) {
-          console.error('Erro ao listar arquivos aprovados:', err);
-          return res.status(500).json({ error: 'Erro ao listar arquivos' });
-        }
-        
-        res.json(files);
-      }
-    );
+    const { data: files, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('status', 'APPROVED')
+      .order('data_upload', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao listar arquivos aprovados:', error);
+      return res.status(500).json({ error: 'Erro ao listar arquivos' });
+    }
+    
+    res.json(files || []);
   } catch (error) {
     console.error('Erro ao listar arquivos aprovados:', error);
     res.status(500).json({ error: 'Erro ao listar arquivos' });

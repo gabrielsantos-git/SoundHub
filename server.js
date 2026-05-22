@@ -10,7 +10,7 @@ require('dotenv').config();
 const { initializeDatabase } = require('./database-supabase');
 
 const authRoutes = require('./routes/auth');
-// const fileRoutes = require('./routes/files');
+const fileRoutes = require('./routes/files');
 // const qrRoutes = require('./routes/qr');
 // const userRoutes = require('./routes/users');
 // const scheduleRoutes = require('./routes/schedules');
@@ -74,7 +74,7 @@ app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/auth', authRoutes);
-// app.use('/api/files', fileRoutes);
+app.use('/api/files', fileRoutes);
 // app.use('/api/qr', qrRoutes);
 // app.use('/api/users', userRoutes);
 // app.use('/api/schedules', scheduleRoutes);
