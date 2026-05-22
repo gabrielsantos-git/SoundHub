@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { supabaseAdmin } = require('./supabase');
+const supabase = require('./supabase');
 
 async function createAdmin() {
   const senhaPlana = '@dmin123';
@@ -19,7 +19,7 @@ async function createAdmin() {
     console.log('Senha (texto puro):', senhaPlana);
     console.log('Hash gerado:', hashedPassword);
     
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .insert(admin)
       .select()

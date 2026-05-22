@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { supabase } = require('../supabase');
+const supabase = require('../supabase');
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'soundhub-secret-key';
