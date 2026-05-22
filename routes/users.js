@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('../database');
+const supabase = require('../supabase');
 const router = express.Router();
 
 // Middleware para verificar autenticação e permissões

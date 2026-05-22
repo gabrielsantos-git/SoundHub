@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const supabase = require('../supabase');
 const jwt = require('jsonwebtoken');
 
-const dbPath = process.env.DB_PATH || './database.sqlite';
-const db = new sqlite3.Database(path.join(__dirname, '..', dbPath));
 const JWT_SECRET = process.env.JWT_SECRET || 'soundhub_secret_key';
 
 // Middleware de autenticação

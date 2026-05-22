@@ -175,19 +175,20 @@ router.get('/', (req, res) => {
 });
 
 // Listar arquivos pendentes
-router.get('/pending', (req, res) => {
+router.get('/pending', async (req, res) => {
   try {
-    db.all(
-      "SELECT * FROM files WHERE status = 'PENDING' ORDER BY data_upload DESC",
-      (err, files) => {
-        if (err) {
-          console.error('Erro ao listar arquivos pendentes:', err);
-          return res.status(500).json({ error: 'Erro ao listar arquivos' });
-        }
-        
-        res.json(files);
-      }
-    );
+    const { data: files, error } = await supabase
+      .from('files')
+      .select('*')
+      .eq('status', 'PENDING')
+      .order('data_upload', { ascending: false });
+    
+    if (error) {
+      console.error('Erro ao listar arquivos pendentes:', error);
+      return res.status(500).json({ error: 'Erro ao listar arquivos' });
+    }
+    
+    res.json(files || []);
   } catch (error) {
     console.error('Erro ao listar arquivos pendentes:', error);
     res.status(500).json({ error: 'Erro ao listar arquivos' });
