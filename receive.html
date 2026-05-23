@@ -447,10 +447,16 @@
         
         // Gerar QR Code automaticamente após verificação de autenticação
         async function autoGenerateQR() {
+            console.log('🔧 autoGenerateQR iniciado...');
             await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeno delay
             
             const token = localStorage.getItem('token');
-            if (!token) return;
+            if (!token) {
+                console.log('❌ Token não encontrado');
+                return;
+            }
+            
+            console.log('🔧 Token encontrado, fazendo requisição para /api/qr/generate...');
             
             try {
                 const response = await fetch('/api/qr/generate', {
@@ -461,8 +467,11 @@
                     }
                 });
                 
+                console.log('🔧 Resposta recebida:', response.status, response.statusText);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('✅ QR code gerado:', data);
                     currentQRToken = data.token;
                     
                     // Exibir QR code automaticamente
@@ -478,11 +487,17 @@
                         </div>
                     `;
                     
+                    console.log('✅ QR code exibido na tela');
+                    
                     // Iniciar verificação de status
                     startStatusCheck();
+                } else {
+                    console.error('❌ Erro na resposta:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('❌ Erro detalhado:', errorText);
                 }
             } catch (error) {
-                console.error('Erro ao gerar QR Code automático:', error);
+                console.error('❌ Erro ao gerar QR Code automático:', error);
             }
         }
         
