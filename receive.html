@@ -496,7 +496,11 @@
         // Verificar autenticação ao carregar
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🔧 DOMContentLoaded disparado, chamando checkAuth...');
-            checkAuth();
+            try {
+                checkAuth();
+            } catch (error) {
+                console.error('❌ Erro ao chamar checkAuth:', error);
+            }
         });
         
         // Gerar QR Code automaticamente após verificação de autenticação
