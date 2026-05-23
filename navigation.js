@@ -1,7 +1,7 @@
 // Variáveis globais
-if (typeof currentUser === 'undefined') {
-  var currentUser = null;
-  var currentToken = null;
+if (!window.currentUser) {
+  window.currentUser = null;
+  window.currentToken = null;
 }
 
 // Funções de navegação
@@ -11,8 +11,8 @@ function updateNavigationUI(user) {
         return;
     }
 
-    currentUser = user;
-    currentToken = user.token;
+    window.currentUser = user;
+    window.currentToken = user.token;
 
     // Elementos da navegação
     const userNameEl = document.getElementById('userName');
@@ -97,8 +97,8 @@ function checkAuth() {
 function logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    currentUser = null;
-    currentToken = null;
+    window.currentUser = null;
+    window.currentToken = null;
     window.location.href = '/auth.html';
 }
 

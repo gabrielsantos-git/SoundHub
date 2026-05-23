@@ -162,6 +162,10 @@ app.get('/accounts', (req, res) => {
   res.sendFile(path.join(__dirname, 'accounts.html'));
 });
 
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'accounts.html'));
+});
+
 app.get('/display', (req, res) => {
   res.sendFile(path.join(__dirname, 'display.html'));
 });
