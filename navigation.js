@@ -1,5 +1,10 @@
 // Variáveis globais
-if (!window.currentUser) {
+try {
+  if (typeof window.currentUser === 'undefined') {
+    window.currentUser = null;
+    window.currentToken = null;
+  }
+} catch (e) {
   window.currentUser = null;
   window.currentToken = null;
 }

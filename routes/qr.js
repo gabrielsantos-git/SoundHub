@@ -107,7 +107,13 @@ router.get('/status/:token', (req, res) => {
   const qrData = qrCodes.get(token);
   
   if (!qrData) {
-    return res.status(404).json({ error: 'QR code não encontrado' });
+    return res.json({
+      token: token,
+      valid: false,
+      used: true,
+      createdAt: null,
+      reason: 'QR code não encontrado ou expirou'
+    });
   }
   
   res.json({
