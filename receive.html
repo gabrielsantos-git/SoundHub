@@ -435,6 +435,7 @@
     </div>
 
     <script>
+        console.log('🔧 Script receive.html carregado...');
         let currentUser = null;
         let currentQRToken = null;
         let countdownInterval = null;
@@ -503,7 +504,8 @@
         }
         
         async function checkAuth() {
-            console.log('🔍 receive.html - Verificando autenticação...');
+            console.log('� checkAuth() iniciada...');
+            console.log('�� receive.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
             const authOverlay = document.getElementById('authOverlay');
             
