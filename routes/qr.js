@@ -9,8 +9,12 @@ const qrCodes = new Map();
 // Gerar QR code sem tempo limite - apenas invalida quando lido
 router.post('/generate', (req, res) => {
   try {
+    console.log('🔧 Gerando QR code...');
     const token = crypto.randomBytes(32).toString('hex');
     const uploadUrl = `${req.protocol}://${req.get('host')}/upload.html?token=${token}`;
+    
+    console.log('🔧 Token gerado:', token);
+    console.log('🔧 Upload URL:', uploadUrl);
     
     // Armazenar informações do QR code (sem expiração por tempo)
     qrCodes.set(token, {
@@ -20,13 +24,16 @@ router.post('/generate', (req, res) => {
       used: false
     });
     
+    console.log('🔧 QR code armazenado no Map');
+    
     // Gerar QR code como imagem base64
     QRCode.toDataURL(uploadUrl, (err, url) => {
       if (err) {
-        console.error('Erro ao gerar QR code:', err);
+        console.error('❌ Erro ao gerar QR code:', err);
         return res.status(500).json({ error: 'Erro ao gerar QR code' });
       }
       
+      console.log('✅ QR code gerado com sucesso');
       res.json({
         qrCode: url,
         token: token
@@ -34,7 +41,7 @@ router.post('/generate', (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erro ao gerar QR code:', error);
+    console.error('❌ Erro ao gerar QR code:', error);
     res.status(500).json({ error: 'Erro ao gerar QR code' });
   }
 });
