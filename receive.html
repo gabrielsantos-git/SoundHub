@@ -555,63 +555,6 @@
             }
         }
         
-        async function checkAuth() {
-            console.log('� checkAuth() iniciada...');
-            console.log('�� receive.html - Verificando autenticação...');
-            const token = localStorage.getItem('token');
-            const authOverlay = document.getElementById('authOverlay');
-            
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-            console.log('Token completo:', token);
-            
-            if (!token) {
-                console.log('❌ Token não encontrado, redirecionando para /auth');
-                // Redirecionar automaticamente para página de autenticação
-                window.location.href = '/auth';
-                return;
-            }
-            
-            try {
-                console.log('🔍 Enviando requisição para /api/auth/me...');
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
-                });
-                
-                console.log('Status da resposta:', response.status);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Usuário autenticado:', data.user);
-                    currentUser = data.user;
-                    updateUserInterface();
-                    
-                    // Verificar permissão
-                    console.log('🔍 Verificando permissão para cargo:', currentUser.cargo);
-                    if (currentUser.cargo !== 'SONOPLASTA' && currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN') {
-                        console.log('❌ Permissão negada para cargo:', currentUser.cargo);
-                        showAuthRequired();
-                        return;
-                    }
-                    
-                    console.log('✅ Permissão concedida, carregando arquivos...');
-                    loadPendingFiles();
-                } else {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                }
-            } catch (error) {
-                showAuthRequired();
-            }
-        }
-        
-        function showAuthRequired() {
-            console.log('❌ showAuthRequired chamado - redirecionando para /auth');
-            // Redirecionar automaticamente para página de autenticação
-            window.location.href = '/auth';
-        }
-        
         function updateUserInterface() {
             if (!currentUser) return;
             
