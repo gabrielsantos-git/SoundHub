@@ -17,6 +17,7 @@ const scheduleRoutes = require('./routes/schedules');
 const eventRoutes = require('./routes/events');
 
 const app = express();
+const isVercel = !!process.env.VERCEL;
 
 // Configurações robustas para evitar conexões recusadas
 app.use((req, res, next) => {
@@ -25,14 +26,18 @@ app.use((req, res, next) => {
   next();
 });
 
-const server = http.createServer(app);
+let server;
+let io;
 
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+if (!isVercel) {
+  server = http.createServer(app);
+  io = socketIo(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"]
+    }
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -263,49 +268,50 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-io.on('connection', (socket) => {
-  console.log('Cliente conectado:', socket.id);
+if (!isVercel) {
+  io.on('connection', (socket) => {
+    console.log('Cliente conectado:', socket.id);
 
-  socket.on('join-display', (screenId) => {
-    socket.join(`display-${screenId}`);
-    console.log(`Display ${screenId} joined`);
+    socket.on('join-display', (screenId) => {
+      socket.join(`display-${screenId}`);
+      console.log(`Display ${screenId} joined`);
+    });
+
+    socket.on('project-file', (data) => {
+      const { screenId, file } = data;
+      io.to(`display-${screenId}`).emit('display-file', file);
+      console.log(`Projetando arquivo ${file.name} na tela ${screenId}`);
+    });
+
+    socket.on('stop-projection', (screenId) => {
+      io.to(`display-${screenId}`).emit('stop-display');
+      console.log(`Parando projeção na tela ${screenId}`);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Cliente desconectado:', socket.id);
+    });
   });
 
-  socket.on('project-file', (data) => {
-    const { screenId, file } = data;
-    io.to(`display-${screenId}`).emit('display-file', file);
-    console.log(`Projetando arquivo ${file.name} na tela ${screenId}`);
+  server.on('connection', (socket) => {
+    console.log('Nova conexão TCP estabelecida');
+
+    socket.on('close', (hadError) => {
+      console.log(`Conexão TCP fechada. Erro: ${hadError}`);
+    });
+
+    socket.on('error', (err) => {
+      console.error('Erro na conexão TCP:', err.message);
+    });
   });
 
-  socket.on('stop-projection', (screenId) => {
-    io.to(`display-${screenId}`).emit('stop-display');
-    console.log(`Parando projeção na tela ${screenId}`);
+  server.on('error', (err) => {
+    console.error('Erro no servidor:', err.message);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Porta ${PORT} já está em uso!`);
+    }
   });
-
-  socket.on('disconnect', () => {
-    console.log('Cliente desconectado:', socket.id);
-  });
-});
-
-// Eventos do servidor para monitorar conexões
-server.on('connection', (socket) => {
-  console.log('Nova conexão TCP estabelecida');
-  
-  socket.on('close', (hadError) => {
-    console.log(`Conexão TCP fechada. Erro: ${hadError}`);
-  });
-  
-  socket.on('error', (err) => {
-    console.error('Erro na conexão TCP:', err.message);
-  });
-});
-
-server.on('error', (err) => {
-  console.error('Erro no servidor:', err.message);
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Porta ${PORT} já está em uso!`);
-  }
-});
+}
 
 // Inicializar banco de dados antes de iniciar o servidor
 async function startServer() {
@@ -336,7 +342,7 @@ async function startServer() {
 }
 
 // Export para Vercel Serverless Function
-if (process.env.VERCEL) {
+if (isVercel) {
   module.exports = app;
 } else {
   startServer();
