@@ -2,9 +2,8 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
+const { getJwtSecret } = require('../config/jwt');
 const router = express.Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'soundhub-secret-key';
 
 // Login
 router.post('/login', async (req, res) => {
@@ -47,7 +46,7 @@ router.post('/login', async (req, res) => {
         email: user.email, 
         cargo: user.cargo 
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '24h' }
     );
 
@@ -77,7 +76,7 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'Token não fornecido' });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, getJwtSecret());
     
     // Buscar usuário no Supabase
     const { data: user, error } = await supabase

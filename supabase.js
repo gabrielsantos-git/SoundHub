@@ -1,8 +1,11 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Configurações do Supabase
-const supabaseUrl = process.env.SUPABASE_URL || 'https://hmxnqxozyldroulhnqha.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'sb_publishable_vhsQfqCNoHlhoCzYKiSIUg_ckHhlThL';
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL e SUPABASE_ANON_KEY precisam estar configurados');
+}
 
 // Criar cliente Supabase
 const supabase = createClient(supabaseUrl, supabaseKey);

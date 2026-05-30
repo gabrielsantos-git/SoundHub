@@ -467,13 +467,6 @@
                 formData.append('arquivos', file);
             });
             
-            // Marcar QR code como utilizado
-            try {
-                await fetch(`/api/qr/use/${token}`, { method: 'POST' });
-            } catch (error) {
-                console.error('Erro ao marcar QR code como utilizado:', error);
-            }
-            
             // Mostrar loading
             document.getElementById('loading').style.display = 'block';
             document.getElementById('progressBar').style.display = 'block';

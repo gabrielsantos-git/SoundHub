@@ -1,117 +1,93 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'soundhub_secret_key';
-
-// Middleware de autenticação
-function checkAuth(req, res, next) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-        return res.status(401).json({ error: 'Token não fornecido' });
-    }
-    
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Buscar usuário no banco
-        db.get(
-            "SELECT * FROM users WHERE id = ? AND status = 'APPROVED'",
-            [decoded.id],
-            (err, user) => {
-                if (err || !user) {
-                    return res.status(401).json({ error: 'Token inválido' });
-                }
-                req.user = user;
-                next();
-            }
-        );
-    } catch (error) {
-        return res.status(401).json({ error: 'Token inválido' });
-    }
-}
-
-// Middleware para verificar permissões de admin/diretor
-function checkAdmin(req, res, next) {
-    if (req.user.cargo !== 'ADMIN' && req.user.cargo !== 'DIRETOR') {
-        return res.status(403).json({ error: 'Permissão negada' });
-    }
-    next();
-}
+const { requireAuth, requireRoles } = require('../middleware/auth');
 
 // Listar eventos
-router.get('/', checkAuth, (req, res) => {
-    const query = req.user.cargo === 'ADMIN' || req.user.cargo === 'DIRETOR' 
-        ? "SELECT e.*, u.nome as criado_por_nome FROM eventos e LEFT JOIN users u ON e.criado_por = u.id ORDER BY e.data_inicio DESC"
-        : "SELECT e.*, u.nome as criado_por_nome FROM eventos e LEFT JOIN users u ON e.criado_por = u.id ORDER BY e.data_inicio DESC";
-    
-    db.all(query, (err, events) => {
-        if (err) {
-            console.error('Erro ao listar eventos:', err);
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const { data: events, error } = await supabase
+            .from('eventos')
+            .select('*')
+            .order('data_inicio', { ascending: false });
+
+        if (error) {
             return res.status(500).json({ error: 'Erro ao listar eventos' });
         }
-        
-        res.json(events);
-    });
+
+        res.json(events || []);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao listar eventos' });
+    }
 });
 
 // Obter evento específico
-router.get('/:id', checkAuth, (req, res) => {
-    const { id } = req.params;
-    
-    db.get(
-        "SELECT e.*, u.nome as criado_por_nome FROM eventos e LEFT JOIN users u ON e.criado_por = u.id WHERE e.id = ?",
-        [id],
-        (err, event) => {
-            if (err) {
-                console.error('Erro ao obter evento:', err);
-                return res.status(500).json({ error: 'Erro ao obter evento' });
-            }
-            
-            if (!event) {
-                return res.status(404).json({ error: 'Evento não encontrado' });
-            }
-            
-            // Obter dias do evento
-            db.all(
-                "SELECT ed.*, u.nome as usuario_nome FROM escala_dias ed LEFT JOIN users u ON ed.usuario_id = u.id WHERE ed.escala_id = ? ORDER BY ed.data_especifica",
-                [id],
-                (err, days) => {
-                    if (err) {
-                        console.error('Erro ao obter dias do evento:', err);
-                        return res.status(500).json({ error: 'Erro ao obter dias do evento' });
-                    }
-                    
-                    event.dias = days;
-                    res.json(event);
-                }
-            );
+router.get('/:id', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        const { data: event, error } = await supabase
+            .from('eventos')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !event) {
+            return res.status(404).json({ error: 'Evento não encontrado' });
         }
-    );
+
+        const { data: days, error: daysError } = await supabase
+            .from('escala_dias')
+            .select('*')
+            .eq('escala_id', id)
+            .order('data_especifica', { ascending: true });
+
+        if (daysError) {
+            return res.status(500).json({ error: 'Erro ao obter dias do evento' });
+        }
+
+        const userIds = Array.from(new Set((days || []).map(d => d.usuario_id).filter(Boolean)));
+        const { data: users } = userIds.length
+            ? await supabase.from('users').select('id, nome').in('id', userIds)
+            : { data: [] };
+        const userMap = new Map((users || []).map(u => [u.id, u.nome]));
+
+        event.dias = (days || []).map(d => ({ ...d, usuario_nome: userMap.get(d.usuario_id) || null }));
+        res.json(event);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao obter evento' });
+    }
 });
 
 // Obter dias de um evento
-router.get('/:id/days', checkAuth, (req, res) => {
-    const { id } = req.params;
-    
-    db.all(
-        "SELECT ed.*, u.nome as usuario_nome FROM escala_dias ed LEFT JOIN users u ON ed.usuario_id = u.id WHERE ed.escala_id = ? ORDER BY ed.data_especifica",
-        [id],
-        (err, days) => {
-            if (err) {
-                console.error('Erro ao obter dias do evento:', err);
-                return res.status(500).json({ error: 'Erro ao obter dias do evento' });
-            }
-            
-            res.json(days);
+router.get('/:id/days', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        const { data: days, error } = await supabase
+            .from('escala_dias')
+            .select('*')
+            .eq('escala_id', id)
+            .order('data_especifica', { ascending: true });
+
+        if (error) {
+            return res.status(500).json({ error: 'Erro ao obter dias do evento' });
         }
-    );
+
+        const userIds = Array.from(new Set((days || []).map(d => d.usuario_id).filter(Boolean)));
+        const { data: users } = userIds.length
+            ? await supabase.from('users').select('id, nome').in('id', userIds)
+            : { data: [] };
+        const userMap = new Map((users || []).map(u => [u.id, u.nome]));
+
+        res.json((days || []).map(d => ({ ...d, usuario_nome: userMap.get(d.usuario_id) || null })));
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao obter dias do evento' });
+    }
 });
 
 // Criar novo evento
-router.post('/', checkAuth, checkAdmin, (req, res) => {
+router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { nome, descricao, data_inicio, data_fim } = req.body;
     
     if (!nome || !data_inicio || !data_fim) {
@@ -126,67 +102,62 @@ router.post('/', checkAuth, checkAdmin, (req, res) => {
         return res.status(400).json({ error: 'Data de início deve ser anterior à data de término' });
     }
     
-    // Inserir evento
-    db.run(
-        "INSERT INTO eventos (nome, descricao, data_inicio, data_fim, criado_por) VALUES (?, ?, ?, ?, ?)",
-        [nome, descricao || '', data_inicio, data_fim, req.user.id],
-        function(err) {
-            if (err) {
-                console.error('Erro ao criar evento:', err);
-                return res.status(500).json({ error: 'Erro ao criar evento' });
-            }
-            
-            const eventoId = this.lastID;
-            
-            // Obter usuários disponíveis para distribuição
-            db.all(
-                "SELECT id, nome FROM users WHERE status = 'APPROVED' AND cargo IN ('SONOPLASTA', 'DIRETOR', 'ADMIN')",
-                (err, users) => {
-                    if (err) {
-                        console.error('Erro ao obter usuários:', err);
-                        return res.status(500).json({ error: 'Erro ao obter usuários' });
-                    }
-                    
-                    if (users.length === 0) {
-                        return res.status(400).json({ error: 'Nenhum usuário disponível para evento' });
-                    }
-                    
-                    // Gerar datas para o evento
-                    const eventDays = generateEventDays(startDate, endDate, users);
-                    
-                    // Inserir dias do evento
-                    const insertPromises = eventDays.map(day => {
-                        return new Promise((resolve, reject) => {
-                            db.run(
-                                "INSERT INTO escala_dias (escala_id, dia_semana, data_especifica, usuario_id) VALUES (?, ?, ?, ?)",
-                                [eventoId, day.dia_semana, day.data_especifica, day.usuario_id],
-                                function(err) {
-                                    if (err) reject(err);
-                                    else resolve();
-                                }
-                            );
-                        });
-                    });
-                    
-                    Promise.all(insertPromises)
-                        .then(() => {
-                            res.json({
-                                message: 'Evento criado com sucesso',
-                                evento_id: eventoId
-                            });
-                        })
-                        .catch(err => {
-                            console.error('Erro ao inserir dias do evento:', err);
-                            res.status(500).json({ error: 'Erro ao criar dias do evento' });
-                        });
-                }
-            );
+    try {
+        const { data: insertedEvent, error: insertError } = await supabase
+            .from('eventos')
+            .insert({
+                nome,
+                descricao: descricao || '',
+                data_inicio,
+                data_fim,
+                criado_por: req.user.id
+            })
+            .select('id')
+            .single();
+
+        if (insertError || !insertedEvent) {
+            return res.status(500).json({ error: 'Erro ao criar evento' });
         }
-    );
+
+        const eventoId = insertedEvent.id;
+
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('id, nome')
+            .eq('status', 'APPROVED')
+            .in('cargo', ['SONOPLASTA', 'DIRETOR', 'ADMIN']);
+
+        if (usersError) {
+            return res.status(500).json({ error: 'Erro ao obter usuários' });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(400).json({ error: 'Nenhum usuário disponível para evento' });
+        }
+
+        const eventDays = generateEventDays(startDate, endDate, users);
+
+        const { error: insertDaysError } = await supabase.from('escala_dias').insert(
+            eventDays.map(day => ({
+                escala_id: eventoId,
+                dia_semana: day.dia_semana,
+                data_especifica: day.data_especifica,
+                usuario_id: day.usuario_id
+            }))
+        );
+
+        if (insertDaysError) {
+            return res.status(500).json({ error: 'Erro ao criar dias do evento' });
+        }
+
+        res.json({ message: 'Evento criado com sucesso', evento_id: eventoId });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao criar evento' });
+    }
 });
 
 // Atualizar dias de um evento
-router.put('/:id/days', checkAuth, checkAdmin, (req, res) => {
+router.put('/:id/days', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { id } = req.params;
     const { days } = req.body;
     
@@ -194,50 +165,40 @@ router.put('/:id/days', checkAuth, checkAdmin, (req, res) => {
         return res.status(400).json({ error: 'Dados inválidos' });
     }
     
-    // Atualizar cada dia
-    const updatePromises = days.map(day => {
-        return new Promise((resolve, reject) => {
-            db.run(
-                "UPDATE escala_dias SET usuario_id = ? WHERE id = ? AND escala_id = ?",
-                [day.usuario_id, day.id, id],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve();
-                }
-            );
-        });
-    });
-    
-    Promise.all(updatePromises)
-        .then(() => {
-            res.json({ message: 'Evento atualizado com sucesso' });
-        })
-        .catch(err => {
-            console.error('Erro ao atualizar evento:', err);
-            res.status(500).json({ error: 'Erro ao atualizar evento' });
-        });
+    try {
+        for (const day of days) {
+            await supabase
+                .from('escala_dias')
+                .update({ usuario_id: day.usuario_id })
+                .eq('id', day.id)
+                .eq('escala_id', parseInt(id));
+        }
+        res.json({ message: 'Evento atualizado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar evento' });
+    }
 });
 
 // Deletar evento
-router.delete('/:id', checkAuth, checkAdmin, (req, res) => {
+router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { id } = req.params;
-    
-    db.run(
-        "DELETE FROM eventos WHERE id = ?",
-        [id],
-        function(err) {
-            if (err) {
-                console.error('Erro ao deletar evento:', err);
-                return res.status(500).json({ error: 'Erro ao deletar evento' });
-            }
-            
-            if (this.changes === 0) {
-                return res.status(404).json({ error: 'Evento não encontrado' });
-            }
-            
-            res.json({ message: 'Evento deletado com sucesso' });
+    try {
+        const eventId = parseInt(id);
+        await supabase.from('escala_dias').delete().eq('escala_id', eventId);
+        const { data, error } = await supabase.from('eventos').delete().eq('id', eventId).select('id');
+
+        if (error) {
+            return res.status(500).json({ error: 'Erro ao deletar evento' });
         }
-    );
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'Evento não encontrado' });
+        }
+
+        res.json({ message: 'Evento deletado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao deletar evento' });
+    }
 });
 
 // Função para gerar dias do evento

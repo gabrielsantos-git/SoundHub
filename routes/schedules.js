@@ -1,117 +1,93 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
-const jwt = require('jsonwebtoken');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'soundhub_secret_key';
-
-// Middleware de autenticação
-function checkAuth(req, res, next) {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-        return res.status(401).json({ error: 'Token não fornecido' });
-    }
-    
-    try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        
-        // Buscar usuário no banco
-        db.get(
-            "SELECT * FROM users WHERE id = ? AND status = 'APPROVED'",
-            [decoded.id],
-            (err, user) => {
-                if (err || !user) {
-                    return res.status(401).json({ error: 'Token inválido' });
-                }
-                req.user = user;
-                next();
-            }
-        );
-    } catch (error) {
-        return res.status(401).json({ error: 'Token inválido' });
-    }
-}
-
-// Middleware para verificar permissões de admin/diretor
-function checkAdmin(req, res, next) {
-    if (req.user.cargo !== 'ADMIN' && req.user.cargo !== 'DIRETOR') {
-        return res.status(403).json({ error: 'Permissão negada' });
-    }
-    next();
-}
+const { requireAuth, requireRoles } = require('../middleware/auth');
 
 // Listar escalas semanais
-router.get('/', checkAuth, (req, res) => {
-    const query = req.user.cargo === 'ADMIN' || req.user.cargo === 'DIRETOR' 
-        ? "SELECT e.*, u.nome as criado_por_nome FROM escalas e LEFT JOIN users u ON e.criado_por = u.id WHERE e.tipo = 'semanal' ORDER BY e.data_inicio DESC"
-        : "SELECT e.*, u.nome as criado_por_nome FROM escalas e LEFT JOIN users u ON e.criado_por = u.id WHERE e.tipo = 'semanal' ORDER BY e.data_inicio DESC";
-    
-    db.all(query, (err, schedules) => {
-        if (err) {
-            console.error('Erro ao listar escalas:', err);
+router.get('/', requireAuth, async (req, res) => {
+    try {
+        const { data: schedules, error } = await supabase
+            .from('escalas')
+            .select('*')
+            .order('data_inicio', { ascending: false });
+
+        if (error) {
             return res.status(500).json({ error: 'Erro ao listar escalas' });
         }
-        
-        res.json(schedules);
-    });
+
+        res.json(schedules || []);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao listar escalas' });
+    }
 });
 
 // Obter escala específica
-router.get('/:id', checkAuth, (req, res) => {
-    const { id } = req.params;
-    
-    db.get(
-        "SELECT e.*, u.nome as criado_por_nome FROM escalas e LEFT JOIN users u ON e.criado_por = u.id WHERE e.id = ?",
-        [id],
-        (err, schedule) => {
-            if (err) {
-                console.error('Erro ao obter escala:', err);
-                return res.status(500).json({ error: 'Erro ao obter escala' });
-            }
-            
-            if (!schedule) {
-                return res.status(404).json({ error: 'Escala não encontrada' });
-            }
-            
-            // Obter dias da escala
-            db.all(
-                "SELECT ed.*, u.nome as usuario_nome FROM escala_dias ed LEFT JOIN users u ON ed.usuario_id = u.id WHERE ed.escala_id = ? ORDER BY ed.dia_semana",
-                [id],
-                (err, days) => {
-                    if (err) {
-                        console.error('Erro ao obter dias da escala:', err);
-                        return res.status(500).json({ error: 'Erro ao obter dias da escala' });
-                    }
-                    
-                    schedule.dias = days;
-                    res.json(schedule);
-                }
-            );
+router.get('/:id', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        const { data: schedule, error } = await supabase
+            .from('escalas')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !schedule) {
+            return res.status(404).json({ error: 'Escala não encontrada' });
         }
-    );
+
+        const { data: days, error: daysError } = await supabase
+            .from('escala_dias')
+            .select('*')
+            .eq('escala_id', id)
+            .order('dia_semana', { ascending: true });
+
+        if (daysError) {
+            return res.status(500).json({ error: 'Erro ao obter dias da escala' });
+        }
+
+        const userIds = Array.from(new Set((days || []).map(d => d.usuario_id).filter(Boolean)));
+        const { data: users } = userIds.length
+            ? await supabase.from('users').select('id, nome').in('id', userIds)
+            : { data: [] };
+        const userMap = new Map((users || []).map(u => [u.id, u.nome]));
+
+        schedule.dias = (days || []).map(d => ({ ...d, usuario_nome: userMap.get(d.usuario_id) || null }));
+        res.json(schedule);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao obter escala' });
+    }
 });
 
 // Obter dias de uma escala
-router.get('/:id/days', checkAuth, (req, res) => {
-    const { id } = req.params;
-    
-    db.all(
-        "SELECT ed.*, u.nome as usuario_nome FROM escala_dias ed LEFT JOIN users u ON ed.usuario_id = u.id WHERE ed.escala_id = ? ORDER BY ed.dia_semana",
-        [id],
-        (err, days) => {
-            if (err) {
-                console.error('Erro ao obter dias da escala:', err);
-                return res.status(500).json({ error: 'Erro ao obter dias da escala' });
-            }
-            
-            res.json(days);
+router.get('/:id/days', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+
+        const { data: days, error } = await supabase
+            .from('escala_dias')
+            .select('*')
+            .eq('escala_id', id)
+            .order('dia_semana', { ascending: true });
+
+        if (error) {
+            return res.status(500).json({ error: 'Erro ao obter dias da escala' });
         }
-    );
+
+        const userIds = Array.from(new Set((days || []).map(d => d.usuario_id).filter(Boolean)));
+        const { data: users } = userIds.length
+            ? await supabase.from('users').select('id, nome').in('id', userIds)
+            : { data: [] };
+        const userMap = new Map((users || []).map(u => [u.id, u.nome]));
+
+        res.json((days || []).map(d => ({ ...d, usuario_nome: userMap.get(d.usuario_id) || null })));
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao obter dias da escala' });
+    }
 });
 
 // Criar nova escala mensal
-router.post('/', checkAuth, checkAdmin, (req, res) => {
+router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { dias } = req.body;
     
     if (!dias || !Array.isArray(dias) || dias.length === 0) {
@@ -127,67 +103,66 @@ router.post('/', checkAuth, checkAdmin, (req, res) => {
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const nomeMes = meses[dataAtual.getMonth()];
     
-    // Inserir escala mensal
-    db.run(
-        "INSERT INTO escalas (nome, tipo, data_inicio, data_fim, criado_por) VALUES (?, 'mensal', ?, ?, ?)",
-        [`Escala ${nomeMes}`, `${ano}-${mes}-01`, `${ano}-${mes}-31`, req.user.id],
-        function(err) {
-            if (err) {
-                console.error('Erro ao criar escala:', err);
-                return res.status(500).json({ error: 'Erro ao criar escala' });
-            }
-            
-            const escalaId = this.lastID;
-            
-            // Obter usuários disponíveis para distribuição
-            db.all(
-                "SELECT id, nome FROM users WHERE status = 'APPROVED' AND cargo IN ('SONOPLASTA', 'DIRETOR', 'ADMIN')",
-                (err, users) => {
-                    if (err) {
-                        console.error('Erro ao obter usuários:', err);
-                        return res.status(500).json({ error: 'Erro ao obter usuários' });
-                    }
-                    
-                    if (users.length === 0) {
-                        return res.status(400).json({ error: 'Nenhum usuário disponível para escala' });
-                    }
-                    
-                    // Gerar datas específicas do mês para os dias selecionados
-                    const datasEscala = gerarDatasEscala(mes, dias, users);
-                    
-                    // Inserir dias da escala com datas específicas
-                    const insertPromises = datasEscala.map(data => {
-                        return new Promise((resolve, reject) => {
-                            db.run(
-                                "INSERT INTO escala_dias (escala_id, dia_semana, data_especifica, usuario_id) VALUES (?, ?, ?, ?)",
-                                [escalaId, data.dia_semana, data.data_especifica, data.usuario_id],
-                                function(err) {
-                                    if (err) reject(err);
-                                    else resolve();
-                                }
-                            );
-                        });
-                    });
-                    
-                    Promise.all(insertPromises)
-                        .then(() => {
-                            res.json({
-                                message: 'Escala mensal criada com sucesso',
-                                escala_id: escalaId
-                            });
-                        })
-                        .catch(err => {
-                            console.error('Erro ao inserir dias da escala:', err);
-                            res.status(500).json({ error: 'Erro ao criar dias da escala' });
-                        });
-                }
-            );
+    try {
+        const lastDay = new Date(ano, parseInt(mes, 10), 0).getDate();
+        const dataInicio = `${ano}-${mes}-01`;
+        const dataFim = `${ano}-${mes}-${String(lastDay).padStart(2, '0')}`;
+
+        const { data: insertedSchedule, error: insertError } = await supabase
+            .from('escalas')
+            .insert({
+                nome: `Escala ${nomeMes}`,
+                tipo: 'mensal',
+                data_inicio: dataInicio,
+                data_fim: dataFim,
+                criado_por: req.user.id
+            })
+            .select('id')
+            .single();
+
+        if (insertError || !insertedSchedule) {
+            return res.status(500).json({ error: 'Erro ao criar escala' });
         }
-    );
+
+        const escalaId = insertedSchedule.id;
+
+        const { data: users, error: usersError } = await supabase
+            .from('users')
+            .select('id, nome')
+            .eq('status', 'APPROVED')
+            .in('cargo', ['SONOPLASTA', 'DIRETOR', 'ADMIN']);
+
+        if (usersError) {
+            return res.status(500).json({ error: 'Erro ao obter usuários' });
+        }
+
+        if (!users || users.length === 0) {
+            return res.status(400).json({ error: 'Nenhum usuário disponível para escala' });
+        }
+
+        const datasEscala = gerarDatasEscala(mes, dias, users);
+
+        const { error: insertDaysError } = await supabase.from('escala_dias').insert(
+            datasEscala.map(d => ({
+                escala_id: escalaId,
+                dia_semana: d.dia_semana,
+                data_especifica: d.data_especifica,
+                usuario_id: d.usuario_id
+            }))
+        );
+
+        if (insertDaysError) {
+            return res.status(500).json({ error: 'Erro ao criar dias da escala' });
+        }
+
+        res.json({ message: 'Escala mensal criada com sucesso', escala_id: escalaId });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao criar escala' });
+    }
 });
 
 // Atualizar dias de uma escala
-router.put('/:id/days', checkAuth, checkAdmin, (req, res) => {
+router.put('/:id/days', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { id } = req.params;
     const { days } = req.body;
     
@@ -195,50 +170,40 @@ router.put('/:id/days', checkAuth, checkAdmin, (req, res) => {
         return res.status(400).json({ error: 'Dados inválidos' });
     }
     
-    // Atualizar cada dia
-    const updatePromises = days.map(day => {
-        return new Promise((resolve, reject) => {
-            db.run(
-                "UPDATE escala_dias SET usuario_id = ? WHERE id = ? AND escala_id = ?",
-                [day.usuario_id, day.id, id],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve();
-                }
-            );
-        });
-    });
-    
-    Promise.all(updatePromises)
-        .then(() => {
-            res.json({ message: 'Escala atualizada com sucesso' });
-        })
-        .catch(err => {
-            console.error('Erro ao atualizar escala:', err);
-            res.status(500).json({ error: 'Erro ao atualizar escala' });
-        });
+    try {
+        for (const day of days) {
+            await supabase
+                .from('escala_dias')
+                .update({ usuario_id: day.usuario_id })
+                .eq('id', day.id)
+                .eq('escala_id', parseInt(id));
+        }
+        res.json({ message: 'Escala atualizada com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar escala' });
+    }
 });
 
 // Deletar escala
-router.delete('/:id', checkAuth, checkAdmin, (req, res) => {
+router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { id } = req.params;
-    
-    db.run(
-        "DELETE FROM escalas WHERE id = ?",
-        [id],
-        function(err) {
-            if (err) {
-                console.error('Erro ao deletar escala:', err);
-                return res.status(500).json({ error: 'Erro ao deletar escala' });
-            }
-            
-            if (this.changes === 0) {
-                return res.status(404).json({ error: 'Escala não encontrada' });
-            }
-            
-            res.json({ message: 'Escala deletada com sucesso' });
+    try {
+        const escalaId = parseInt(id);
+        await supabase.from('escala_dias').delete().eq('escala_id', escalaId);
+        const { data, error } = await supabase.from('escalas').delete().eq('id', escalaId).select('id');
+
+        if (error) {
+            return res.status(500).json({ error: 'Erro ao deletar escala' });
         }
-    );
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'Escala não encontrada' });
+        }
+
+        res.json({ message: 'Escala deletada com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao deletar escala' });
+    }
 });
 
 // Função para gerar datas específicas da escala mensal
