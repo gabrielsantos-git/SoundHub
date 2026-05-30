@@ -492,6 +492,13 @@
                 showAuthRequired();
             }
         }
+
+        function showAuthRequired() {
+            const authOverlay = document.getElementById('authOverlay');
+            if (authOverlay) {
+                authOverlay.classList.add('show');
+            }
+        }
         
         // Verificar autenticação ao carregar
         document.addEventListener('DOMContentLoaded', function() {
@@ -505,58 +512,8 @@
         
         // Gerar QR Code automaticamente após verificação de autenticação
         async function autoGenerateQR() {
-            console.log('🔧 autoGenerateQR iniciado...');
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Pequeno delay
-            
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.log('❌ Token não encontrado');
-                return;
-            }
-            
-            console.log('🔧 Token encontrado, fazendo requisição para /api/qr/generate...');
-            
-            try {
-                const response = await fetch('/api/qr/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('🔧 Resposta recebida:', response.status, response.statusText);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ QR code gerado:', data);
-                    currentQRToken = data.token;
-                    
-                    // Exibir QR code automaticamente
-                    const qrContainer = document.getElementById('qrContainer');
-                    qrContainer.innerHTML = `
-                        <div class="qr-container">
-                            <img src="${data.qrCode}" alt="QR Code" />
-                            <div class="qr-status active" id="qrStatus">QR Code ativo - Escaneie para fazer upload</div>
-                            <p style="margin-bottom: 1rem;">Escaneie este QR Code para fazer upload</p>
-                            <button class="btn btn-secondary" onclick="generateQRCode()">
-                                Gerar Novo
-                            </button>
-                        </div>
-                    `;
-                    
-                    console.log('✅ QR code exibido na tela');
-                    
-                    // Iniciar verificação de status
-                    startStatusCheck();
-                } else {
-                    console.error('❌ Erro na resposta:', response.status, response.statusText);
-                    const errorText = await response.text();
-                    console.error('❌ Erro detalhado:', errorText);
-                }
-            } catch (error) {
-                console.error('❌ Erro ao gerar QR Code automático:', error);
-            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await generateQRCode();
         }
         
         function updateUserInterface() {
