@@ -435,13 +435,14 @@
     </div>
 
     <script>
+        console.error('=== RECEIVE HTML SCRIPT START ===');
         console.log('🔧 Script receive.html carregado...');
         console.log('🔧 Verificando se checkAuth está definida:', typeof checkAuth);
         let currentUser = null;
         let currentQRToken = null;
         let countdownInterval = null;
         let statusCheckInterval = null;
-        
+
         // Definir funções antes de usar
         async function checkAuth() {
             console.error('=== CHECK AUTH START ===');
