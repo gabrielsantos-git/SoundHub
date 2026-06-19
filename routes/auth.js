@@ -8,14 +8,14 @@ const router = express.Router();
 // Login
 router.post('/login', async (req, res) => {
   try {
-    console.log('=== LOGIN REQUEST ===');
-    console.log('Body:', req.body);
+    console.error('=== LOGIN REQUEST ===');
+    console.error('Body:', req.body);
     const { email, senha } = req.body;
-    console.log('Email:', email);
-    console.log('Senha:', senha ? '***' : undefined);
+    console.error('Email:', email);
+    console.error('Senha:', senha ? '***' : undefined);
 
     if (!email || !senha) {
-      console.log('Email ou senha não fornecidos');
+      console.error('Email ou senha não fornecidos');
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
@@ -33,18 +33,24 @@ router.post('/login', async (req, res) => {
     }
 
     if (!user) {
+      console.error('Usuário não encontrado');
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
+    console.error('Usuário encontrado:', user.email, 'Status:', user.status);
+
     // Verificar senha (aceita hash e texto puro temporariamente)
     if (!user.senha) {
+      console.error('Usuário não tem senha');
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
     let validPassword = false;
     try {
       validPassword = await bcrypt.compare(senha, user.senha);
+      console.error('Senha válida:', validPassword);
     } catch (error) {
+      console.error('Erro ao comparar senha:', error);
       validPassword = false;
     }
 
@@ -78,6 +84,7 @@ router.post('/login', async (req, res) => {
 
   } catch (error) {
     console.error('Erro no login:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
