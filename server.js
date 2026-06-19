@@ -86,24 +86,8 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
 
 // Serve arquivos estáticos (HTML, JS, CSS, imagens)
-app.get('/schedule', (req, res) => {
-  res.sendFile(path.join(__dirname, 'schedule.html'));
-});
-
-app.get('/project', (req, res) => {
-  res.sendFile(path.join(__dirname, 'project.html'));
-});
-
 app.get('/receive', (req, res) => {
   res.sendFile(path.join(__dirname, 'receive.html'));
-});
-
-app.get('/home', (req, res) => {
-  res.sendFile(path.join(__dirname, 'home.html'));
-});
-
-app.get('/display', (req, res) => {
-  res.sendFile(path.join(__dirname, 'display.html'));
 });
 
 // Serve favicon e arquivos estáticos
@@ -181,6 +165,10 @@ app.get('/upload.html', (req, res) => {
 
 app.get('/schedule', (req, res) => {
   res.sendFile(path.join(__dirname, 'schedule.html'));
+});
+
+app.get('/projection', (req, res) => {
+  res.sendFile(path.join(__dirname, 'projection.html'));
 });
 
 // Rota de API para verificação de status (deve vir antes do middleware 404)
