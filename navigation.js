@@ -76,28 +76,6 @@ function updateNavigationUI(user) {
     console.log('Navegação atualizada para usuário:', user.nome, 'Cargo:', user.cargo);
 }
 
-// Verificar autenticação ao carregar a página
-function checkAuth() {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    
-    if (token && user) {
-        try {
-            const userData = JSON.parse(user);
-            updateNavigationUI(userData);
-        } catch (error) {
-            console.error('Erro ao parsear dados do usuário:', error);
-            logout();
-        }
-    } else {
-        // Redirecionar para login se não estiver autenticado
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('/auth.html') && !currentPath.includes('/auth')) {
-            window.location.href = '/auth.html';
-        }
-    }
-}
-
 // Logout
 function logout() {
     localStorage.removeItem('token');
@@ -107,13 +85,6 @@ function logout() {
     window.location.href = '/auth.html';
 }
 
-// Inicializar quando a página carregar
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔍 Navigation.js - Página carregada');
-    checkAuth();
-});
-
 // Exportar funções para uso em outras páginas
 window.updateNavigationUI = updateNavigationUI;
-window.checkAuth = checkAuth;
 window.logout = logout;
