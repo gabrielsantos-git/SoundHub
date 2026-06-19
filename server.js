@@ -155,10 +155,6 @@ app.get('/home', (req, res) => {
   res.sendFile(path.join(__dirname, 'home.html'));
 });
 
-app.get('/receive', (req, res) => {
-  res.sendFile(path.join(__dirname, 'receive.html'));
-});
-
 app.get('/project', (req, res) => {
   res.sendFile(path.join(__dirname, 'project.html'));
 });
