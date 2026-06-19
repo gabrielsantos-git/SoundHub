@@ -512,20 +512,24 @@
         
         // Gerar QR Code automaticamente após verificação de autenticação
         async function autoGenerateQR() {
+            console.error('=== AUTO GENERATE QR ===');
             await new Promise(resolve => setTimeout(resolve, 1000));
+            console.error('Chamando generateQRCode...');
             await generateQRCode();
         }
-        
+
         function updateUserInterface() {
+            console.error('=== UPDATE USER INTERFACE ===');
+            console.error('Current user:', currentUser);
             if (!currentUser) return;
-            
+
             document.getElementById('userName').textContent = currentUser.nome;
             document.getElementById('userRole').textContent = currentUser.cargo;
-            
+
             // Mostrar itens do menu baseado no cargo
             const projectLink = document.getElementById('projectLink');
             const accountsLink = document.getElementById('accountsLink');
-            
+
             if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
                 projectLink.style.display = 'block';
             }
