@@ -8,9 +8,14 @@ const router = express.Router();
 // Login
 router.post('/login', async (req, res) => {
   try {
+    console.log('=== LOGIN REQUEST ===');
+    console.log('Body:', req.body);
     const { email, senha } = req.body;
+    console.log('Email:', email);
+    console.log('Senha:', senha ? '***' : undefined);
 
     if (!email || !senha) {
+      console.log('Email ou senha não fornecidos');
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
