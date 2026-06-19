@@ -551,16 +551,20 @@
         async function generateQRCode() {
             const qrContainer = document.getElementById('qrContainer');
             
+            console.error('=== GENERATE QR CODE ===');
+            
             // Limpar interval de verificação anterior
             if (statusCheckInterval) clearInterval(statusCheckInterval);
             
             try {
                 const token = localStorage.getItem('token');
+                console.error('Token:', token ? 'EXISTS' : 'NULL');
                 if (!token) {
                     showAuthRequired();
                     return;
                 }
                 
+                console.error('Enviando requisição para /api/qr/generate');
                 const response = await fetch('/api/qr/generate', {
                     method: 'POST',
                     headers: {
@@ -569,8 +573,11 @@
                     }
                 });
                 
+                console.error('Status da resposta:', response.status);
+                
                 if (response.ok) {
                     const data = await response.json();
+                    console.error('Dados recebidos:', data);
                     currentQRToken = data.token;
                     
                     // Exibir QR code
@@ -589,12 +596,15 @@
                     startStatusCheck();
                     
                 } else if (response.status === 401 || response.status === 403) {
+                    console.error('Erro de autenticação:', response.status);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
+                    console.error('Erro na resposta:', response.status);
                     throw new Error('Erro ao gerar QR Code');
                 }
             } catch (error) {
+                console.error('Erro ao gerar QR Code:', error);
                 qrContainer.innerHTML = `
                     <div class="qr-container">
                         <p style="color: #ef4444;">Erro ao gerar QR Code</p>

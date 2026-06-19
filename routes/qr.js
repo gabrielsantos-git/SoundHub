@@ -11,18 +11,24 @@ router.post(
   requireRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN']),
   (req, res) => {
   try {
+    console.error('=== QR GENERATE REQUEST ===');
+    console.error('User:', req.user);
     const { token, uploadUrl } = qrStore.createQr({
       protocol: req.protocol,
       host: req.get('host'),
       createdBy: req.user.id
     });
+    console.error('Token gerado:', token);
+    console.error('Upload URL:', uploadUrl);
     
     // Gerar QR code como imagem base64
     QRCode.toDataURL(uploadUrl, (err, url) => {
       if (err) {
+        console.error('Erro ao gerar QR code:', err);
         return res.status(500).json({ error: 'Erro ao gerar QR code' });
       }
       
+      console.error('QR Code gerado com sucesso');
       res.json({
         qrCode: url,
         token: token
@@ -30,6 +36,7 @@ router.post(
     });
     
   } catch (error) {
+    console.error('Erro no generate QR:', error);
     res.status(500).json({ error: 'Erro ao gerar QR code' });
   }
 });
