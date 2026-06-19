@@ -39,15 +39,12 @@ if (!isVercel) {
   });
 }
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0';
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Configurações de ambiente
 const isProduction = NODE_ENV === 'production';
 
 console.log(`Ambiente: ${NODE_ENV}`);
-console.log(`Servidor SoundHub rodando na porta ${PORT}`);
 
 // Em produção, verificar arquivos essenciais
 if (!isProduction) {
@@ -67,6 +64,11 @@ if (!isProduction) {
     console.log('Todos os arquivos HTML essenciais encontrados.');
   }
 }
+
+// Inicializar banco de dados
+initializeDatabase().catch(error => {
+  console.error('❌ Erro ao inicializar banco de dados:', error);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -292,42 +294,10 @@ if (!isVercel) {
   server.on('error', (err) => {
     console.error('Erro no servidor:', err.message);
     if (err.code === 'EADDRINUSE') {
-      console.error(`Porta ${PORT} já está em uso!`);
+      console.error(`Porta já está em uso!`);
     }
   });
 }
 
-// Inicializar banco de dados antes de iniciar o servidor
-async function startServer() {
-  try {
-    console.log('🔧 Inicializando banco de dados Supabase...');
-    const dbInitialized = await initializeDatabase();
-    
-    if (!dbInitialized) {
-      console.error('❌ Falha ao inicializar banco de dados!');
-      process.exit(1);
-    }
-    
-    server.listen(PORT, HOST, () => {
-      console.log(`Servidor SoundHub rodando em ${HOST}:${PORT}`);
-      console.log(`Ambiente: ${NODE_ENV}`);
-      
-      if (!isProduction) {
-        console.log(`URL: http://localhost:${PORT}`);
-        console.log(`📝 Acesse: http://localhost:${PORT}/auth`);
-      } else {
-        console.log(`Servidor pronto para produção!`);
-      }
-    });
-  } catch (error) {
-    console.error('❌ Erro ao iniciar servidor:', error);
-    process.exit(1);
-  }
-}
-
 // Export para Vercel Serverless Function
-if (isVercel) {
-  module.exports = app;
-} else {
-  startServer();
-}
+module.exports = app;
