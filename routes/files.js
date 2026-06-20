@@ -8,23 +8,9 @@ const qrStore = require('../qrStore');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 const router = express.Router();
 
-// Configuração do multer para upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configuração do multer usando memory storage para Vercel serverless
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 50 * 1024 * 1024 // 50MB
   },
@@ -96,15 +82,34 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
 
-    // Salvar múltiplos arquivos no banco de dados
+    // Salvar múltiplos arquivos no Supabase Storage e banco de dados
     const savedFiles = [];
     let hasError = false;
 
     // Processar cada arquivo
     for (const file of req.files) {
-      const filePath = `/uploads/${file.filename}`;
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+      const filePath = `uploads/${fileName}`;
       
       try {
+        console.error('Fazendo upload para Supabase Storage:', fileName);
+        
+        // Upload para Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('files')
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Erro no upload para Supabase Storage:', uploadError);
+          throw uploadError;
+        }
+
+        console.error('Upload para Supabase Storage bem-sucedido:', uploadData);
+
+        // Salvar metadados no banco de dados
         const { data: inserted, error } = await supabase
           .from('files')
           .insert({
@@ -121,6 +126,9 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
           .single();
 
         if (error) {
+          console.error('Erro ao salvar no banco de dados:', error);
+          // Remover arquivo do Supabase Storage em caso de erro
+          await supabase.storage.from('files').remove([filePath]);
           throw error;
         }
 
@@ -130,13 +138,8 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
           status: inserted.status
         });
       } catch (error) {
+        console.error('Erro ao processar arquivo:', error);
         hasError = true;
-        // Remover arquivo em caso de erro
-        try {
-          fs.unlinkSync(file.path);
-        } catch (unlinkError) {
-          console.error('Erro ao remover arquivo:', unlinkError);
-        }
         break;
       }
     }
@@ -155,17 +158,6 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
   } catch (error) {
     console.error('❌ Erro no upload:', error);
     console.error('Stack trace:', error.stack);
-    
-    // Remover todos os arquivos em caso de erro
-    if (req.files && req.files.length > 0) {
-      req.files.forEach(file => {
-        try {
-          fs.unlinkSync(file.path);
-        } catch (unlinkError) {
-          console.error('Erro ao remover arquivo:', unlinkError);
-        }
-      });
-    }
     res.status(500).json({ error: 'Erro ao fazer upload dos arquivos: ' + error.message });
   } finally {
     if (qrToken) {
@@ -313,21 +305,21 @@ router.get('/download/:id', async (req, res) => {
       return res.status(404).json({ error: 'Arquivo não encontrado' });
     }
 
-    const filePath = path.join(__dirname, '..', file.caminho);
+    // Download do Supabase Storage
+    const { data: downloadData, error: downloadError } = await supabase.storage
+      .from('files')
+      .createSignedUrl(file.caminho, 60); // URL válida por 60 segundos
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Arquivo não encontrado no servidor' });
+    if (downloadError) {
+      console.error('Erro ao criar signed URL:', downloadError);
+      return res.status(500).json({ error: 'Erro ao fazer download do arquivo' });
     }
 
-    res.download(filePath, file.nome, (downloadErr) => {
-      if (downloadErr) {
-        if (!res.headersSent) {
-          res.status(500).json({ error: 'Erro ao fazer download do arquivo' });
-        }
-      }
-    });
+    // Redirecionar para a URL assinada
+    res.redirect(downloadData.signedUrl);
     
   } catch (error) {
+    console.error('Erro no download:', error);
     res.status(500).json({ error: 'Erro ao fazer download do arquivo' });
   }
 });
@@ -355,18 +347,6 @@ router.post('/download-zip', async (req, res) => {
       return res.status(404).json({ error: 'Nenhum arquivo encontrado' });
     }
 
-    const existingFiles = [];
-    for (const file of files) {
-      const filePath = path.join(__dirname, '..', file.caminho);
-      if (fs.existsSync(filePath)) {
-        existingFiles.push(file);
-      }
-    }
-
-    if (existingFiles.length === 0) {
-      return res.status(404).json({ error: 'Nenhum arquivo encontrado no servidor' });
-    }
-
     const safeGroupName = String(groupName || 'arquivos').replace(/[^a-zA-Z0-9]/g, '_');
     const zipName = `${safeGroupName}_${Date.now()}.zip`;
     res.attachment(zipName);
@@ -381,14 +361,33 @@ router.post('/download-zip', async (req, res) => {
 
     archive.pipe(res);
 
-    existingFiles.forEach(file => {
-      const filePath = path.join(__dirname, '..', file.caminho);
-      archive.file(filePath, { name: file.nome });
-    });
+    // Baixar cada arquivo do Supabase Storage e adicionar ao ZIP
+    for (const file of files) {
+      try {
+        const { data: downloadData, error: downloadError } = await supabase.storage
+          .from('files')
+          .createSignedUrl(file.caminho, 60);
+
+        if (downloadError) {
+          console.error('Erro ao criar signed URL para arquivo:', file.nome, downloadError);
+          continue;
+        }
+
+        // Baixar o arquivo usando a signed URL
+        const response = await fetch(downloadData.signedUrl);
+        const buffer = await response.arrayBuffer();
+        const uint8Array = new Uint8Array(buffer);
+
+        archive.append(uint8Array, { name: file.nome });
+      } catch (fileError) {
+        console.error('Erro ao baixar arquivo:', file.nome, fileError);
+      }
+    }
 
     archive.finalize();
     
   } catch (error) {
+    console.error('Erro no download ZIP:', error);
     res.status(500).json({ error: 'Erro ao fazer download dos arquivos' });
   }
 });
