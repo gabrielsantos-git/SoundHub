@@ -256,49 +256,11 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div style="margin-bottom: 2rem;">
-            <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">🎵</div>
-            <h1 style="text-align: center; color: #3b82f6; font-size: 1.5rem;">SoundHub</h1>
-        </div>
-        
-        <nav>
-            <a href="/" class="sidebar-item active">
-                <span style="margin-right: 0.75rem;">🏠</span>
-                Início
-            </a>
-            <a href="/receive" class="sidebar-item" id="receiveLink" style="display: none;">
-                <span style="margin-right: 0.75rem;">📥</span>
-                Receber
-            </a>
-            <a href="/project" class="sidebar-item" id="projectLink" style="display: none;">
-                <span style="margin-right: 0.75rem;">🎥</span>
-                Projetar
-            </a>
-            <a href="/accounts" class="sidebar-item" id="accountsLink" style="display: none;">
-                <span style="margin-right: 0.75rem;">👤</span>
-                Contas
-            </a>
-            <a href="/schedule" class="sidebar-item" id="scheduleLink" style="display: none;">
-                <span style="margin-right: 0.75rem;">📅</span>
-                Escalas
-            </a>
-        </nav>
-        
-        <div style="position: absolute; bottom: 1rem; left: 1rem; right: 1rem;">
-            <button class="btn btn-secondary" onclick="logout()" style="width: 100%;">
-                Sair
-            </button>
-        </div>
-    </div>
-
-    <!-- Overlay para mobile -->
-    <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+    <!-- Sidebar unificada será injetada pelo sidebar.js -->
+    <script src="sidebar.js"></script>
 
     <!-- Header -->
     <header class="header">
-        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
         <div class="logo">🎵 SoundHub</div>
         <div class="user-info">
             <span id="userName">Carregando...</span>
