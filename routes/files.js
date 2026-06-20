@@ -92,9 +92,16 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
       const filePath = `uploads/${fileName}`;
       
       try {
-        console.error('Fazendo upload para Supabase Storage:', fileName);
+        console.error('=== PROCESSANDO ARQUIVO ===');
+        console.error('Nome original:', file.originalname);
+        console.error('Nome gerado:', fileName);
+        console.error('Caminho:', filePath);
+        console.error('Tipo:', file.mimetype);
+        console.error('Tamanho:', file.size);
+        console.error('Buffer length:', file.buffer.length);
         
         // Upload para Supabase Storage
+        console.error('Iniciando upload para Supabase Storage...');
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('files')
           .upload(filePath, file.buffer, {
@@ -103,13 +110,15 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
           });
 
         if (uploadError) {
-          console.error('Erro no upload para Supabase Storage:', uploadError);
-          throw uploadError;
+          console.error('❌ Erro no upload para Supabase Storage:', uploadError);
+          console.error('Erro details:', JSON.stringify(uploadError, null, 2));
+          throw new Error(`Erro no upload para Supabase Storage: ${uploadError.message}`);
         }
 
-        console.error('Upload para Supabase Storage bem-sucedido:', uploadData);
+        console.error('✅ Upload para Supabase Storage bem-sucedido:', uploadData);
 
         // Salvar metadados no banco de dados
+        console.error('Salvando metadados no banco de dados...');
         const { data: inserted, error } = await supabase
           .from('files')
           .insert({
@@ -126,11 +135,14 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
           .single();
 
         if (error) {
-          console.error('Erro ao salvar no banco de dados:', error);
+          console.error('❌ Erro ao salvar no banco de dados:', error);
+          console.error('Erro details:', JSON.stringify(error, null, 2));
           // Remover arquivo do Supabase Storage em caso de erro
           await supabase.storage.from('files').remove([filePath]);
-          throw error;
+          throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
         }
+
+        console.error('✅ Metadados salvos com sucesso:', inserted);
 
         savedFiles.push({
           id: inserted.id,
@@ -138,7 +150,8 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
           status: inserted.status
         });
       } catch (error) {
-        console.error('Erro ao processar arquivo:', error);
+        console.error('❌ Erro ao processar arquivo:', error);
+        console.error('Stack trace:', error.stack);
         hasError = true;
         break;
       }
