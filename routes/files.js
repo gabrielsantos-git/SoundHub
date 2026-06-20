@@ -88,40 +88,44 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
 
     // Verificar/criar bucket 'files' antes do upload
     try {
-      console.error('Verificando se bucket "files" existe...');
+      console.error('=== VERIFICANDO SUPABASE STORAGE ===');
+      console.error('Verificando se bucket "files" existe no Supabase Storage...');
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
       if (bucketsError) {
-        console.error('Erro ao listar buckets:', bucketsError);
+        console.error('❌ Erro ao listar buckets:', bucketsError);
+        console.error('⚠️  Verifique se as permissões do Supabase Storage estão configuradas corretamente');
+        return res.status(500).json({ 
+          error: 'Erro ao acessar Supabase Storage. Verifique as permissões no Supabase Dashboard.' 
+        });
+      }
+      
+      console.error('Buckets encontrados:', buckets.map(b => b.name));
+      
+      const filesBucket = buckets.find(b => b.name === 'files');
+      if (!filesBucket) {
+        console.error('❌ Bucket "files" NÃO encontrado no Supabase Storage!');
+        console.error('⚠️  Isso é diferente da tabela "files" no banco de dados');
+        console.error('📝 Você precisa criar o bucket "files" no Supabase Storage:');
+        console.error('   1. Acesse o Supabase Dashboard');
+        console.error('   2. Vá em Storage (não em Database)');
+        console.error('   3. Clique em "New bucket"');
+        console.error('   4. Nome do bucket: files');
+        console.error('   5. Configure como Public bucket');
+        console.error('   6. Clique em "Create bucket"');
+        
+        return res.status(500).json({ 
+          error: 'Bucket "files" não existe no Supabase Storage. Crie o bucket manualmente no Supabase Dashboard (Storage > New bucket > Nome: files).' 
+        });
       } else {
-        const filesBucket = buckets.find(b => b.name === 'files');
-        if (!filesBucket) {
-          console.error('❌ Bucket "files" não encontrado! Tentando criar...');
-          const { error: createError } = await supabase.storage.createBucket('files', {
-            public: false
-          });
-          
-          if (createError) {
-            console.error('❌ Erro ao criar bucket "files":', createError);
-            console.error('⚠️  Você precisa criar o bucket "files" manualmente no Supabase Dashboard');
-            console.error('📝 Instruções:');
-            console.error('   1. Acesse o Supabase Dashboard');
-            console.error('   2. Vá em Storage');
-            console.error('   3. Clique em "New bucket"');
-            console.error('   4. Nome do bucket: files');
-            console.error('   5. Configure as permissões (Public ou Private)');
-            return res.status(500).json({ 
-              error: 'Bucket "files" não existe no Supabase Storage. Crie o bucket manualmente no Supabase Dashboard.' 
-            });
-          } else {
-            console.error('✅ Bucket "files" criado com sucesso!');
-          }
-        } else {
-          console.error('✅ Bucket "files" encontrado!');
-        }
+        console.error('✅ Bucket "files" encontrado no Supabase Storage!');
       }
     } catch (bucketError) {
-      console.error('Erro ao verificar bucket:', bucketError);
+      console.error('❌ Erro ao verificar bucket:', bucketError);
+      console.error('Stack trace:', bucketError.stack);
+      return res.status(500).json({ 
+        error: 'Erro ao verificar Supabase Storage: ' + bucketError.message 
+      });
     }
 
     // Verificar se tabela 'files' existe no banco de dados
