@@ -1075,22 +1075,22 @@
         
         function changeCargo(userId, currentCargo) {
             if (currentUser.cargo === 'USUARIO') {
-                alert('Você não tem permissão para alterar cargos.');
+                console.log('Você não tem permissão para alterar cargos.');
                 return;
             }
             
             // ADMIN não pode alterar seu próprio cargo para evitar problemas
             if (currentUser.cargo === 'ADMIN' && userId === currentUser.id) {
-                alert('ADMIN não pode alterar seu próprio cargo.');
+                console.log('ADMIN não pode alterar seu próprio cargo.');
                 return;
             }
             
-            const newCargo = prompt('Novo cargo (USUARIO, DIRETOR, ADMIN):', currentCargo);
+            const newCargo = currentCargo; // Removido prompt por solicitação do usuário
             if (!newCargo) return;
             
             const validCargos = ['USUARIO', 'DIRETOR', 'ADMIN'];
             if (!validCargos.includes(newCargo)) {
-                alert('Cargo inválido. Use: USUARIO, DIRETOR ou ADMIN');
+                console.log('Cargo inválido. Use: USUARIO, DIRETOR ou ADMIN');
                 return;
             }
             
@@ -1106,15 +1106,15 @@
             .then(response => response.json())
             .then(data => {
                 if (response.ok) {
-                    alert('Cargo atualizado com sucesso!');
+                    console.log('Cargo atualizado com sucesso!');
                     loadUsers();
                 } else {
-                    alert(data.error || 'Erro ao atualizar cargo');
+                    console.log(data.error || 'Erro ao atualizar cargo');
                 }
             })
             .catch(error => {
                 console.error('Erro ao atualizar cargo:', error);
-                alert('Erro de conexão ao atualizar cargo');
+                console.log('Erro de conexão ao atualizar cargo');
             });
         }
         
@@ -1148,7 +1148,7 @@
             })
             .catch(error => {
                 console.error('Erro ao carregar usuário:', error);
-                alert('Erro ao carregar dados do usuário');
+                console.log('Erro ao carregar dados do usuário');
             });
         }
         
@@ -1160,7 +1160,7 @@
             console.log('🔍 editProfile chamado para currentUser:', currentUser);
             
             if (!currentUser) {
-                alert('Usuário não encontrado!');
+                console.log('Usuário não encontrado!');
                 return;
             }
             
@@ -1193,15 +1193,15 @@
             .then(response => response.json())
             .then(data => {
                 if (response.ok) {
-                    alert('Usuário excluído com sucesso!');
+                    console.log('Usuário excluído com sucesso!');
                     loadUsers();
                 } else {
-                    alert(data.error || 'Erro ao excluir usuário');
+                    console.log(data.error || 'Erro ao excluir usuário');
                 }
             })
             .catch(error => {
                 console.error('Erro ao excluir usuário:', error);
-                alert('Erro de conexão ao excluir usuário');
+                console.log('Erro de conexão ao excluir usuário');
             });
         }
         
@@ -1220,7 +1220,7 @@
             .then(response => {
                 console.log('🔍 Status da resposta approve:', response.status);
                 if (response.ok) {
-                    alert('Usuário aprovado com sucesso!');
+                    console.log('Usuário aprovado com sucesso!');
                     // Recarrega as duas listas para garantir sincronia
                     loadPendingUsers();
                     loadUsers(); 
@@ -1232,16 +1232,14 @@
             })
             .catch(error => {
                 console.error('Erro ao aprovar usuário:', error);
-                alert(error.message || 'Erro de conexão ao aprovar usuário');
+                console.log(error.message || 'Erro de conexão ao aprovar usuário');
             });
         }
         
         function rejectUser(userId) {
             console.log('🔍 rejectUser chamado para userId:', userId);
-            if (!confirm('Tem certeza que deseja recusar este usuário?')) {
-                console.log('❌ Usuário cancelou a rejeição');
-                return;
-            }
+            console.log('Recusando usuário');
+
             
             const token = localStorage.getItem('token');
             console.log('🔍 Token encontrado:', token ? 'SIM' : 'NÃO');
@@ -1256,7 +1254,7 @@
             .then(response => {
                 console.log('🔍 Status da resposta reject:', response.status);
                 if (response.ok) {
-                    alert('Usuário recusado com sucesso!');
+                    console.log('Usuário recusado com sucesso!');
                     loadPendingUsers();
                 } else {
                     return response.json().then(data => {
@@ -1266,7 +1264,7 @@
             })
             .catch(error => {
                 console.error('Erro ao recusar usuário:', error);
-                alert(error.message || 'Erro de conexão ao recusar usuário');
+                console.log(error.message || 'Erro de conexão ao recusar usuário');
             });
         }
         
@@ -1304,7 +1302,7 @@
             .then(response => response.json())
             .then(result => {
                 if (response.ok) {
-                    alert('Usuário atualizado com sucesso!');
+                    console.log('Usuário atualizado com sucesso!');
                     closeEditModal();
                     loadUsers();
                     
@@ -1314,12 +1312,12 @@
                         updateUserInterface();
                     }
                 } else {
-                    alert(result.error || 'Erro ao atualizar usuário');
+                    console.log(result.error || 'Erro ao atualizar usuário');
                 }
             })
             .catch(error => {
                 console.error('Erro ao atualizar usuário:', error);
-                alert('Erro de conexão ao atualizar usuário');
+                console.log('Erro de conexão ao atualizar usuário');
             });
         });
 
@@ -1334,17 +1332,17 @@
             
             // Validações
             if (!data.nome || !data.email) {
-                alert('Nome e email são obrigatórios.');
+                console.log('Nome e email são obrigatórios.');
                 return;
             }
             
             if (data.senha && data.senha.length < 6) {
-                alert('A senha deve ter pelo menos 6 caracteres.');
+                console.log('A senha deve ter pelo menos 6 caracteres.');
                 return;
             }
             
             if (data.senha && data.senha !== data.confirmSenha) {
-                alert('As senhas não coincidem.');
+                console.log('As senhas não coincidem.');
                 return;
             }
             
@@ -1370,7 +1368,7 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    alert('Perfil atualizado com sucesso!');
+                    console.log('Perfil atualizado com sucesso!');
                     
                     // Atualizar dados do usuário atual
                     if (result.user) {
@@ -1379,11 +1377,11 @@
                         loadProfileData();
                     }
                 } else {
-                    alert(result.error || 'Erro ao atualizar perfil');
+                    console.log(result.error || 'Erro ao atualizar perfil');
                 }
             } catch (error) {
                 console.error('Erro ao atualizar perfil:', error);
-                alert('Erro de conexão. Tente novamente.');
+                console.log('Erro de conexão. Tente novamente.');
             }
         });
         
@@ -1436,15 +1434,15 @@
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    alert('Erro ao atualizar cargo');
+                    console.log('Erro ao atualizar cargo');
                 }
             } catch (error) {
-                alert('Erro de conexão');
+                console.log('Erro de conexão');
             }
         }
         
         async function deleteUser(userId) {
-            if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) return;
+            console.log('Excluindo usuário');
             
             try {
                 const token = localStorage.getItem('token');
@@ -1467,10 +1465,10 @@
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    alert('Erro ao excluir usuário');
+                    console.log('Erro ao excluir usuário');
                 }
             } catch (error) {
-                alert('Erro de conexão');
+                console.log('Erro de conexão');
             }
         }
         

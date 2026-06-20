@@ -737,19 +737,19 @@
                 } else {
                     try {
                         const error = await response.json();
-                        alert(`Erro ao aprovar arquivo: ${error.error || 'Erro desconhecido'}`);
+                        console.log(`Erro ao aprovar arquivo: ${error.error || 'Erro desconhecido'}`);
                     } catch (parseError) {
-                        alert('Erro ao aprovar arquivo');
+                        console.log('Erro ao aprovar arquivo');
                     }
                 }
             } catch (error) {
                 console.error('Erro de conexão ao aprovar arquivo:', error);
-                alert('Erro de conexão ao aprovar arquivo');
+                console.log('Erro de conexão ao aprovar arquivo');
             }
         }
         
         async function rejectFile(fileId) {
-            if (!confirm('Tem certeza que deseja recusar este arquivo?')) return;
+            console.log('Recusando arquivo');
             
             try {
                 const token = localStorage.getItem('token');
@@ -780,14 +780,14 @@
                 } else {
                     try {
                         const error = await response.json();
-                        alert(`Erro ao recusar arquivo: ${error.error || 'Erro desconhecido'}`);
+                        console.log(`Erro ao recusar arquivo: ${error.error || 'Erro desconhecido'}`);
                     } catch (parseError) {
-                        alert('Erro ao recusar arquivo');
+                        console.log('Erro ao recusar arquivo');
                     }
                 }
             } catch (error) {
                 console.error('Erro de conexão ao recusar arquivo:', error);
-                alert('Erro de conexão ao recusar arquivo');
+                console.log('Erro de conexão ao recusar arquivo');
             }
         }
         

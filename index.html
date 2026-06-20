@@ -542,17 +542,17 @@
                         }, 100);
                     } catch (blobError) {
                         console.error('Erro ao processar blob:', blobError);
-                        alert('Erro ao processar arquivo para download');
+                        console.log('Erro ao processar arquivo para download');
                     }
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    alert('Erro ao baixar arquivo');
+                    console.log('Erro ao baixar arquivo');
                 }
             } catch (error) {
                 console.error('Erro de conexão:', error);
-                alert('Erro de conexão ao baixar arquivo');
+                console.log('Erro de conexão ao baixar arquivo');
             }
         }
         
@@ -605,11 +605,11 @@
                     showAuthRequired();
                 } else {
                     const error = await response.json();
-                    alert(`Erro ao baixar grupo: ${error.error || 'Erro desconhecido'}`);
+                    console.log(`Erro ao baixar grupo: ${error.error || 'Erro desconhecido'}`);
                 }
             } catch (error) {
                 console.error('Erro ao baixar grupo como ZIP:', error);
-                alert('Erro de conexão ao baixar arquivos do grupo');
+                console.log('Erro de conexão ao baixar arquivos do grupo');
             }
         }
         
@@ -626,7 +626,7 @@
                 window.location.href = '/project.html';
             } catch (error) {
                 console.error('Erro ao projetar grupo:', error);
-                alert('Erro ao iniciar projeção do grupo');
+                console.log('Erro ao iniciar projeção do grupo');
             }
         }
         

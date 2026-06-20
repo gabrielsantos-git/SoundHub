@@ -1222,7 +1222,7 @@
             });
             
             if (dias.length === 0) {
-                alert('Selecione pelo menos um dia da semana.');
+                console.log('Selecione pelo menos um dia da semana.');
                 return;
             }
             
@@ -1240,16 +1240,16 @@
                 });
                 
                 if (response.ok) {
-                    alert('Escala mensal criada com sucesso!');
+                    console.log('Escala mensal criada com sucesso!');
                     closeCreateScheduleModal();
                     loadSchedules();
                 } else {
                     const error = await response.json();
-                    alert(error.error || 'Erro ao criar escala');
+                    console.log(error.error || 'Erro ao criar escala');
                 }
             } catch (error) {
                 console.error('Erro ao criar escala:', error);
-                alert('Erro de conexão ao criar escala');
+                console.log('Erro de conexão ao criar escala');
             }
         }
 
@@ -1270,16 +1270,16 @@
                 });
                 
                 if (response.ok) {
-                    alert('Evento criado com sucesso!');
+                    console.log('Evento criado com sucesso!');
                     closeCreateEventModal();
                     loadEvents();
                 } else {
                     const error = await response.json();
-                    alert(error.error || 'Erro ao criar evento');
+                    console.log(error.error || 'Erro ao criar evento');
                 }
             } catch (error) {
                 console.error('Erro ao criar evento:', error);
-                alert('Erro de conexão ao criar evento');
+                console.log('Erro de conexão ao criar evento');
             }
         }
 
@@ -1352,16 +1352,16 @@
                 });
                 
                 if (response.ok) {
-                    alert('Escala atualizada com sucesso!');
+                    console.log('Escala atualizada com sucesso!');
                     closeEditScheduleModal();
                     loadSchedules();
                 } else {
                     const error = await response.json();
-                    alert(error.error || 'Erro ao atualizar escala');
+                    console.log(error.error || 'Erro ao atualizar escala');
                 }
             } catch (error) {
                 console.error('Erro ao atualizar escala:', error);
-                alert('Erro de conexão ao atualizar escala');
+                console.log('Erro de conexão ao atualizar escala');
             }
         }
 

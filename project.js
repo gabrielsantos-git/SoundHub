@@ -500,7 +500,7 @@ async function startProjection() {
         AppState.projectionWindow = window.open('projection.html', 'SoundHub-Screen', features);
 
         if (!AppState.projectionWindow) {
-            alert('Pop-up bloqueado! Por favor, autorize pop-ups para este site.');
+            console.log('Pop-up bloqueado! Por favor, autorize pop-ups para este site.');
             return;
         }
 
