@@ -153,6 +153,9 @@
     window.updateSidebar = function(user) {
         if (!user) return;
 
+        console.log('🔍 sidebar.js - Atualizando sidebar para usuário:', user);
+        console.log('🔍 sidebar.js - Cargo do usuário:', user.cargo);
+
         // Atualizar informações do usuário
         const userName = document.getElementById('userName');
         const userRole = document.getElementById('userRole');
@@ -170,8 +173,18 @@
         const scheduleLink = document.getElementById('scheduleLink');
         const profileLink = document.getElementById('profileLink');
 
+        console.log('🔍 sidebar.js - Links encontrados:', {
+            homeLink: !!homeLink,
+            receiveLink: !!receiveLink,
+            projectLink: !!projectLink,
+            accountsLink: !!accountsLink,
+            scheduleLink: !!scheduleLink,
+            profileLink: !!profileLink
+        });
+
         // Para ADMIN e DIRETOR: mostrar todos os links principais
         if (user.cargo === 'ADMIN' || user.cargo === 'DIRETOR') {
+            console.log('🔍 sidebar.js - Modo ADMIN/DIRETOR');
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'flex';
             if (projectLink) projectLink.style.display = 'flex';
@@ -181,6 +194,7 @@
         }
         // Para SONOPLASTA: mostrar links específicos
         else if (user.cargo === 'SONOPLASTA') {
+            console.log('🔍 sidebar.js - Modo SONOPLASTA');
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'flex';
             if (projectLink) projectLink.style.display = 'flex';
@@ -190,6 +204,7 @@
         }
         // Para outros usuários
         else {
+            console.log('🔍 sidebar.js - Modo OUTRO (USUARIO)');
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'none';
             if (projectLink) projectLink.style.display = 'none';
