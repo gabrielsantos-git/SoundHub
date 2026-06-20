@@ -178,7 +178,7 @@ router.post('/register', async (req, res) => {
         nome,
         email,
         senha: hashedPassword,
-        cargo: 'USUARIO',
+        cargo: 'SONOPLASTA',
         status: 'PENDING',
         data_cadastro: new Date().toISOString()
       })
