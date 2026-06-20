@@ -142,6 +142,13 @@
         overlay.classList.remove('show');
     };
 
+    // Função de logout
+    window.logout = function() {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/auth';
+    };
+
     // Atualizar sidebar com base no usuário
     window.updateSidebar = function(user) {
         if (!user) return;
