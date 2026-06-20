@@ -73,8 +73,13 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
     console.error('✅ Token QR recebido');
 
     console.error('VERIFICANDO LOCK RESULT...');
+    console.error('Lock result valid:', lockResult.valid);
+    console.error('Lock result reason:', lockResult.reason);
+    console.error('Lock result data:', lockResult.data);
+    
     if (!lockResult.valid) {
       console.error('❌ QR Code inválido ou expirado:', lockResult.reason);
+      console.error('❌ Detalhes do lock result:', JSON.stringify(lockResult, null, 2));
       return res.status(400).json({ error: lockResult.reason || 'QR Code inválido ou expirado' });
     }
     console.error('✅ Lock result válido');
