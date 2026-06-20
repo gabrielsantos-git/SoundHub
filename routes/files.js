@@ -153,6 +153,9 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
     });
 
   } catch (error) {
+    console.error('❌ Erro no upload:', error);
+    console.error('Stack trace:', error.stack);
+    
     // Remover todos os arquivos em caso de erro
     if (req.files && req.files.length > 0) {
       req.files.forEach(file => {
@@ -163,7 +166,7 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
         }
       });
     }
-    res.status(500).json({ error: 'Erro ao fazer upload dos arquivos' });
+    res.status(500).json({ error: 'Erro ao fazer upload dos arquivos: ' + error.message });
   } finally {
     if (qrToken) {
       qrStore.unlock(qrToken);
