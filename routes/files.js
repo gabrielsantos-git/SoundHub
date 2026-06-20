@@ -61,25 +61,38 @@ router.use((error, req, res, next) => {
 
 // Upload de múltiplos arquivos
 router.post('/upload', upload.array('arquivos'), async (req, res) => {
+  console.error('=== UPLOAD REQUEST ===');
+  console.error('Body:', req.body);
+  console.error('Files:', req.files);
+  
   const qrToken = req.body?.token;
+  console.error('QR Token:', qrToken);
+  
   const lockResult = qrToken ? qrStore.lock(qrToken) : { valid: false };
+  console.error('Lock result:', lockResult);
 
   try {
     if (!req.files || req.files.length === 0) {
+      console.error('❌ Nenhum arquivo enviado');
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
 
     if (!qrToken) {
+      console.error('❌ Token do QR Code não fornecido');
       return res.status(400).json({ error: 'Token do QR Code é obrigatório' });
     }
 
     if (!lockResult.valid) {
+      console.error('❌ QR Code inválido ou expirado:', lockResult.reason);
       return res.status(400).json({ error: lockResult.reason || 'QR Code inválido ou expirado' });
     }
 
     const { nome, descricao } = req.body;
+    console.error('Nome:', nome);
+    console.error('Descrição:', descricao);
 
     if (!nome) {
+      console.error('❌ Nome não fornecido');
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
 
