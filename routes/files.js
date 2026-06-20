@@ -86,6 +86,44 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
     const savedFiles = [];
     let hasError = false;
 
+    // Verificar/criar bucket 'files' antes do upload
+    try {
+      console.error('Verificando se bucket "files" existe...');
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error('Erro ao listar buckets:', bucketsError);
+      } else {
+        const filesBucket = buckets.find(b => b.name === 'files');
+        if (!filesBucket) {
+          console.error('❌ Bucket "files" não encontrado! Tentando criar...');
+          const { error: createError } = await supabase.storage.createBucket('files', {
+            public: false
+          });
+          
+          if (createError) {
+            console.error('❌ Erro ao criar bucket "files":', createError);
+            console.error('⚠️  Você precisa criar o bucket "files" manualmente no Supabase Dashboard');
+            console.error('📝 Instruções:');
+            console.error('   1. Acesse o Supabase Dashboard');
+            console.error('   2. Vá em Storage');
+            console.error('   3. Clique em "New bucket"');
+            console.error('   4. Nome do bucket: files');
+            console.error('   5. Configure as permissões (Public ou Private)');
+            return res.status(500).json({ 
+              error: 'Bucket "files" não existe no Supabase Storage. Crie o bucket manualmente no Supabase Dashboard.' 
+            });
+          } else {
+            console.error('✅ Bucket "files" criado com sucesso!');
+          }
+        } else {
+          console.error('✅ Bucket "files" encontrado!');
+        }
+      }
+    } catch (bucketError) {
+      console.error('Erro ao verificar bucket:', bucketError);
+    }
+
     // Processar cada arquivo
     for (const file of req.files) {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
