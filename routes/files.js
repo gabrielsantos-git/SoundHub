@@ -58,29 +58,37 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
   console.error('Lock result:', lockResult);
 
   try {
+    console.error('VERIFICANDO ARQUIVOS...');
     if (!req.files || req.files.length === 0) {
       console.error('❌ Nenhum arquivo enviado');
       return res.status(400).json({ error: 'Nenhum arquivo enviado' });
     }
+    console.error('✅ Arquivos recebidos:', req.files.length);
 
+    console.error('VERIFICANDO TOKEN QR...');
     if (!qrToken) {
       console.error('❌ Token do QR Code não fornecido');
       return res.status(400).json({ error: 'Token do QR Code é obrigatório' });
     }
+    console.error('✅ Token QR recebido');
 
+    console.error('VERIFICANDO LOCK RESULT...');
     if (!lockResult.valid) {
       console.error('❌ QR Code inválido ou expirado:', lockResult.reason);
       return res.status(400).json({ error: lockResult.reason || 'QR Code inválido ou expirado' });
     }
+    console.error('✅ Lock result válido');
 
     const { nome, descricao } = req.body;
     console.error('Nome:', nome);
     console.error('Descrição:', descricao);
 
+    console.error('VERIFICANDO NOME...');
     if (!nome) {
       console.error('❌ Nome não fornecido');
       return res.status(400).json({ error: 'Nome é obrigatório' });
     }
+    console.error('✅ Nome recebido');
 
     // Salvar múltiplos arquivos no Supabase Storage e banco de dados
     const savedFiles = [];
