@@ -99,6 +99,9 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
     const savedFiles = [];
     let hasError = false;
 
+    console.error('=== INICIANDO UPLOAD DIRETO PARA SUPABASE STORAGE ===');
+    console.error('Pulando verificação de bucket (anon key não tem permissões)');
+
     // Processar cada arquivo
     for (const file of req.files) {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
