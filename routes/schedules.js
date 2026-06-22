@@ -246,40 +246,9 @@ async function verificarEGerarEscalaAutomatica() {
 
 async function _gerarSeNecessario() {
     const hoje = new Date();
-    const anoHoje  = hoje.getFullYear();
-    const mesHoje  = hoje.getMonth();       // 0-indexed
-    const diaHoje  = hoje.getDate();
-
-    const penultimoSabado = getPenultimoSabado(anoHoje, mesHoje);
-    if (!penultimoSabado) return;
-
-    // Só age a partir do penúltimo sábado do mês atual
-    if (diaHoje < penultimoSabado.getDate()) return;
-
-    // Calcular próximo mês corretamente
-    const mesProxIdx = mesHoje === 11 ? 0 : mesHoje + 1;   // 0-indexed
-    const anoProximo = mesHoje === 11 ? anoHoje + 1 : anoHoje;
-    const mesProxNum = mesProxIdx + 1;                       // 1-indexed (1–12)
-    const mesProxStr = String(mesProxNum).padStart(2, '0'); // "01"–"12"
-
-    const dataInicioProximo = `${anoProximo}-${mesProxStr}-01`;
-
-    // Verificar duplicata
-    const { data: existing } = await supabase
-        .from('escalas')
-        .select('id')
-        .eq('data_inicio', dataInicioProximo)
-        .limit(1);
-
-    if (existing && existing.length > 0) return;
-
-    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const nomeProximoMes = MESES[mesProxIdx];
-
-    // Último dia do próximo mês: new Date(ano, mesNum, 0) dá o último dia do mês anterior a mesNum
-    const ultimoDia = new Date(anoProximo, mesProxNum, 0).getDate();
-    const dataFim = `${anoProximo}-${mesProxStr}-${String(ultimoDia).padStart(2, '0')}`;
+    const anoHoje = hoje.getFullYear();
+    const mesHoje = hoje.getMonth(); // 0-indexed
+    const diaHoje = hoje.getDate();
 
     const { data: adminUser } = await supabase
         .from('users')
@@ -291,29 +260,6 @@ async function _gerarSeNecessario() {
 
     if (!adminUser) return;
 
-    const { data: novaEscala, error: insertError } = await supabase
-        .from('escalas')
-        .insert({
-            nome: `Escala ${nomeProximoMes}`,
-            tipo: 'mensal',
-            data_inicio: dataInicioProximo,
-            data_fim: dataFim,
-            criado_por: adminUser.id
-        })
-        .select('id')
-        .single();
-
-    if (insertError || !novaEscala) return;
-
-    // Verificar se os dias já foram criados (segunda proteção contra duplicata)
-    const { data: diasExistentes } = await supabase
-        .from('escala_dias')
-        .select('id')
-        .eq('escala_id', novaEscala.id)
-        .limit(1);
-
-    if (diasExistentes && diasExistentes.length > 0) return;
-
     const { data: users } = await supabase
         .from('users')
         .select('id, nome')
@@ -322,16 +268,73 @@ async function _gerarSeNecessario() {
 
     if (!users || users.length === 0) return;
 
-    const datasEscala = gerarDatasEscala(mesProxStr, ['sabado', 'domingo', 'quarta'], users, anoProximo);
+    // 1. Garantir que o mês atual tem escala
+    await garantirEscalaDeMes(anoHoje, mesHoje, adminUser.id, users);
 
-    await supabase.from('escala_dias').insert(
-        datasEscala.map(d => ({
-            escala_id: novaEscala.id,
-            dia_semana: d.dia_semana,
-            data_especifica: d.data_especifica,
-            usuario_id: d.usuario_id
-        }))
-    );
+    // 2. Se já passou do penúltimo sábado, garantir que o próximo mês também tem
+    const penultimoSabado = getPenultimoSabado(anoHoje, mesHoje);
+    if (penultimoSabado && diaHoje >= penultimoSabado.getDate()) {
+        const mesProxIdx = mesHoje === 11 ? 0 : mesHoje + 1;
+        const anoProximo = mesHoje === 11 ? anoHoje + 1 : anoHoje;
+        await garantirEscalaDeMes(anoProximo, mesProxIdx, adminUser.id, users);
+    }
+}
+
+// Cria a escala de um mês caso ainda não exista
+async function garantirEscalaDeMes(ano, mesIdx, adminId, users) {
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+    const mesNum = mesIdx + 1; // 1-indexed
+    const mesStr = String(mesNum).padStart(2, '0');
+    const dataInicio = `${ano}-${mesStr}-01`;
+
+    const { data: existing } = await supabase
+        .from('escalas')
+        .select('id')
+        .eq('data_inicio', dataInicio)
+        .limit(1);
+
+    if (existing && existing.length > 0) return; // já existe
+
+    const ultimoDia = new Date(ano, mesNum, 0).getDate();
+    const dataFim   = `${ano}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
+
+    const { data: novaEscala, error } = await supabase
+        .from('escalas')
+        .insert({
+            nome: `Escala ${MESES[mesIdx]}`,
+            tipo: 'mensal',
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            criado_por: adminId
+        })
+        .select('id')
+        .single();
+
+    if (error || !novaEscala) return;
+
+    // Segunda proteção: checar se dias já existem antes de inserir
+    const { data: diasExistentes } = await supabase
+        .from('escala_dias')
+        .select('id')
+        .eq('escala_id', novaEscala.id)
+        .limit(1);
+
+    if (diasExistentes && diasExistentes.length > 0) return;
+
+    const datasEscala = gerarDatasEscala(mesStr, ['sabado', 'domingo', 'quarta'], users, ano);
+
+    if (datasEscala.length > 0) {
+        await supabase.from('escala_dias').insert(
+            datasEscala.map(d => ({
+                escala_id: novaEscala.id,
+                dia_semana: d.dia_semana,
+                data_especifica: d.data_especifica,
+                usuario_id: d.usuario_id
+            }))
+        );
+    }
 }
 
 // Calcula o penúltimo sábado de um mês/ano
