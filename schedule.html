@@ -1322,8 +1322,10 @@
 
         // Funções Utilitárias
         function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('pt-BR');
+            if (!dateString) return '';
+            // Divide a string "YYYY-MM-DD" diretamente — evita conversão UTC→local
+            const [ano, mes, dia] = dateString.split('-');
+            return `${dia}/${mes}/${ano}`;
         }
 
         function getDayDisplay(day) {
