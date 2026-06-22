@@ -199,14 +199,26 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
   try {
     const userId = parseInt(req.params.id);
 
-    const { data, error } = await supabase.from('users').delete().eq('id', userId).select('id');
+    // Verificar se usuário existe
+    const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
+    if (!existing) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Remover o usuário de todos os dias de escala onde estava escalado
+    await supabase.from('escala_dias').delete().eq('usuario_id', userId);
+
+    // Transferir escalas e eventos criados por ele para o admin que está fazendo a exclusão
+    await supabase.from('escalas').update({ criado_por: req.user.id }).eq('criado_por', userId);
+    await supabase.from('eventos').update({ criado_por: req.user.id }).eq('criado_por', userId);
+
+    // Desvincula arquivos do usuário mas mantém usuario_nome para rastreabilidade
+    await supabase.from('files').update({ usuario_id: null }).eq('usuario_id', userId);
+
+    const { error } = await supabase.from('users').delete().eq('id', userId);
 
     if (error) {
       return res.status(500).json({ error: 'Erro ao excluir usuário' });
-    }
-
-    if (!data || data.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
     res.json({ message: 'Usuário excluído com sucesso' });
