@@ -937,10 +937,8 @@
                 userRoleEl.textContent = getCargoDisplay(currentUser.cargo);
             }
             
-            // Atualizar navegação
-            if (typeof updateNavigationUI === 'function') {
-                updateNavigationUI(currentUser);
-            }
+            // Sidebar gerenciada pelo sidebar.js
+            if (typeof updateSidebar === 'function') updateSidebar(currentUser);
         }
 
         function getCargoDisplay(cargo) {

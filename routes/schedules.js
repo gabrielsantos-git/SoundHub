@@ -106,19 +106,20 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
         return res.status(400).json({ error: 'Selecione pelo menos um dia da semana' });
     }
     
-    // Obter mês atual
-    const dataAtual = new Date();
-    const mes = (dataAtual.getMonth() + 1).toString().padStart(2, '0');
-    const ano = dataAtual.getFullYear();
-    
-    // Obter nome do mês
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    const nomeMes = meses[dataAtual.getMonth()];
-    
+    // Mês e ano atuais
+    const agora = new Date();
+    const mesNum = agora.getMonth() + 1; // 1-indexed
+    const ano    = agora.getFullYear();
+    const mes    = String(mesNum).padStart(2, '0');
+
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const nomeMes = MESES[agora.getMonth()];
+
     try {
-        const lastDay = new Date(ano, parseInt(mes, 10), 0).getDate();
+        const lastDay   = new Date(ano, mesNum, 0).getDate(); // último dia do mês
         const dataInicio = `${ano}-${mes}-01`;
-        const dataFim = `${ano}-${mes}-${String(lastDay).padStart(2, '0')}`;
+        const dataFim    = `${ano}-${mes}-${String(lastDay).padStart(2, '0')}`;
 
         // Impedir escala duplicada para o mesmo mês
         const { data: existente } = await supabase
@@ -229,27 +230,41 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
     }
 });
 
-// Função standalone: verifica se é o penúltimo sábado e gera escala do próximo mês
-async function verificarEGerarEscalaAutomatica() {
-    const hoje = new Date();
-    const penultimoSabado = getPenultimoSabado(hoje.getFullYear(), hoje.getMonth());
+// Flag para evitar geração simultânea (race condition)
+let _gerando = false;
 
+// Verifica se é o penúltimo sábado e gera escala do próximo mês
+async function verificarEGerarEscalaAutomatica() {
+    if (_gerando) return;
+    _gerando = true;
+    try {
+        await _gerarSeNecessario();
+    } finally {
+        _gerando = false;
+    }
+}
+
+async function _gerarSeNecessario() {
+    const hoje = new Date();
+    const anoHoje  = hoje.getFullYear();
+    const mesHoje  = hoje.getMonth();       // 0-indexed
+    const diaHoje  = hoje.getDate();
+
+    const penultimoSabado = getPenultimoSabado(anoHoje, mesHoje);
     if (!penultimoSabado) return;
 
-    const ehPenultimoSabadoOuDepois =
-        hoje.getFullYear() > penultimoSabado.getFullYear() ||
-        (hoje.getFullYear() === penultimoSabado.getFullYear() &&
-         hoje.getMonth() === penultimoSabado.getMonth() &&
-         hoje.getDate() >= penultimoSabado.getDate());
+    // Só age a partir do penúltimo sábado do mês atual
+    if (diaHoje < penultimoSabado.getDate()) return;
 
-    if (!ehPenultimoSabadoOuDepois) return;
+    // Calcular próximo mês corretamente
+    const mesProxIdx = mesHoje === 11 ? 0 : mesHoje + 1;   // 0-indexed
+    const anoProximo = mesHoje === 11 ? anoHoje + 1 : anoHoje;
+    const mesProxNum = mesProxIdx + 1;                       // 1-indexed (1–12)
+    const mesProxStr = String(mesProxNum).padStart(2, '0'); // "01"–"12"
 
-    const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
-    const anoProximo = proximoMes.getFullYear();
-    const mesProximo = (proximoMes.getMonth() + 1).toString().padStart(2, '0');
-    const dataInicioProximo = `${anoProximo}-${mesProximo}-01`;
+    const dataInicioProximo = `${anoProximo}-${mesProxStr}-01`;
 
-    // Não criar se já existe
+    // Verificar duplicata
     const { data: existing } = await supabase
         .from('escalas')
         .select('id')
@@ -258,11 +273,13 @@ async function verificarEGerarEscalaAutomatica() {
 
     if (existing && existing.length > 0) return;
 
-    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    const nomeProximoMes = meses[proximoMes.getMonth()];
-    const lastDay = new Date(anoProximo, parseInt(mesProximo, 10), 0).getDate();
-    const dataFim = `${anoProximo}-${mesProximo}-${String(lastDay).padStart(2, '0')}`;
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const nomeProximoMes = MESES[mesProxIdx];
+
+    // Último dia do próximo mês: new Date(ano, mesNum, 0) dá o último dia do mês anterior a mesNum
+    const ultimoDia = new Date(anoProximo, mesProxNum, 0).getDate();
+    const dataFim = `${anoProximo}-${mesProxStr}-${String(ultimoDia).padStart(2, '0')}`;
 
     const { data: adminUser } = await supabase
         .from('users')
@@ -288,6 +305,15 @@ async function verificarEGerarEscalaAutomatica() {
 
     if (insertError || !novaEscala) return;
 
+    // Verificar se os dias já foram criados (segunda proteção contra duplicata)
+    const { data: diasExistentes } = await supabase
+        .from('escala_dias')
+        .select('id')
+        .eq('escala_id', novaEscala.id)
+        .limit(1);
+
+    if (diasExistentes && diasExistentes.length > 0) return;
+
     const { data: users } = await supabase
         .from('users')
         .select('id, nome')
@@ -296,8 +322,7 @@ async function verificarEGerarEscalaAutomatica() {
 
     if (!users || users.length === 0) return;
 
-    const diasSemana = ['sabado', 'domingo', 'quarta'];
-    const datasEscala = gerarDatasEscala(mesProximo, diasSemana, users, anoProximo);
+    const datasEscala = gerarDatasEscala(mesProxStr, ['sabado', 'domingo', 'quarta'], users, anoProximo);
 
     await supabase.from('escala_dias').insert(
         datasEscala.map(d => ({
@@ -322,71 +347,61 @@ function getPenultimoSabado(ano, mes) {
     return sabados[sabados.length - 2]; // penúltimo sábado
 }
 
-// Função para gerar datas específicas da escala mensal
+// Gera os dias da escala para um mês/ano com rodízio equilibrado por tipo de dia.
+// mes: string "01"–"12" | ano: number
+// dias: array de nomes, ex: ['sabado', 'domingo', 'quarta']
+// users: array de { id, nome }
+//
+// Rodízio: para cada tipo de dia (sabado, domingo, quarta) o índice inicial é
+// deslocado, garantindo que nenhum usuário fique preso sempre no mesmo dia da semana.
 function gerarDatasEscala(mes, dias, users, ano) {
-    const result = [];
-    let userIndex = 0;
     if (!ano) ano = new Date().getFullYear();
-    
-    // Mapear dias da semana para números
-    const diasSemanaMap = {
-        'domingo': 0,
-        'segunda': 1,
-        'terca': 2,
-        'quarta': 3,
-        'quinta': 4,
-        'sexta': 5,
-        'sabado': 6
+
+    const mesNum = parseInt(mes, 10); // 1-indexed
+    const anoNum = parseInt(ano, 10);
+
+    const DIA_SEMANA = {
+        'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3,
+        'quinta': 4, 'sexta': 5, 'sabado': 6
     };
-    
-    // Obter número de dias no mês
-    const diasNoMes = new Date(ano, parseInt(mes), 0).getDate();
-    
-    // Para cada dia do mês
-    for (let dia = 1; dia <= diasNoMes; dia++) {
-        const data = new Date(ano, parseInt(mes) - 1, dia);
-        const diaSemana = data.getDay(); // 0 = domingo, 6 = sábado
-        
-        // Verificar se este dia da semana está nos selecionados
-        const diaSemanaNome = Object.keys(diasSemanaMap).find(key => diasSemanaMap[key] === diaSemana);
-        
-        if (dias.includes(diaSemanaNome)) {
-            // Distribuir usuário em rodízio
-            const assignedUser = users[userIndex % users.length];
-            
-            // Formatar data como YYYY-MM-DD
-            const dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
-            
-            result.push({
-                dia_semana: diaSemanaNome,
-                data_especifica: dataFormatada,
-                usuario_id: assignedUser.id,
-                usuario_nome: assignedUser.nome
-            });
-            
-            userIndex++;
+
+    // 1. Agrupar todas as datas do mês por tipo de dia
+    const grupos = {};
+    for (const nomeDia of dias) grupos[nomeDia] = [];
+
+    const ultimoDia = new Date(anoNum, mesNum, 0).getDate(); // new Date(ano, mes, 0) = último dia do mês mesNum
+
+    for (let d = 1; d <= ultimoDia; d++) {
+        // Usa UTC para evitar variação de fuso horário no servidor
+        const diaSemana = new Date(Date.UTC(anoNum, mesNum - 1, d)).getUTCDay();
+        const nomeDia = Object.keys(DIA_SEMANA).find(k => DIA_SEMANA[k] === diaSemana);
+        if (nomeDia && grupos[nomeDia] !== undefined) {
+            const dataStr = `${anoNum}-${String(mesNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            grupos[nomeDia].push(dataStr);
         }
     }
-    
-    return result;
-}
 
-// Função para distribuir usuários igualmente
-function distributeUsersEqually(users, dias) {
+    // 2. Para cada tipo de dia, atribuir usuários em rodízio com offset diferente
+    //    Isso evita que a mesma pessoa caia sempre no mesmo dia da semana.
     const result = [];
-    let userIndex = 0;
-    
-    dias.forEach(dia => {
-        // Distribuir em rodízio
-        const assignedUser = users[userIndex % users.length];
-        result.push({
-            dia_semana: dia,
-            usuario_id: assignedUser.id,
-            usuario_nome: assignedUser.nome
-        });
-        userIndex++;
-    });
-    
+    let offset = 0;
+
+    for (const nomeDia of dias) {
+        const datas = grupos[nomeDia];
+        for (let i = 0; i < datas.length; i++) {
+            const user = users[(i + offset) % users.length];
+            result.push({
+                dia_semana: nomeDia,
+                data_especifica: datas[i],
+                usuario_id: user.id,
+                usuario_nome: user.nome
+            });
+        }
+        offset = (offset + 1) % users.length; // cada tipo de dia começa num usuário diferente
+    }
+
+    // 3. Ordenar por data para facilitar visualização
+    result.sort((a, b) => a.data_especifica.localeCompare(b.data_especifica));
     return result;
 }
 
