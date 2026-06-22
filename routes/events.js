@@ -89,19 +89,15 @@ router.get('/:id/days', requireAuth, async (req, res) => {
 // Criar novo evento
 router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
     const { nome, descricao, data_inicio, data_fim } = req.body;
-    
+
     if (!nome || !data_inicio || !data_fim) {
         return res.status(400).json({ error: 'Nome, data de início e data de término são obrigatórios' });
     }
-    
-    // Validar datas
-    const startDate = new Date(data_inicio);
-    const endDate = new Date(data_fim);
-    
-    if (startDate > endDate) {
+
+    if (data_inicio > data_fim) {
         return res.status(400).json({ error: 'Data de início deve ser anterior à data de término' });
     }
-    
+
     try {
         const { data: insertedEvent, error: insertError } = await supabase
             .from('eventos')
@@ -116,42 +112,13 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
             .single();
 
         if (insertError || !insertedEvent) {
-            return res.status(500).json({ error: 'Erro ao criar evento' });
+            console.error('Erro Supabase ao criar evento:', insertError);
+            return res.status(500).json({ error: 'Erro ao criar evento', detail: insertError?.message });
         }
 
-        const eventoId = insertedEvent.id;
-
-        const { data: users, error: usersError } = await supabase
-            .from('users')
-            .select('id, nome')
-            .eq('status', 'APPROVED')
-            .in('cargo', ['SONOPLASTA', 'DIRETOR', 'ADMIN']);
-
-        if (usersError) {
-            return res.status(500).json({ error: 'Erro ao obter usuários' });
-        }
-
-        if (!users || users.length === 0) {
-            return res.status(400).json({ error: 'Nenhum usuário disponível para evento' });
-        }
-
-        const eventDays = generateEventDays(startDate, endDate, users);
-
-        const { error: insertDaysError } = await supabase.from('escala_dias').insert(
-            eventDays.map(day => ({
-                escala_id: eventoId,
-                dia_semana: day.dia_semana,
-                data_especifica: day.data_especifica,
-                usuario_id: day.usuario_id
-            }))
-        );
-
-        if (insertDaysError) {
-            return res.status(500).json({ error: 'Erro ao criar dias do evento' });
-        }
-
-        res.json({ message: 'Evento criado com sucesso', evento_id: eventoId });
+        res.json({ message: 'Evento criado com sucesso', evento_id: insertedEvent.id });
     } catch (error) {
+        console.error('Erro ao criar evento:', error);
         res.status(500).json({ error: 'Erro ao criar evento' });
     }
 });
