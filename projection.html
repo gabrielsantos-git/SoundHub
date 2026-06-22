@@ -286,9 +286,10 @@
         function initializeMedia(mediaList, currentIndex) {
             ProjectionState.mediaList = mediaList;
             ProjectionState.currentMediaIndex = currentIndex;
-            
+
             if (mediaList.length > 0) {
                 loadMedia(mediaList[currentIndex]);
+                requestFullscreen();
             } else {
                 showError('Nenhuma mídia disponível para projeção.');
             }

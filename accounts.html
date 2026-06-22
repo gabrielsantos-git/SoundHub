@@ -1289,22 +1289,20 @@
             }
             
             const token = localStorage.getItem('token');
-            fetch(`/api/users/${userId}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(result => {
+            try {
+                const response = await fetch(`/api/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
                 if (response.ok) {
                     console.log('Usuário atualizado com sucesso!');
                     closeEditModal();
                     loadUsers();
-                    
-                    // Se editando o próprio usuário, atualizar interface
                     if (userId == currentUser.id) {
                         currentUser = result.user;
                         updateUserInterface();
@@ -1312,11 +1310,10 @@
                 } else {
                     console.log(result.error || 'Erro ao atualizar usuário');
                 }
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Erro ao atualizar usuário:', error);
                 console.log('Erro de conexão ao atualizar usuário');
-            });
+            }
         });
 
         // Event listener para formulário de perfil
