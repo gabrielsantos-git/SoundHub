@@ -319,19 +319,8 @@
             document.getElementById('userName').textContent = currentUser.nome;
             document.getElementById('userRole').textContent = currentUser.cargo;
             
-            // Mostrar itens do menu baseado no cargo
-            const receiveLink = document.getElementById('receiveLink');
-            const projectLink = document.getElementById('projectLink');
-            const accountsLink = document.getElementById('accountsLink');
-            
-            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR') {
-                receiveLink.style.display = 'block';
-                projectLink.style.display = 'block';
-            }
-            
-            if (currentUser.cargo === 'DIRETOR') {
-                accountsLink.style.display = 'block';
-            }
+            // Sidebar gerenciada pelo sidebar.js
+            if (typeof updateSidebar === 'function') updateSidebar(currentUser);
         }
 
         // Inicializar Socket.io

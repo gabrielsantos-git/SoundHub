@@ -3,16 +3,25 @@ const router = express.Router();
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 
-// Listar escalas — também dispara geração automática se necessário
+// Listar escalas — apenas mês atual + próximo mês; dispara geração automática
 router.get('/', requireAuth, async (req, res) => {
     try {
-        // Verificação silenciosa: gera escala do próximo mês se for o penúltimo sábado
         verificarEGerarEscalaAutomatica().catch(() => {});
+
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = hoje.getMonth() + 1;
+        const mesProximo = mesAtual === 12 ? 1 : mesAtual + 1;
+        const anoProximo = mesAtual === 12 ? anoAtual + 1 : anoAtual;
+
+        const dataAtual  = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`;
+        const dataProximo = `${anoProximo}-${String(mesProximo).padStart(2, '0')}-01`;
 
         const { data: schedules, error } = await supabase
             .from('escalas')
             .select('*')
-            .order('data_inicio', { ascending: false });
+            .in('data_inicio', [dataAtual, dataProximo])
+            .order('data_inicio', { ascending: true });
 
         if (error) {
             return res.status(500).json({ error: 'Erro ao listar escalas' });
@@ -110,6 +119,17 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
         const lastDay = new Date(ano, parseInt(mes, 10), 0).getDate();
         const dataInicio = `${ano}-${mes}-01`;
         const dataFim = `${ano}-${mes}-${String(lastDay).padStart(2, '0')}`;
+
+        // Impedir escala duplicada para o mesmo mês
+        const { data: existente } = await supabase
+            .from('escalas')
+            .select('id')
+            .eq('data_inicio', dataInicio)
+            .limit(1);
+
+        if (existente && existente.length > 0) {
+            return res.status(400).json({ error: 'Já existe uma escala para este mês' });
+        }
 
         const { data: insertedSchedule, error: insertError } = await supabase
             .from('escalas')
@@ -370,4 +390,64 @@ function distributeUsersEqually(users, dias) {
     return result;
 }
 
+// Reajusta as escalas ativas incluindo um novo usuário
+// Encontra o sonoplasta com mais dias e cede um dia futuro para o novo usuário
+async function reajustarEscalasParaNovoUsuario(userId) {
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
+    const mesProximo = mesAtual === 12 ? 1 : mesAtual + 1;
+    const anoProximo = mesAtual === 12 ? anoAtual + 1 : anoAtual;
+
+    const dataAtual   = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`;
+    const dataProximo = `${anoProximo}-${String(mesProximo).padStart(2, '0')}-01`;
+
+    const { data: escalas } = await supabase
+        .from('escalas')
+        .select('id')
+        .in('data_inicio', [dataAtual, dataProximo]);
+
+    if (!escalas || escalas.length === 0) return;
+
+    const hojeStr = hoje.toISOString().split('T')[0];
+
+    for (const escala of escalas) {
+        const { data: dias } = await supabase
+            .from('escala_dias')
+            .select('id, usuario_id, data_especifica')
+            .eq('escala_id', escala.id)
+            .order('data_especifica', { ascending: true });
+
+        if (!dias || dias.length === 0) continue;
+
+        // Contar dias por usuário
+        const contagem = {};
+        for (const dia of dias) {
+            if (dia.usuario_id) {
+                contagem[dia.usuario_id] = (contagem[dia.usuario_id] || 0) + 1;
+            }
+        }
+
+        // Usuário com mais dias
+        const maisAtarefadoId = Object.entries(contagem)
+            .sort((a, b) => b[1] - a[1])[0]?.[0];
+
+        if (!maisAtarefadoId) continue;
+
+        // Primeiro dia futuro desse usuário
+        const diaParaCeder = dias.find(d =>
+            String(d.usuario_id) === String(maisAtarefadoId) &&
+            d.data_especifica >= hojeStr
+        );
+
+        if (!diaParaCeder) continue;
+
+        await supabase
+            .from('escala_dias')
+            .update({ usuario_id: userId })
+            .eq('id', diaParaCeder.id);
+    }
+}
+
 module.exports = router;
+module.exports.reajustarEscalasParaNovoUsuario = reajustarEscalasParaNovoUsuario;

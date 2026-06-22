@@ -834,22 +834,13 @@
             // Ajustar título da página baseado no cargo
             if (currentUser.cargo === 'SONOPLASTA') {
                 document.getElementById('pageTitle').textContent = 'Minha Conta';
-                document.getElementById('receiveLink').style.display = 'block';
-                document.getElementById('projectLink').style.display = 'block';
-                // Ocultar aba de pendentes para sonoplastas
                 document.getElementById('pendingTab').style.display = 'none';
             } else {
                 document.getElementById('pageTitle').textContent = 'Gerenciar Contas';
-                document.getElementById('receiveLink').style.display = 'block';
-                document.getElementById('projectLink').style.display = 'block';
             }
-            
-            // Mostrar link de escalas para todos os usuários logados
-            const scheduleLink = document.getElementById('scheduleLink');
-            if (scheduleLink) {
-                scheduleLink.style.display = 'block';
-                console.log('Menu Escalas mostrado para usuário:', currentUser.cargo);
-            }
+
+            // Sidebar gerenciada pelo sidebar.js
+            if (typeof updateSidebar === 'function') updateSidebar(currentUser);
         }
         
         function getCargoDisplay(cargo) {

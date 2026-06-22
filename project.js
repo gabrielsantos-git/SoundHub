@@ -202,35 +202,9 @@ function updateUserInterface() {
         userRoleEl.textContent = AppState.currentUser.cargo;
     }
     
-    // Lógica de menu consistente para todas as páginas
-    if (AppState.currentUser.cargo === 'SONOPLASTA' || AppState.currentUser.cargo === 'DIRETOR' || AppState.currentUser.cargo === 'ADMIN') {
-        if (receiveLink) receiveLink.style.display = 'block';
-        if (projectLink) projectLink.style.display = 'block';
-    }
-    
-    if (AppState.currentUser.cargo === 'DIRETOR' || AppState.currentUser.cargo === 'ADMIN') {
-        if (accountsLink) {
-            accountsLink.style.display = 'block';
-            console.log('Menu Contas mostrado para DIRETOR/ADMIN');
-        }
-    }
-    
-    // Mostrar link de escalas para todos os usuários logados
-    const scheduleLink = document.getElementById('scheduleLink');
-    if (scheduleLink) {
-        scheduleLink.style.display = 'block';
-        console.log('Menu Escalas mostrado para usuário:', AppState.currentUser.cargo);
-    }
-    
-    console.log('UI atualizada para usuário:', AppState.currentUser.nome, 'Cargo:', AppState.currentUser.cargo);
-    
-    // CHAMADA DIRETA PARA GARANTIR QUE O MENU APAREÇA
-    console.log('🔍 Verificando se updateNavigationUI está disponível:', typeof updateNavigationUI);
-    if (typeof updateNavigationUI === 'function') {
-        console.log('🔍 Chamando updateNavigationUI com usuário:', AppState.currentUser);
-        updateNavigationUI(AppState.currentUser);
-    } else {
-        console.log('❌ updateNavigationUI não está disponível');
+    // Sidebar gerenciada pelo sidebar.js via updateSidebar
+    if (typeof updateSidebar === 'function') {
+        updateSidebar(AppState.currentUser);
     }
 }
 

@@ -374,26 +374,8 @@
             document.getElementById('userName').textContent = currentUser.nome;
             document.getElementById('userRole').textContent = currentUser.cargo;
             
-            // Mostrar itens do menu baseado no cargo
-            const receiveLink = document.getElementById('receiveLink');
-            const projectLink = document.getElementById('projectLink');
-            const accountsLink = document.getElementById('accountsLink');
-            
-            if (currentUser.cargo === 'SONOPLASTA' || currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
-                receiveLink.style.display = 'block';
-                projectLink.style.display = 'block';
-            }
-            
-            if (currentUser.cargo === 'DIRETOR' || currentUser.cargo === 'ADMIN') {
-                accountsLink.style.display = 'block';
-            }
-            
-            // Mostrar link de escalas para todos os usuários logados
-            const scheduleLink = document.getElementById('scheduleLink');
-            if (scheduleLink) {
-                scheduleLink.style.display = 'block';
-                console.log('Menu Escalas mostrado para usuário:', currentUser.cargo);
-            }
+            // Sidebar gerenciada pelo sidebar.js
+            if (typeof updateSidebar === 'function') updateSidebar(currentUser);
         }
         
         async function loadFiles() {

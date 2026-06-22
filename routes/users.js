@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
+const { reajustarEscalasParaNovoUsuario } = require('./schedules');
 const router = express.Router();
 
 // Listar todos os usuários (aprovados)
@@ -159,11 +160,16 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
       .from('users')
       .update({ status: 'APPROVED', aprovado_em: new Date().toISOString() })
       .eq('id', userId)
-      .select('id')
+      .select('id, cargo')
       .single();
 
     if (error || !data) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Reajustar escalas ativas para incluir o novo SONOPLASTA ou DIRETOR
+    if (data.cargo === 'SONOPLASTA' || data.cargo === 'DIRETOR') {
+      reajustarEscalasParaNovoUsuario(userId).catch(() => {});
     }
 
     res.json({ message: 'Usuário aprovado com sucesso' });
