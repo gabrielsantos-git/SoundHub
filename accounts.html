@@ -1276,7 +1276,7 @@
         }
         
         // Event listener para formulário de edição
-        document.getElementById('editUserForm').addEventListener('submit', function(e) {
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const userId = this.dataset.userId;
