@@ -208,25 +208,16 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: 'Erro ao listar arquivos' });
     }
 
-    const filesWithUrls = (files || []).map(file => {
-      // Gerar URL assinada do Supabase Storage (válida por 1 hora)
-      const { data: signedUrlData, error: signedUrlError } = supabase.storage
+    const filesWithUrls = await Promise.all((files || []).map(async file => {
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('files')
-        .createSignedUrl(file.caminho, 3600); // 3600 segundos = 1 hora
-      
-      if (signedUrlError) {
-        console.error('Erro ao criar signed URL:', signedUrlError);
-        return {
-          ...file,
-          caminho: file.caminho // Fallback para o caminho original
-        };
-      }
-      
+        .createSignedUrl(file.caminho, 3600);
+
       return {
         ...file,
-        caminho: signedUrlData.signedUrl
+        caminho: signedUrlError ? file.caminho : signedUrlData.signedUrl
       };
-    });
+    }));
 
     res.json(filesWithUrls);
   } catch (error) {
@@ -272,26 +263,17 @@ router.get('/approved', async (req, res) => {
       return res.status(500).json({ error: 'Erro ao listar arquivos' });
     }
     
-    const filesWithUrls = (files || []).map(file => {
-      // Gerar URL assinada do Supabase Storage (válida por 1 hora)
-      const { data: signedUrlData, error: signedUrlError } = supabase.storage
+    const filesWithUrls = await Promise.all((files || []).map(async file => {
+      const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('files')
-        .createSignedUrl(file.caminho, 3600); // 3600 segundos = 1 hora
-      
-      if (signedUrlError) {
-        console.error('Erro ao criar signed URL:', signedUrlError);
-        return {
-          ...file,
-          caminho: file.caminho // Fallback para o caminho original
-        };
-      }
-      
+        .createSignedUrl(file.caminho, 3600);
+
       return {
         ...file,
-        caminho: signedUrlData.signedUrl
+        caminho: signedUrlError ? file.caminho : signedUrlData.signedUrl
       };
-    });
-    
+    }));
+
     res.json(filesWithUrls);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao listar arquivos' });
