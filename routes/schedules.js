@@ -3,9 +3,12 @@ const router = express.Router();
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 
-// Listar escalas semanais
+// Listar escalas — também dispara geração automática se necessário
 router.get('/', requireAuth, async (req, res) => {
     try {
+        // Verificação silenciosa: gera escala do próximo mês se for o penúltimo sábado
+        verificarEGerarEscalaAutomatica().catch(() => {});
+
         const { data: schedules, error } = await supabase
             .from('escalas')
             .select('*')
@@ -130,7 +133,7 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
             .from('users')
             .select('id, nome')
             .eq('status', 'APPROVED')
-            .in('cargo', ['SONOPLASTA', 'DIRETOR', 'ADMIN']);
+            .in('cargo', ['SONOPLASTA', 'DIRETOR']);
 
         if (usersError) {
             return res.status(500).json({ error: 'Erro ao obter usuários' });
@@ -140,7 +143,7 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
             return res.status(400).json({ error: 'Nenhum usuário disponível para escala' });
         }
 
-        const datasEscala = gerarDatasEscala(mes, dias, users);
+        const datasEscala = gerarDatasEscala(mes, dias, users, ano);
 
         const { error: insertDaysError } = await supabase.from('escala_dias').insert(
             datasEscala.map(d => ({
@@ -206,11 +209,104 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
     }
 });
 
+// Função standalone: verifica se é o penúltimo sábado e gera escala do próximo mês
+async function verificarEGerarEscalaAutomatica() {
+    const hoje = new Date();
+    const penultimoSabado = getPenultimoSabado(hoje.getFullYear(), hoje.getMonth());
+
+    if (!penultimoSabado) return;
+
+    const ehPenultimoSabadoOuDepois =
+        hoje.getFullYear() > penultimoSabado.getFullYear() ||
+        (hoje.getFullYear() === penultimoSabado.getFullYear() &&
+         hoje.getMonth() === penultimoSabado.getMonth() &&
+         hoje.getDate() >= penultimoSabado.getDate());
+
+    if (!ehPenultimoSabadoOuDepois) return;
+
+    const proximoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1);
+    const anoProximo = proximoMes.getFullYear();
+    const mesProximo = (proximoMes.getMonth() + 1).toString().padStart(2, '0');
+    const dataInicioProximo = `${anoProximo}-${mesProximo}-01`;
+
+    // Não criar se já existe
+    const { data: existing } = await supabase
+        .from('escalas')
+        .select('id')
+        .eq('data_inicio', dataInicioProximo)
+        .limit(1);
+
+    if (existing && existing.length > 0) return;
+
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+    const nomeProximoMes = meses[proximoMes.getMonth()];
+    const lastDay = new Date(anoProximo, parseInt(mesProximo, 10), 0).getDate();
+    const dataFim = `${anoProximo}-${mesProximo}-${String(lastDay).padStart(2, '0')}`;
+
+    const { data: adminUser } = await supabase
+        .from('users')
+        .select('id')
+        .in('cargo', ['ADMIN', 'DIRETOR'])
+        .eq('status', 'APPROVED')
+        .limit(1)
+        .single();
+
+    if (!adminUser) return;
+
+    const { data: novaEscala, error: insertError } = await supabase
+        .from('escalas')
+        .insert({
+            nome: `Escala ${nomeProximoMes}`,
+            tipo: 'mensal',
+            data_inicio: dataInicioProximo,
+            data_fim: dataFim,
+            criado_por: adminUser.id
+        })
+        .select('id')
+        .single();
+
+    if (insertError || !novaEscala) return;
+
+    const { data: users } = await supabase
+        .from('users')
+        .select('id, nome')
+        .eq('status', 'APPROVED')
+        .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+    if (!users || users.length === 0) return;
+
+    const diasSemana = ['sabado', 'domingo', 'quarta'];
+    const datasEscala = gerarDatasEscala(mesProximo, diasSemana, users, anoProximo);
+
+    await supabase.from('escala_dias').insert(
+        datasEscala.map(d => ({
+            escala_id: novaEscala.id,
+            dia_semana: d.dia_semana,
+            data_especifica: d.data_especifica,
+            usuario_id: d.usuario_id
+        }))
+    );
+}
+
+// Calcula o penúltimo sábado de um mês/ano
+function getPenultimoSabado(ano, mes) {
+    const sabados = [];
+    const diasNoMes = new Date(ano, mes + 1, 0).getDate();
+
+    for (let dia = 1; dia <= diasNoMes; dia++) {
+        const data = new Date(ano, mes, dia);
+        if (data.getDay() === 6) sabados.push(data); // 6 = sábado
+    }
+
+    return sabados[sabados.length - 2]; // penúltimo sábado
+}
+
 // Função para gerar datas específicas da escala mensal
-function gerarDatasEscala(mes, dias, users) {
+function gerarDatasEscala(mes, dias, users, ano) {
     const result = [];
     let userIndex = 0;
-    const ano = new Date().getFullYear();
+    if (!ano) ano = new Date().getFullYear();
     
     // Mapear dias da semana para números
     const diasSemanaMap = {

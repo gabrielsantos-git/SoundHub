@@ -182,23 +182,21 @@
             profileLink: !!profileLink
         });
 
-        // Para ADMIN e DIRETOR: mostrar todos os links principais
+        // Para ADMIN e DIRETOR: sem link de Contas na sidebar
         if (user.cargo === 'ADMIN' || user.cargo === 'DIRETOR') {
-            console.log('🔍 sidebar.js - Modo ADMIN/DIRETOR');
-            if (homeLink) homeLink.style.display = 'flex';
-            if (receiveLink) receiveLink.style.display = 'flex';
-            if (projectLink) projectLink.style.display = 'flex';
-            if (accountsLink) accountsLink.style.display = 'flex';
-            if (scheduleLink) scheduleLink.style.display = 'flex';
-            if (profileLink) profileLink.style.display = 'flex';
-        }
-        // Para SONOPLASTA: mostrar links específicos
-        else if (user.cargo === 'SONOPLASTA') {
-            console.log('🔍 sidebar.js - Modo SONOPLASTA');
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'flex';
             if (projectLink) projectLink.style.display = 'flex';
             if (accountsLink) accountsLink.style.display = 'none';
+            if (scheduleLink) scheduleLink.style.display = 'flex';
+            if (profileLink) profileLink.style.display = 'flex';
+        }
+        // Para SONOPLASTA: mostrar Contas
+        else if (user.cargo === 'SONOPLASTA') {
+            if (homeLink) homeLink.style.display = 'flex';
+            if (receiveLink) receiveLink.style.display = 'flex';
+            if (projectLink) projectLink.style.display = 'flex';
+            if (accountsLink) accountsLink.style.display = 'flex';
             if (scheduleLink) scheduleLink.style.display = 'flex';
             if (profileLink) profileLink.style.display = 'flex';
         }

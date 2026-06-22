@@ -37,13 +37,12 @@ function updateNavigationUI(user) {
     const isSonoplasta = user.cargo === 'SONOPLASTA';
 
     if (scheduleLink) {
-        scheduleLink.style.display = (isAdmin || isDiretor) ? 'block' : 'none';
-        console.log('✅ Link Escalas mostrado para usuário:', user.nome, 'Cargo:', user.cargo);
+        scheduleLink.style.display = (isAdmin || isDiretor || isSonoplasta) ? 'block' : 'none';
     }
-    
+
     if (accountsLink) {
-        accountsLink.style.display = isAdmin ? 'block' : 'none';
-        console.log('✅ Link Contas mostrado para usuário:', user.nome, 'Cargo:', user.cargo);
+        // Contas visível só para SONOPLASTA; ADMIN/DIRETOR gerenciam via outra rota
+        accountsLink.style.display = isSonoplasta ? 'block' : 'none';
     }
     
     if (receiveLink) {
