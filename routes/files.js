@@ -209,14 +209,22 @@ router.get('/', async (req, res) => {
     }
 
     const filesWithUrls = (files || []).map(file => {
-      // Gerar URL pública do Supabase Storage
-      const { data: { publicUrl } } = supabase.storage
+      // Gerar URL assinada do Supabase Storage (válida por 1 hora)
+      const { data: signedUrlData, error: signedUrlError } = supabase.storage
         .from('files')
-        .getPublicUrl(file.caminho);
+        .createSignedUrl(file.caminho, 3600); // 3600 segundos = 1 hora
+      
+      if (signedUrlError) {
+        console.error('Erro ao criar signed URL:', signedUrlError);
+        return {
+          ...file,
+          caminho: file.caminho // Fallback para o caminho original
+        };
+      }
       
       return {
         ...file,
-        caminho: publicUrl
+        caminho: signedUrlData.signedUrl
       };
     });
 
@@ -265,14 +273,22 @@ router.get('/approved', async (req, res) => {
     }
     
     const filesWithUrls = (files || []).map(file => {
-      // Gerar URL pública do Supabase Storage
-      const { data: { publicUrl } } = supabase.storage
+      // Gerar URL assinada do Supabase Storage (válida por 1 hora)
+      const { data: signedUrlData, error: signedUrlError } = supabase.storage
         .from('files')
-        .getPublicUrl(file.caminho);
+        .createSignedUrl(file.caminho, 3600); // 3600 segundos = 1 hora
+      
+      if (signedUrlError) {
+        console.error('Erro ao criar signed URL:', signedUrlError);
+        return {
+          ...file,
+          caminho: file.caminho // Fallback para o caminho original
+        };
+      }
       
       return {
         ...file,
-        caminho: publicUrl
+        caminho: signedUrlData.signedUrl
       };
     });
     
