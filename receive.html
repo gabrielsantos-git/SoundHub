@@ -393,9 +393,6 @@
     </div>
 
     <script>
-        console.error('=== RECEIVE HTML SCRIPT START ===');
-        console.log('🔧 Script receive.html carregado...');
-        console.log('🔧 Verificando se checkAuth está definida:', typeof checkAuth);
         let currentUser = null;
         let currentQRToken = null;
         let countdownInterval = null;
@@ -403,55 +400,34 @@
 
         // Definir funções antes de usar
         async function checkAuth() {
-            console.error('=== CHECK AUTH START ===');
-            console.log('🔧 checkAuth() iniciada...');
-            console.log('🔍 receive.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
-            const authOverlay = document.getElementById('authOverlay');
-
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
 
             if (!token) {
-                console.log('❌ Token não encontrado, redirecionando para /auth');
-                // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
 
             try {
-                console.log('🔍 Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-
-                console.log('Status da resposta:', response.status);
 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('✅ Usuário autenticado:', data.user);
                     currentUser = data.user;
-                    console.error('Chamando updateUserInterface...');
                     updateUserInterface();
 
-                    // Verificar permissão
-                    console.log('🔍 Verificando permissão para cargo:', currentUser.cargo);
                     if (currentUser.cargo !== 'SONOPLASTA' && currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN') {
-                        console.log('❌ Permissão negada para cargo:', currentUser.cargo);
                         showAuthRequired();
                         return;
                     }
 
-                    console.log('✅ Permissão concedida, carregando arquivos...');
                     loadPendingFiles();
                 } else {
-                    console.error('❌ Resposta não OK:', response.status);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 }
             } catch (error) {
-                console.error('❌ Erro no checkAuth:', error);
                 showAuthRequired();
             }
         }
@@ -465,25 +441,16 @@
         
         // Verificar autenticação ao carregar
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 DOMContentLoaded disparado, chamando checkAuth...');
-            try {
-                checkAuth();
-            } catch (error) {
-                console.error('❌ Erro ao chamar checkAuth:', error);
-            }
+            checkAuth();
         });
         
         // Gerar QR Code automaticamente após verificação de autenticação
         async function autoGenerateQR() {
-            console.error('=== AUTO GENERATE QR ===');
             await new Promise(resolve => setTimeout(resolve, 1000));
-            console.error('Chamando generateQRCode...');
             await generateQRCode();
         }
 
         function updateUserInterface() {
-            console.error('=== UPDATE USER INTERFACE ===');
-            console.error('Current user:', currentUser);
             if (!currentUser) return;
 
             document.getElementById('userName').textContent = currentUser.nome;
@@ -500,21 +467,16 @@
         // Função generateQRCode manual para o botão "Gerar Novo"
         async function generateQRCode() {
             const qrContainer = document.getElementById('qrContainer');
-            
-            console.error('=== GENERATE QR CODE ===');
-            
-            // Limpar interval de verificação anterior
+
             if (statusCheckInterval) clearInterval(statusCheckInterval);
-            
+
             try {
                 const token = localStorage.getItem('token');
-                console.error('Token:', token ? 'EXISTS' : 'NULL');
                 if (!token) {
                     showAuthRequired();
                     return;
                 }
-                
-                console.error('Enviando requisição para /api/qr/generate');
+
                 const response = await fetch('/api/qr/generate', {
                     method: 'POST',
                     headers: {
@@ -522,12 +484,9 @@
                         'Content-Type': 'application/json'
                     }
                 });
-                
-                console.error('Status da resposta:', response.status);
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    console.error('Dados recebidos:', data);
                     currentQRToken = data.token;
                     
                     // Exibir QR code
@@ -546,15 +505,12 @@
                     startStatusCheck();
                     
                 } else if (response.status === 401 || response.status === 403) {
-                    console.error('Erro de autenticação:', response.status);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 } else {
-                    console.error('Erro na resposta:', response.status);
                     throw new Error('Erro ao gerar QR Code');
                 }
             } catch (error) {
-                console.error('Erro ao gerar QR Code:', error);
                 qrContainer.innerHTML = `
                     <div class="qr-container">
                         <p style="color: #ef4444;">Erro ao gerar QR Code</p>
@@ -708,10 +664,9 @@
                 
                 if (response.ok) {
                     try {
-                        const result = await response.json();
-                        console.log('Arquivo aprovado:', result);
+                        await response.json();
                     } catch (parseError) {
-                        console.warn('Erro ao parsear resposta de aprovação:', parseError);
+                        // ignora erro de parse
                     }
                     loadPendingFiles();
                 } else if (response.status === 401 || response.status === 403) {
@@ -719,20 +674,17 @@
                     showAuthRequired();
                 } else {
                     try {
-                        const error = await response.json();
-                        console.log(`Erro ao aprovar arquivo: ${error.error || 'Erro desconhecido'}`);
+                        await response.json();
                     } catch (parseError) {
-                        console.log('Erro ao aprovar arquivo');
+                        // ignora erro de parse
                     }
                 }
             } catch (error) {
                 console.error('Erro de conexão ao aprovar arquivo:', error);
-                console.log('Erro de conexão ao aprovar arquivo');
             }
         }
-        
+
         async function rejectFile(fileId) {
-            console.log('Recusando arquivo');
             
             try {
                 const token = localStorage.getItem('token');
@@ -751,10 +703,9 @@
                 
                 if (response.ok) {
                     try {
-                        const result = await response.json();
-                        console.log('Arquivo recusado:', result);
+                        await response.json();
                     } catch (parseError) {
-                        console.warn('Erro ao parsear resposta de rejeição:', parseError);
+                        // ignora erro de parse
                     }
                     loadPendingFiles();
                 } else if (response.status === 401 || response.status === 403) {
@@ -762,15 +713,13 @@
                     showAuthRequired();
                 } else {
                     try {
-                        const error = await response.json();
-                        console.log(`Erro ao recusar arquivo: ${error.error || 'Erro desconhecido'}`);
+                        await response.json();
                     } catch (parseError) {
-                        console.log('Erro ao recusar arquivo');
+                        // ignora erro de parse
                     }
                 }
             } catch (error) {
                 console.error('Erro de conexão ao recusar arquivo:', error);
-                console.log('Erro de conexão ao recusar arquivo');
             }
         }
         
@@ -806,23 +755,5 @@
         }
     </script>
     <script src="navigation.js"></script>
-    <script>
-        // Debug script para verificar localStorage
-        console.log('=== DEBUG RECEIVE.HTML ===');
-        const debugToken = localStorage.getItem('token');
-        const debugUser = localStorage.getItem('user');
-        console.log('Token no localStorage:', debugToken ? 'EXISTS' : 'NULL');
-        console.log('User no localStorage:', debugUser ? 'EXISTS' : 'NULL');
-        if (debugUser) {
-            try {
-                const userObj = JSON.parse(debugUser);
-                console.log('User object:', userObj);
-                console.log('User cargo:', userObj.cargo);
-            } catch (error) {
-                console.error('❌ Erro ao parsear user:', error);
-            }
-        }
-        console.log('=== FIM DEBUG ===');
-    </script>
 </body>
 </html>

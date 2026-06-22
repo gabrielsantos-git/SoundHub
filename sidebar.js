@@ -1,241 +1,329 @@
 // Sidebar unificado para todas as páginas
 (function() {
-    // Criar sidebar
     const sidebarHTML = `
+        <!-- Botão hamburger fixo — só aparece no mobile -->
+        <button class="sidebar-hamburger" id="sidebarHamburger" onclick="toggleSidebar()" aria-label="Abrir menu">
+            <span class="hamburger-icon">&#9776;</span>
+        </button>
+
         <div class="sidebar" id="sidebar">
-            <div style="margin-bottom: 2rem;">
-                <div style="font-size: 2rem; text-align: center; margin-bottom: 0.5rem;">🎵</div>
-                <h1 style="text-align: center; color: #3b82f6; font-size: 1.5rem;">SoundHub</h1>
+            <!-- Cabeçalho com logo e botão fechar (mobile) -->
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span style="font-size:1.75rem;">🎵</span>
+                    <h1 style="color:#3b82f6;font-size:1.25rem;font-weight:700;margin:0;">SoundHub</h1>
+                </div>
+                <button class="sidebar-close" id="sidebarClose" onclick="closeSidebar()" aria-label="Fechar menu">&#10005;</button>
             </div>
-            
-            <nav>
+
+            <nav style="flex:1;overflow-y:auto;">
                 <a href="/" class="sidebar-item" id="homeLink">
-                    <span style="margin-right: 0.75rem;">🏠</span>
-                    Início
+                    <span class="sidebar-icon">🏠</span>Início
                 </a>
                 <a href="/receive" class="sidebar-item" id="receiveLink">
-                    <span style="margin-right: 0.75rem;">📥</span>
-                    Receber
+                    <span class="sidebar-icon">📥</span>Receber
                 </a>
                 <a href="/project" class="sidebar-item" id="projectLink">
-                    <span style="margin-right: 0.75rem;">🎥</span>
-                    Projetar
+                    <span class="sidebar-icon">🎥</span>Projetar
                 </a>
                 <a href="/accounts" class="sidebar-item" id="accountsLink">
-                    <span style="margin-right: 0.75rem;">👤</span>
-                    Contas
+                    <span class="sidebar-icon">👥</span>Contas
                 </a>
                 <a href="/schedule" class="sidebar-item" id="scheduleLink">
-                    <span style="margin-right: 0.75rem;">📅</span>
-                    Escalas
+                    <span class="sidebar-icon">📅</span>Escalas
                 </a>
-                <a href="/profile" class="sidebar-item" id="profileLink" style="display: none;">
-                    <span style="margin-right: 0.75rem;">👤</span>
-                    Meu Perfil
+                <a href="/profile" class="sidebar-item" id="profileLink" style="display:none;">
+                    <span class="sidebar-icon">👤</span>Meu Perfil
                 </a>
             </nav>
-            
-            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
-                <div style="display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem;">
-                    <div style="width: 40px; height: 40px; background: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-weight: bold;">
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="sidebar-avatar">
                         <span id="userInitial">U</span>
                     </div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: 500; color: #374151;" id="userName">Usuário</div>
-                        <div style="font-size: 0.875rem; color: #6b7280;" id="userRole">Cargo</div>
+                    <div class="sidebar-user-info">
+                        <div id="userName">Usuário</div>
+                        <div id="userRole" class="sidebar-user-role">Cargo</div>
                     </div>
                 </div>
-                <button onclick="logout()" style="width: 100%; padding: 0.75rem; margin-top: 0.5rem; background: #ef4444; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 500;">
-                    Sair
-                </button>
+                <button onclick="logout()" class="sidebar-logout">Sair</button>
             </div>
         </div>
 
-        <!-- Overlay para mobile -->
-        <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+        <!-- Overlay escuro ao abrir no mobile -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
     `;
 
-    // Adicionar CSS para sidebar
     const style = document.createElement('style');
     style.textContent = `
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 280px;
-            height: 100vh;
-            background: white;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            padding: 1.5rem;
+        /* ── Layout base ── */
+        body {
+            margin: 0;
+            padding-left: 280px; /* espaço para a sidebar no desktop */
+            box-sizing: border-box;
+            transition: padding-left 0.3s ease;
         }
 
-        .sidebar.open {
-            transform: translateX(0);
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 280px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        /* Cabeçalho da sidebar */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.25rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        /* Botão fechar — oculto no desktop */
+        .sidebar-close {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            line-height: 1;
+            transition: background 0.15s;
+        }
+        .sidebar-close:hover { background: #f3f4f6; color: #111; }
+
+        /* Itens de navegação */
+        .sidebar-icon {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            width: 1.5rem;
+            text-align: center;
+            flex-shrink: 0;
         }
 
         .sidebar-item {
             display: flex;
             align-items: center;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.5rem;
+            padding: 0.7rem 1.25rem;
+            margin: 0.15rem 0.75rem;
             border-radius: 0.5rem;
             text-decoration: none;
             color: #374151;
-            transition: all 0.2s ease;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: background 0.15s, color 0.15s;
+        }
+        .sidebar-item:hover { background: #f1f5f9; color: #1d4ed8; }
+        .sidebar-item.active { background: #dbeafe; color: #1d4ed8; }
+
+        /* Rodapé com usuário */
+        .sidebar-footer {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid #f1f5f9;
+            flex-shrink: 0;
         }
 
-        .sidebar-item:hover {
-            background: #f3f4f6;
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
         }
 
-        .sidebar-item.active {
+        .sidebar-avatar {
+            width: 38px; height: 38px;
             background: #dbeafe;
-            color: #3b82f6;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #1d4ed8;
+            font-weight: 700;
+            font-size: 1rem;
+            flex-shrink: 0;
         }
 
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
+        .sidebar-user-info { flex: 1; min-width: 0; }
+        .sidebar-user-info #userName { font-weight: 600; color: #111827; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-user-role { font-size: 0.75rem; color: #6b7280; margin-top: 0.1rem; }
+
+        .sidebar-logout {
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
+            padding: 0.625rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: background 0.15s;
+        }
+        .sidebar-logout:hover { background: #dc2626; }
+
+        /* ── Hamburger ── */
+        .sidebar-hamburger {
+            display: none; /* oculto no desktop */
+            position: fixed;
+            top: 0.875rem;
+            left: 0.875rem;
+            z-index: 1001;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            width: 2.5rem; height: 2.5rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(59,130,246,0.4);
+            transition: background 0.15s;
+        }
+        .sidebar-hamburger:hover { background: #2563eb; }
+
+        /* ── Overlay ── */
+        .sidebar-overlay {
             display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 999;
+            backdrop-filter: blur(2px);
         }
+        .sidebar-overlay.show { display: block; }
 
-        .overlay.show {
-            display: block;
-        }
-
-        @media (min-width: 768px) {
-            .sidebar {
-                transform: translateX(0);
+        /* ── Mobile (< 768px) ── */
+        @media (max-width: 767px) {
+            body {
+                padding-left: 0 !important;
+                padding-top: 3.5rem; /* espaço para o hamburger */
             }
-            .overlay {
-                display: none !important;
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+            }
+
+            .sidebar-hamburger {
+                display: flex;
+            }
+
+            .sidebar-close {
+                display: flex;
+                align-items: center;
             }
         }
     `;
     document.head.appendChild(style);
 
-    // Injetar sidebar
+    // Injetar HTML
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
-    // Funções para controlar sidebar
+    // ── Controles ──
     window.toggleSidebar = function() {
         const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        sidebar.classList.toggle('open');
-        overlay.classList.toggle('show');
+        const overlay = document.getElementById('sidebarOverlay');
+        const isOpen = sidebar.classList.toggle('open');
+        overlay.classList.toggle('show', isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
     };
 
     window.closeSidebar = function() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        sidebar.classList.remove('open');
-        overlay.classList.remove('show');
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('show');
+        document.body.style.overflow = '';
     };
 
-    // Função de logout
+    // Fechar com ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') window.closeSidebar();
+    });
+
+    // Fechar ao navegar (mobile)
+    document.querySelectorAll('.sidebar-item').forEach(link => {
+        link.addEventListener('click', function() {
+            if (window.innerWidth < 768) window.closeSidebar();
+        });
+    });
+
     window.logout = function() {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/auth';
     };
 
-    // Atualizar sidebar com base no usuário
+    // ── Atualizar visibilidade dos links ──
     window.updateSidebar = function(user) {
         if (!user) return;
 
-        console.log('🔍 sidebar.js - Atualizando sidebar para usuário:', user);
-        console.log('🔍 sidebar.js - Cargo do usuário:', user.cargo);
-
-        // Atualizar informações do usuário
-        const userName = document.getElementById('userName');
-        const userRole = document.getElementById('userRole');
+        const userName    = document.getElementById('userName');
+        const userRole    = document.getElementById('userRole');
         const userInitial = document.getElementById('userInitial');
 
-        if (userName) userName.textContent = user.nome || 'Usuário';
-        if (userRole) userRole.textContent = user.cargo || 'Cargo';
+        if (userName)    userName.textContent    = user.nome  || 'Usuário';
+        if (userRole)    userRole.textContent    = user.cargo || 'Cargo';
         if (userInitial) userInitial.textContent = (user.nome || 'U').charAt(0).toUpperCase();
 
-        // Mostrar/ocultar links baseado no cargo
-        const homeLink = document.getElementById('homeLink');
-        const receiveLink = document.getElementById('receiveLink');
-        const projectLink = document.getElementById('projectLink');
+        const homeLink     = document.getElementById('homeLink');
+        const receiveLink  = document.getElementById('receiveLink');
+        const projectLink  = document.getElementById('projectLink');
         const accountsLink = document.getElementById('accountsLink');
         const scheduleLink = document.getElementById('scheduleLink');
-        const profileLink = document.getElementById('profileLink');
+        const profileLink  = document.getElementById('profileLink');
 
-        console.log('🔍 sidebar.js - Links encontrados:', {
-            homeLink: !!homeLink,
-            receiveLink: !!receiveLink,
-            projectLink: !!projectLink,
-            accountsLink: !!accountsLink,
-            scheduleLink: !!scheduleLink,
-            profileLink: !!profileLink
-        });
+        const show = el => { if (el) el.style.display = 'flex'; };
+        const hide = el => { if (el) el.style.display = 'none'; };
 
-        // Para ADMIN e DIRETOR: Contas visível, Meu Perfil oculto
+        show(homeLink);
+        show(receiveLink);
+        show(projectLink);
+        show(scheduleLink);
+
         if (user.cargo === 'ADMIN' || user.cargo === 'DIRETOR') {
-            if (homeLink) homeLink.style.display = 'flex';
-            if (receiveLink) receiveLink.style.display = 'flex';
-            if (projectLink) projectLink.style.display = 'flex';
-            if (accountsLink) accountsLink.style.display = 'flex';
-            if (scheduleLink) scheduleLink.style.display = 'flex';
-            if (profileLink) profileLink.style.display = 'none';
-        }
-        // Para SONOPLASTA: Contas oculta, Meu Perfil visível
-        else if (user.cargo === 'SONOPLASTA') {
-            if (homeLink) homeLink.style.display = 'flex';
-            if (receiveLink) receiveLink.style.display = 'flex';
-            if (projectLink) projectLink.style.display = 'flex';
-            if (accountsLink) accountsLink.style.display = 'none';
-            if (scheduleLink) scheduleLink.style.display = 'flex';
-            if (profileLink) profileLink.style.display = 'flex';
-        }
-        // Para outros usuários
-        else {
-            console.log('🔍 sidebar.js - Modo OUTRO (SONOPLASTA)');
-            if (homeLink) homeLink.style.display = 'flex';
-            if (receiveLink) receiveLink.style.display = 'none';
-            if (projectLink) projectLink.style.display = 'none';
-            if (accountsLink) accountsLink.style.display = 'none';
-            if (scheduleLink) scheduleLink.style.display = 'flex';
-            if (profileLink) profileLink.style.display = 'flex';
+            show(accountsLink);
+            hide(profileLink);
+        } else if (user.cargo === 'SONOPLASTA') {
+            hide(accountsLink);
+            show(profileLink);
+        } else {
+            hide(accountsLink);
+            hide(receiveLink);
+            hide(projectLink);
+            show(profileLink);
         }
 
-        // Marcar link ativo baseado na URL atual
+        // Marcar link ativo
         const currentPath = window.location.pathname;
-        const links = document.querySelectorAll('.sidebar-item');
-        links.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('active');
-            }
+        document.querySelectorAll('.sidebar-item').forEach(link => {
+            link.classList.toggle('active', link.getAttribute('href') === currentPath);
         });
     };
 
-    // Verificar usuário no localStorage e atualizar sidebar
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user) {
-        window.updateSidebar(user);
-    }
-
-    // Adicionar botão de menu no header se não existir
-    const header = document.querySelector('.header');
-    if (header && !header.querySelector('.menu-toggle')) {
-        const menuToggle = document.createElement('button');
-        menuToggle.className = 'menu-toggle';
-        menuToggle.innerHTML = '☰';
-        menuToggle.onclick = window.toggleSidebar;
-        menuToggle.style.cssText = 'background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0.5rem;';
-        header.insertBefore(menuToggle, header.firstChild);
+    // Aplicar dados do localStorage imediatamente (sem esperar auth)
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+        try { window.updateSidebar(JSON.parse(storedUser)); } catch {}
     }
 })();

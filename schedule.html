@@ -802,7 +802,7 @@
                 <button type="button" class="btn btn-secondary" onclick="closeCreateEventModal()">
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-primary" onclick="createEvent()">
+                <button type="button" class="btn btn-primary" onclick="submitCreateEvent()">
                     Criar Evento
                 </button>
             </div>
@@ -1208,11 +1208,11 @@
             }
         }
 
-        async function createEvent() {
+        async function submitCreateEvent() {
             const form = document.getElementById('createEventForm');
             const formData = new FormData(form);
             const data = Object.fromEntries(formData);
-            
+
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/events', {
@@ -1223,18 +1223,16 @@
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (response.ok) {
-                    console.log('Evento criado com sucesso!');
                     closeCreateEventModal();
                     loadEvents();
                 } else {
-                    const error = await response.json();
-                    console.log(error.error || 'Erro ao criar evento');
+                    const err = await response.json();
+                    alert(err.error || 'Erro ao criar evento');
                 }
             } catch (error) {
-                console.error('Erro ao criar evento:', error);
-                console.log('Erro de conexão ao criar evento');
+                alert('Erro de conexão ao criar evento');
             }
         }
 
