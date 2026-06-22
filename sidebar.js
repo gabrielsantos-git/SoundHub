@@ -182,21 +182,21 @@
             profileLink: !!profileLink
         });
 
-        // Para ADMIN e DIRETOR: sem link de Contas na sidebar
+        // Para ADMIN e DIRETOR: Contas visível, Meu Perfil oculto
         if (user.cargo === 'ADMIN' || user.cargo === 'DIRETOR') {
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'flex';
             if (projectLink) projectLink.style.display = 'flex';
-            if (accountsLink) accountsLink.style.display = 'none';
+            if (accountsLink) accountsLink.style.display = 'flex';
             if (scheduleLink) scheduleLink.style.display = 'flex';
-            if (profileLink) profileLink.style.display = 'flex';
+            if (profileLink) profileLink.style.display = 'none';
         }
-        // Para SONOPLASTA: mostrar Contas
+        // Para SONOPLASTA: Contas oculta, Meu Perfil visível
         else if (user.cargo === 'SONOPLASTA') {
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'flex';
             if (projectLink) projectLink.style.display = 'flex';
-            if (accountsLink) accountsLink.style.display = 'flex';
+            if (accountsLink) accountsLink.style.display = 'none';
             if (scheduleLink) scheduleLink.style.display = 'flex';
             if (profileLink) profileLink.style.display = 'flex';
         }

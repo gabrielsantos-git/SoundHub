@@ -41,8 +41,13 @@ function updateNavigationUI(user) {
     }
 
     if (accountsLink) {
-        // Contas visível só para SONOPLASTA; ADMIN/DIRETOR gerenciam via outra rota
-        accountsLink.style.display = isSonoplasta ? 'block' : 'none';
+        // Contas visível para ADMIN e DIRETOR; oculta para SONOPLASTA
+        accountsLink.style.display = (isAdmin || isDiretor) ? 'block' : 'none';
+    }
+
+    if (profileLink) {
+        // Meu Perfil visível só para SONOPLASTA
+        profileLink.style.display = isSonoplasta ? 'block' : 'none';
     }
     
     if (receiveLink) {
