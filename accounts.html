@@ -574,7 +574,7 @@
                 <div class="form-group">
                     <label for="editCargo">Cargo</label>
                     <select id="editCargo" name="cargo">
-                        <option value="USUARIO">Sonoplasta</option>
+                        <option value="SONOPLASTA">Sonoplasta</option>
                         <option value="DIRETOR">Diretor</option>
                         <option value="ADMIN">Administrador</option>
                     </select>
@@ -774,8 +774,6 @@
                     return 'Diretor';
                 case 'SONOPLASTA':
                     return 'Sonoplasta';
-                case 'USUARIO':
-                    return 'Usuário';
                 default:
                     console.log('⚠️ Cargo não reconhecido:', cargo);
                     return cargo || 'Desconhecido';
@@ -834,7 +832,7 @@
             }
             
             // Ajustar título da página baseado no cargo
-            if (currentUser.cargo === 'USUARIO') {
+            if (currentUser.cargo === 'SONOPLASTA') {
                 document.getElementById('pageTitle').textContent = 'Minha Conta';
                 document.getElementById('receiveLink').style.display = 'block';
                 document.getElementById('projectLink').style.display = 'block';
@@ -858,7 +856,7 @@
             const cargoMap = {
                 'ADMIN': 'Administrador',
                 'DIRETOR': 'Diretor',
-                'USUARIO': 'Sonoplasta'
+                'SONOPLASTA': 'Sonoplasta'
             };
             return cargoMap[cargo] || cargo;
         }
@@ -941,12 +939,12 @@
                         <td>${new Date(user.data_cadastro).toLocaleDateString('pt-BR')}</td>
                         <td>
                             <div class="actions">
-                                ${currentUser.cargo === 'USUARIO' ? '' : `
+                                ${currentUser.cargo === 'SONOPLASTA' ? '' : `
                                     <button class="btn btn-secondary" onclick="editUser(${user.id})">
                                         ✏️ Editar
                                     </button>
                                 `}
-                                ${currentUser.cargo === 'USUARIO' || (currentUser.cargo === 'ADMIN' && user.id === currentUser.id) ? '' : `
+                                ${currentUser.cargo === 'SONOPLASTA' || (currentUser.cargo === 'ADMIN' && user.id === currentUser.id) ? '' : `
                                     <button class="btn btn-danger" onclick="deleteUser(${user.id})">
                                         🗑️ Excluir
                                     </button>
@@ -1050,7 +1048,7 @@
             const classMap = {
                 'ADMIN': 'purple',
                 'DIRETOR': 'blue',
-                'USUARIO': 'green'
+                'SONOPLASTA': 'green'
             };
             return classMap[cargo] || 'gray';
         }
@@ -1074,7 +1072,7 @@
         }
         
         function changeCargo(userId, currentCargo) {
-            if (currentUser.cargo === 'USUARIO') {
+            if (currentUser.cargo === 'SONOPLASTA') {
                 console.log('Você não tem permissão para alterar cargos.');
                 return;
             }
@@ -1088,9 +1086,9 @@
             const newCargo = currentCargo; // Removido prompt por solicitação do usuário
             if (!newCargo) return;
             
-            const validCargos = ['USUARIO', 'DIRETOR', 'ADMIN'];
+            const validCargos = ['SONOPLASTA', 'DIRETOR', 'ADMIN'];
             if (!validCargos.includes(newCargo)) {
-                console.log('Cargo inválido. Use: USUARIO, DIRETOR ou ADMIN');
+                console.log('Cargo inválido. Use: SONOPLASTA, DIRETOR ou ADMIN');
                 return;
             }
             

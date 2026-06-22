@@ -105,7 +105,6 @@ soundhub/
 ## 🔐 Usuários e Permissões
 
 ### Cargos
-- **USER**: Usuário comum (pode acessar home e baixar arquivos)
 - **SONOPLASTA**: Pode gerar QR Codes, aprovar/rejeitar arquivos e projetar
 - **DIRETOR**: Todas as permissões + gerenciar usuários e excluir conteúdo
 

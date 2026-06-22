@@ -204,7 +204,7 @@
         }
         // Para outros usuários
         else {
-            console.log('🔍 sidebar.js - Modo OUTRO (USUARIO)');
+            console.log('🔍 sidebar.js - Modo OUTRO (SONOPLASTA)');
             if (homeLink) homeLink.style.display = 'flex';
             if (receiveLink) receiveLink.style.display = 'none';
             if (projectLink) projectLink.style.display = 'none';

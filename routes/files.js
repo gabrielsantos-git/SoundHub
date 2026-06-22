@@ -208,10 +208,17 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: 'Erro ao listar arquivos' });
     }
 
-    const filesWithUrls = (files || []).map(file => ({
-      ...file,
-      caminho: `${req.protocol}://${req.get('host')}/uploads/${path.basename(file.caminho)}`
-    }));
+    const filesWithUrls = (files || []).map(file => {
+      // Gerar URL pública do Supabase Storage
+      const { data: { publicUrl } } = supabase.storage
+        .from('files')
+        .getPublicUrl(file.caminho);
+      
+      return {
+        ...file,
+        caminho: publicUrl
+      };
+    });
 
     res.json(filesWithUrls);
   } catch (error) {
@@ -257,7 +264,19 @@ router.get('/approved', async (req, res) => {
       return res.status(500).json({ error: 'Erro ao listar arquivos' });
     }
     
-    res.json(files || []);
+    const filesWithUrls = (files || []).map(file => {
+      // Gerar URL pública do Supabase Storage
+      const { data: { publicUrl } } = supabase.storage
+        .from('files')
+        .getPublicUrl(file.caminho);
+      
+      return {
+        ...file,
+        caminho: publicUrl
+      };
+    });
+    
+    res.json(filesWithUrls);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao listar arquivos' });
   }

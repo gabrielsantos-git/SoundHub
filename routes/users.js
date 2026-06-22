@@ -128,7 +128,7 @@ router.patch('/:id/cargo', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), asyn
       return res.status(400).json({ error: 'Cargo é obrigatório' });
     }
     
-    const validCargos = ['USUARIO', 'SONOPLASTA', 'DIRETOR', 'ADMIN'];
+    const validCargos = ['SONOPLASTA', 'DIRETOR', 'ADMIN'];
     if (!validCargos.includes(cargo)) {
       return res.status(400).json({ error: 'Cargo inválido' });
     }
