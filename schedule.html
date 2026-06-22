@@ -751,44 +751,14 @@
                 <button class="close-btn" onclick="closeCreateScheduleModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="createScheduleForm">
-                    <div class="form-group">
-                        <label class="form-label">Selecione os Dias da Semana</label>
-                        <p style="color: #64748b; font-size: 0.875rem; margin-bottom: 1rem;">
-                            A escala será gerada automaticamente para o mês atual nos dias selecionados.
-                        </p>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="segunda" name="dias" value="segunda">
-                                <label for="segunda">Segunda-feira</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="terca" name="dias" value="terca">
-                                <label for="terca">Terça-feira</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="quarta" name="dias" value="quarta">
-                                <label for="quarta">Quarta-feira</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="quinta" name="dias" value="quinta">
-                                <label for="quinta">Quinta-feira</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="sexta" name="dias" value="sexta">
-                                <label for="sexta">Sexta-feira</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="sabado" name="dias" value="sabado">
-                                <label for="sabado">Sábado</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="domingo" name="dias" value="domingo">
-                                <label for="domingo">Domingo</label>
-                            </div>
-                        </div>
-                    </div>
-                </form>
+                <p style="color: #374151; font-size: 0.95rem;">
+                    A escala do mês atual será criada automaticamente com os dias fixos:
+                </p>
+                <ul style="margin: 1rem 0 0 1.5rem; color: #3b82f6; font-weight: 500;">
+                    <li>Sábado</li>
+                    <li>Domingo</li>
+                    <li>Quarta-feira</li>
+                </ul>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeCreateScheduleModal()">
@@ -1211,18 +1181,7 @@
 
         // Funções de Criação
         async function createSchedule() {
-            // Obter dias selecionados
-            const dias = [];
-            document.querySelectorAll('input[name="dias"]:checked').forEach(checkbox => {
-                dias.push(checkbox.value);
-            });
-            
-            if (dias.length === 0) {
-                console.log('Selecione pelo menos um dia da semana.');
-                return;
-            }
-            
-            const data = { dias };
+            const data = {}; // dias são fixos no servidor (sábado, domingo, quarta)
             
             try {
                 const token = localStorage.getItem('token');

@@ -6,7 +6,7 @@ const { requireAuth, requireRoles } = require('../middleware/auth');
 // Listar escalas — apenas mês atual + próximo mês; dispara geração automática
 router.get('/', requireAuth, async (req, res) => {
     try {
-        verificarEGerarEscalaAutomatica().catch(() => {});
+        await verificarEGerarEscalaAutomatica().catch(() => {});
 
         const hoje = new Date();
         const anoAtual = hoje.getFullYear();
@@ -98,13 +98,9 @@ router.get('/:id/days', requireAuth, async (req, res) => {
     }
 });
 
-// Criar nova escala mensal
+// Criar nova escala mensal (dias fixos: sábado, domingo, quarta)
 router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
-    const { dias } = req.body;
-    
-    if (!dias || !Array.isArray(dias) || dias.length === 0) {
-        return res.status(400).json({ error: 'Selecione pelo menos um dia da semana' });
-    }
+    const dias = ['sabado', 'domingo', 'quarta'];
     
     // Mês e ano atuais
     const agora = new Date();
