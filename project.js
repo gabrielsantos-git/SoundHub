@@ -510,7 +510,7 @@ async function startProjection() {
             try {
                 if (event.data.type === 'PROJECTION_READY') {
                     console.log('Janela confirmou que está pronta. Enviando dados...');
-                    
+
                     AppState.broadcastChannel.postMessage({
                         type: 'INITIALIZE_PROJECTION',
                         data: {
@@ -519,9 +519,11 @@ async function startProjection() {
                         }
                     });
 
+                    AppState.isProjecting = true;
+                    AppState.currentMediaIndex = 0;
+                    switchToControlPanel(selectedMediaList);
                     updateStatus('Projeção Ativa');
-                    
-                    // Remove o listener de sincronização após o sucesso
+
                     AppState.broadcastChannel.removeEventListener('message', syncHandler);
                 }
             } catch (handlerError) {
@@ -541,6 +543,14 @@ async function startProjection() {
     } catch (error) {
         console.error('Erro ao projetar:', error);
         showError('Falha ao iniciar: ' + error.message);
+    }
+}
+
+function toggleProjectionFullscreen() {
+    try {
+        AppState.broadcastChannel.postMessage({ type: 'TOGGLE_FULLSCREEN' });
+    } catch (e) {
+        console.error('Erro ao enviar comando de tela cheia:', e);
     }
 }
 
@@ -718,8 +728,13 @@ function initializeBroadcastChannel() {
         // Adicionar tratamento de erro para o listener
         const messageHandler = (event) => {
             try {
-                if (event.data.type === 'PROJECTION_CLOSED') {
+                const { type, data } = event.data;
+                if (type === 'PROJECTION_CLOSED') {
                     endProjection();
+                } else if (type === 'MEDIA_CHANGED') {
+                    AppState.currentMediaIndex = data.index;
+                    updateMediaListSelection();
+                    updatePreviews();
                 }
             } catch (handlerError) {
                 console.warn('Erro no handler do BroadcastChannel:', handlerError);

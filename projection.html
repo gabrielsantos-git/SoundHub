@@ -73,56 +73,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        .controls {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            padding: 1.5rem 2rem;
-            border-radius: 2rem;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .controls:hover {
-            opacity: 1;
-        }
-
-        .controls.show {
-            opacity: 1;
-        }
-
-        .control-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 1rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .control-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .control-btn.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
-        }
-
         .media-info {
             position: absolute;
             top: 30px;
@@ -272,22 +222,6 @@
             </div>
         </div>
 
-        <!-- Controles -->
-        <div class="controls" id="controls">
-            <button class="control-btn" onclick="previousMedia()">
-                ⏮️ Anterior
-            </button>
-            <button class="control-btn" onclick="togglePlayPause()" id="playPauseBtn">
-                ⏸️ Pausar
-            </button>
-            <button class="control-btn" onclick="nextMedia()">
-                ⏭️ Próximo
-            </button>
-            <button class="control-btn" onclick="toggleFullscreen()">
-                🖥️ Tela Cheia
-            </button>
-        </div>
-
         <!-- Controles de vídeo -->
         <div class="video-controls" id="videoControls">
             <div class="progress-bar" onclick="seekVideo(event)">
@@ -320,14 +254,9 @@
         });
 
         function initializeProjection() {
-            // Inicializar canal de comunicação
             ProjectionState.broadcastChannel = new BroadcastChannel('soundhub-projection');
             ProjectionState.broadcastChannel.onmessage = handleControlMessage;
-            
-            // ESSENCIAL: Avisa ao painel que pode enviar os dados
             ProjectionState.broadcastChannel.postMessage({ type: 'PROJECTION_READY' });
-            
-            setupMouseControls();
             setupKeyboardControls();
         }
 
@@ -339,13 +268,17 @@
                 case 'INITIALIZE_PROJECTION':
                     initializeMedia(data.mediaList, data.currentMediaIndex);
                     break;
-                    
+
                 case 'CHANGE_MEDIA':
                     changeMedia(data.mediaIndex, data.media);
                     break;
-                    
+
                 case 'TOGGLE_PLAY_PAUSE':
                     togglePlayPause();
+                    break;
+
+                case 'TOGGLE_FULLSCREEN':
+                    toggleFullscreen();
                     break;
             }
         }
@@ -518,21 +451,29 @@
         // Controles de Mídia
         function previousMedia() {
             if (ProjectionState.mediaList.length === 0) return;
-            
-            const newIndex = ProjectionState.currentMediaIndex === 0 ? 
-                ProjectionState.mediaList.length - 1 : 
+
+            const newIndex = ProjectionState.currentMediaIndex === 0 ?
+                ProjectionState.mediaList.length - 1 :
                 ProjectionState.currentMediaIndex - 1;
-            
+
             ProjectionState.currentMediaIndex = newIndex;
             loadMedia(ProjectionState.mediaList[newIndex]);
+            ProjectionState.broadcastChannel.postMessage({
+                type: 'MEDIA_CHANGED',
+                data: { index: newIndex, media: ProjectionState.mediaList[newIndex] }
+            });
         }
 
         function nextMedia() {
             if (ProjectionState.mediaList.length === 0) return;
-            
+
             const newIndex = (ProjectionState.currentMediaIndex + 1) % ProjectionState.mediaList.length;
             ProjectionState.currentMediaIndex = newIndex;
             loadMedia(ProjectionState.mediaList[newIndex]);
+            ProjectionState.broadcastChannel.postMessage({
+                type: 'MEDIA_CHANGED',
+                data: { index: newIndex, media: ProjectionState.mediaList[newIndex] }
+            });
         }
 
         function togglePlayPause() {
@@ -593,40 +534,6 @@
             } else if (document.msExitFullscreen) {
                 document.msExitFullscreen();
             }
-        }
-
-        // Controles de Mouse
-        function setupMouseControls() {
-            document.addEventListener('mousemove', () => {
-                showControls();
-                resetControlsTimeout();
-            });
-            
-            document.addEventListener('click', () => {
-                showControls();
-                resetControlsTimeout();
-            });
-        }
-
-        function showControls() {
-            document.getElementById('controls').classList.add('show');
-            
-            const video = document.querySelector('.media-video');
-            if (video) {
-                document.getElementById('videoControls').classList.add('show');
-            }
-        }
-
-        function hideControls() {
-            if (!ProjectionState.isPlaying) return;
-            
-            document.getElementById('controls').classList.remove('show');
-            document.getElementById('videoControls').classList.remove('show');
-        }
-
-        function resetControlsTimeout() {
-            clearTimeout(ProjectionState.controlsTimeout);
-            ProjectionState.controlsTimeout = setTimeout(hideControls, 3000);
         }
 
         // Controles de Teclado
