@@ -10,22 +10,13 @@
     <!-- Sidebar unificada será injetada pelo sidebar.js -->
     <script src="sidebar.js"></script>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">🎵 SoundHub</div>
-        <div class="user-info">
-            <span id="userName">Carregando...</span>
-            <span id="userRole" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.875rem;"></span>
-        </div>
-    </header>
 
     <!-- Main Content -->
     <main class="main-content">
         <div class="card">
             <div class="card-header">
-                <h1 class="card-title">Receber Arquivos</h1>
-                <button class="btn btn-primary" onclick="refreshFiles()">
-                    🔄 Atualizar
+                <button class="btn-primary" onclick="refreshFiles()">
+                    Atualizar
                 </button>
             </div>
         </div>
@@ -65,7 +56,7 @@
     <!-- Modal de Autenticação -->
     <div class="overlay" id="authOverlay">
         <div class="auth-required">
-            <h2>🔐 Acesso Restrito</h2>
+            <h2>Acesso Restrito</h2>
             <p>Apenas Sonoplastas e Diretores podem acessar esta página.</p>
             <a href="/auth" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
                 Fazer Login
@@ -177,7 +168,7 @@
                     qrContainer.innerHTML = `
                         <div class="qr-container">
                             <img src="${data.qrCode}" alt="QR Code" />
-                            <div class="qr-status active" id="qrStatus">QR Code ativo - Escaneie para fazer upload</div>
+                            <div class="qr-status active" id="qrStatus">QR Code ativo</div>
                             <p style="margin-bottom: 1rem;">Escaneie este QR Code para fazer upload</p>
                             <button class="btn btn-secondary" onclick="generateQRCode()">
                                 Gerar Novo
@@ -291,7 +282,7 @@
             if (files.length === 0) {
                 pendingContainer.innerHTML = `
                     <div class="empty-state">
-                        <h3>📁 Nenhum Upload Pendente</h3>
+                        <h3>Nenhum Upload Pendente</h3>
                         <p>Nenhum upload pendente.</p>
                     </div>
                 `;
@@ -317,10 +308,10 @@
                         </div>
                         <div class="file-actions">
                             <button class="btn btn-success" onclick="approveFile(${file.id})">
-                                ✅ Receber
+                                Receber
                             </button>
                             <button class="btn btn-danger" onclick="rejectFile(${file.id})">
-                                ❌ Recusar
+                                Recusar
                             </button>
                         </div>
                     </div>

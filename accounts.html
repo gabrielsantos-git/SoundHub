@@ -10,28 +10,12 @@
     <!-- Sidebar unificada será injetada pelo sidebar.js -->
     <script src="sidebar.js"></script>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">🎵 SoundHub</div>
-        <div class="user-info">
-            <span id="userName">Carregando...</span>
-            <span id="userRole" style="padding: 0.25rem 0.75rem; background: #f3f4f6; border-radius: 9999px; font-size: 0.875rem;"></span>
-            <button class="btn btn-secondary" onclick="editProfile()" style="margin-left: 1rem;">
-                ✏️ Editar Perfil
-            </button>
-        </div>
-    </header>
-
     <!-- Main Content -->
     <main class="main-content">
-        <div class="card">
+        <div class="card0">
             <div class="card-header">
-                <h1 class="card-title" id="pageTitle">Gerenciar Contas</h1>
-                <button class="btn btn-primary" onclick="refreshUsers()">
-                    🔄 Atualizar
-                </button>
-                <button class="btn btn-secondary" onclick="showProfileSection()">
-                    👤 Meu Perfil
+                <button class="btn-primary-refresh" onclick="refreshUsers()">
+                    Atualizar
                 </button>
             </div>
         </div>
@@ -107,7 +91,6 @@
             <div id="profileContent" class="tab-content" style="display: none;">
                 <div class="card">
                     <div class="card-header">
-                        <h2 class="card-title">Meu Perfil</h2>
                     </div>
                     <div class="table-container">
                         <form id="profileForm">
@@ -133,7 +116,7 @@
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">
-                                    🔄 Atualizar Meu Perfil
+                                    Atualizar Meu Perfil
                                 </button>
                             </div>
                         </form>
@@ -186,7 +169,7 @@
     <!-- Modal de Autenticação -->
     <div class="overlay" id="authOverlay">
         <div class="auth-required">
-            <h2>🔐 Acesso Restrito</h2>
+            <h2>Acesso Restrito</h2>
             <p>Apenas Diretores podem acessar esta página.</p>
             <a href="/auth" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
                 Fazer Login
@@ -206,7 +189,7 @@
         });
         
         async function checkAuth() {
-            console.log('🔍 accounts.html - Verificando autenticação...');
+            console.log('accounts.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
             const authOverlay = document.getElementById('authOverlay');
             
@@ -214,14 +197,14 @@
             console.log('Token completo:', token);
             
             if (!token) {
-                console.log('❌ Token não encontrado, redirecionando para /auth');
+                console.log('Token não encontrado, redirecionando para /auth');
                 // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
             
             try {
-                console.log('🔍 Enviando requisição para /api/auth/me...');
+                console.log('Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
                     headers: {
                         'Authorization': 'Bearer ' + token
@@ -232,15 +215,15 @@
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('✅ Usuário autenticado:', data.user);
+                    console.log('Usuário autenticado:', data.user);
                     currentUser = data.user;
                     updateUserInterface();
                     
                     // Verificar permissão
-                    console.log('🔍 Verificando permissão para cargo:', currentUser.cargo);
-                    console.log('🔍 Cargo é SONOPLASTA?', currentUser.cargo === 'SONOPLASTA');
-                    console.log('🔍 Cargo é DIRETOR?', currentUser.cargo === 'DIRETOR');
-                    console.log('🔍 Cargo é ADMIN?', currentUser.cargo === 'ADMIN');
+                    console.log('Verificando permissão para cargo:', currentUser.cargo);
+                    console.log('Cargo é SONOPLASTA?', currentUser.cargo === 'SONOPLASTA');
+                    console.log('Cargo é DIRETOR?', currentUser.cargo === 'DIRETOR');
+                    console.log('Cargo é ADMIN?', currentUser.cargo === 'ADMIN');
                     
                     if (currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN' && currentUser.cargo !== 'SONOPLASTA') {
                         console.log('❌ Permissão negada para cargo:', currentUser.cargo);
@@ -248,20 +231,18 @@
                         return;
                     }
                     
-                    console.log('✅ Permissão concedida, carregando...');
+                    console.log('Permissão concedida, carregando...');
                     
                     // Ajustar interface baseado no cargo
                     if (currentUser.cargo === 'SONOPLASTA') {
-                        console.log('🔍 Entrando no modo SONOPLASTA...');
+                        console.log('Entrando no modo SONOPLASTA...');
                         // Para SONOPLASTA: mostrar apenas aba de perfil
-                        document.getElementById('pageTitle').textContent = 'Minha Conta';
-                        
                         // Esconder abas de gerenciamento
                         const activeTab = document.getElementById('activeTab');
                         const pendingTab = document.getElementById('pendingTab');
                         const profileTab = document.getElementById('profileTab');
                         
-                        console.log('🔍 Elementos das abas encontrados:', {
+                        console.log('Elementos das abas encontrados:', {
                             activeTab: !!activeTab,
                             pendingTab: !!pendingTab,
                             profileTab: !!profileTab
@@ -276,7 +257,7 @@
                         const pendingContent = document.getElementById('pendingContent');
                         const profileContent = document.getElementById('profileContent');
                         
-                        console.log('🔍 Elementos dos conteúdos encontrados:', {
+                        console.log('Elementos dos conteúdos encontrados:', {
                             activeContent: !!activeContent,
                             pendingContent: !!pendingContent,
                             profileContent: !!profileContent
@@ -288,32 +269,32 @@
                         
                         if (profileTab) profileTab.classList.add('active');
                         
-                        console.log('🔍 Carregando dados do perfil...');
+                        console.log('Carregando dados do perfil...');
                         loadProfileData();
                     } else {
-                        console.log('🔍 Entrando no modo ADMIN/DIRETOR...');
+                        console.log('Entrando no modo ADMIN/DIRETOR...');
                         // Para ADMIN/DIRETOR: mostrar todas as funcionalidades
                         loadUsers();
                     }
                 } else {
-                    console.log('❌ Resposta não OK:', response.status);
+                    console.log('Resposta não OK:', response.status);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 }
             } catch (error) {
-                console.error('❌ Erro na verificação:', error);
+                console.error('Erro na verificação:', error);
                 showAuthRequired();
             }
         }
         
         function showAuthRequired() {
-            console.log('❌ showAuthRequired chamado - redirecionando para /auth');
+            console.log('showAuthRequired chamado - redirecionando para /auth');
             // Redirecionar automaticamente para página de autenticação
             window.location.href = '/auth';
         }
         
         function showProfileSection() {
-            console.log('🔍 showProfileSection chamado');
+            console.log('showProfileSection chamado');
             
             // Atualizar abas
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -328,10 +309,10 @@
         }
         
         function loadProfileData() {
-            console.log('🔍 loadProfileData chamado para currentUser:', currentUser);
+            console.log('loadProfileData chamado para currentUser:', currentUser);
             
             if (!currentUser) {
-                console.log('❌ currentUser não disponível');
+                console.log('currentUser não disponível');
                 return;
             }
             
@@ -341,7 +322,7 @@
                 const profileEmail = document.getElementById('profileEmail');
                 const profileCargo = document.getElementById('profileCargo');
                 
-                console.log('🔍 Elementos do perfil encontrados:', {
+                console.log('Elementos do perfil encontrados:', {
                     profileNome: !!profileNome,
                     profileEmail: !!profileEmail,
                     profileCargo: !!profileCargo
@@ -351,14 +332,14 @@
                 if (profileEmail) profileEmail.value = currentUser.email || '';
                 if (profileCargo) profileCargo.value = getCargoDisplay(currentUser.cargo) || '';
                 
-                console.log('✅ Dados do perfil carregados com sucesso');
+                console.log('Dados do perfil carregados com sucesso');
             } catch (error) {
-                console.error('❌ Erro ao carregar dados do perfil:', error);
+                console.error('Erro ao carregar dados do perfil:', error);
             }
         }
         
         function getCargoDisplay(cargo) {
-            console.log('🔍 getCargoDisplay chamado com cargo:', cargo);
+            console.log('getCargoDisplay chamado com cargo:', cargo);
             switch (cargo) {
                 case 'ADMIN':
                     return 'Administrador';
@@ -367,13 +348,13 @@
                 case 'SONOPLASTA':
                     return 'Sonoplasta';
                 default:
-                    console.log('⚠️ Cargo não reconhecido:', cargo);
+                    console.log('Cargo não reconhecido:', cargo);
                     return cargo || 'Desconhecido';
             }
         }
         
         function getStatusDisplay(status) {
-            console.log('🔍 getStatusDisplay chamado com status:', status);
+            console.log('getStatusDisplay chamado com status:', status);
             switch (status) {
                 case 'APPROVED':
                     return 'Aprovado';
@@ -382,53 +363,50 @@
                 case 'REJECTED':
                     return 'Rejeitado';
                 default:
-                    console.log('⚠️ Status não reconhecido:', status);
+                    console.log('Status não reconhecido:', status);
                     return status || 'Desconhecido';
             }
         }
         
         function updateUserInterface() {
-            console.log('🔍 updateUserInterface chamado com currentUser:', currentUser);
+            console.log('updateUserInterface chamado com currentUser:', currentUser);
             
             if (!currentUser) {
-                console.log('❌ currentUser é null/undefined');
+                console.log('currentUser é null/undefined');
                 return;
             }
             
-            console.log('✅ Atualizando interface com usuário:', currentUser.nome, currentUser.cargo);
+            console.log('Atualizando interface com usuário:', currentUser.nome, currentUser.cargo);
             
             const userNameEl = document.getElementById('userName');
             const userRoleEl = document.getElementById('userRole');
             
             if (userNameEl) {
                 userNameEl.textContent = currentUser.nome;
-                console.log('✅ Nome do usuário atualizado:', currentUser.nome);
+                console.log('Nome do usuário atualizado:', currentUser.nome);
             } else {
-                console.log('❌ Elemento userName não encontrado');
+                console.log('Elemento userName não encontrado');
             }
             
             if (userRoleEl) {
                 userRoleEl.textContent = getCargoDisplay(currentUser.cargo);
-                console.log('✅ Cargo do usuário atualizado:', getCargoDisplay(currentUser.cargo));
+                console.log('Cargo do usuário atualizado:', getCargoDisplay(currentUser.cargo));
             } else {
-                console.log('❌ Elemento userRole não encontrado');
+                console.log('Elemento userRole não encontrado');
             }
             
             // Verificar se o botão de editar perfil existe
             const editProfileBtn = document.querySelector('button[onclick="editProfile()"]');
             if (editProfileBtn) {
-                console.log('✅ Botão de editar perfil encontrado:', editProfileBtn);
-                console.log('✅ Botão visível:', editProfileBtn.style.display !== 'none');
+                console.log('Botão de editar perfil encontrado:', editProfileBtn);
+                console.log('Botão visível:', editProfileBtn.style.display !== 'none');
             } else {
-                console.log('❌ Botão de editar perfil NÃO encontrado');
+                console.log('Botão de editar perfil NÃO encontrado');
             }
             
-            // Ajustar título da página baseado no cargo
+            // Ajustar visibilidade das abas baseado no cargo
             if (currentUser.cargo === 'SONOPLASTA') {
-                document.getElementById('pageTitle').textContent = 'Minha Conta';
                 document.getElementById('pendingTab').style.display = 'none';
-            } else {
-                document.getElementById('pageTitle').textContent = 'Gerenciar Contas';
             }
 
             // Sidebar gerenciada pelo sidebar.js
@@ -524,12 +502,12 @@
                             <div class="actions">
                                 ${currentUser.cargo === 'SONOPLASTA' ? '' : `
                                     <button class="btn btn-secondary" onclick="editUser(${user.id})">
-                                        ✏️ Editar
+                                        Editar
                                     </button>
                                 `}
                                 ${currentUser.cargo === 'SONOPLASTA' || (currentUser.cargo === 'ADMIN' && user.id === currentUser.id) ? '' : `
                                     <button class="btn btn-danger" onclick="deleteUser(${user.id})">
-                                        🗑️ Excluir
+                                        Excluir
                                     </button>
                                 `}
                             </div>
@@ -545,7 +523,7 @@
                     <tr>
                         <td colspan="5" style="text-align: center; padding: 2rem;">
                             <div class="empty-state">
-                                <h3>❌ Erro ao Carregar</h3>
+                                <h3>Erro ao Carregar</h3>
                                 <p>Não foi possível carregar os usuários.</p>
                                 <button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button>
                             </div>
@@ -599,10 +577,10 @@
                         <td>
                             <div class="actions">
                                 <button class="btn btn-success" onclick="approveUser(${user.id})">
-                                    ✅ Aprovar
+                                    Aprovar
                                 </button>
                                 <button class="btn btn-danger" onclick="rejectUser(${user.id})">
-                                    ❌ Recusar
+                                    Recusar
                                 </button>
                             </div>
                         </td>
@@ -617,7 +595,7 @@
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 2rem;">
                             <div class="empty-state">
-                                <h3>❌ Erro ao Carregar</h3>
+                                <h3>Erro ao Carregar</h3>
                                 <p>Não foi possível carregar as contas pendentes.</p>
                                 <button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button>
                             </div>
@@ -700,8 +678,8 @@
         }
         
         function editUser(userId) {
-            console.log('🔍 editUser chamado para userId:', userId);
-            console.log('🔍 currentUser:', currentUser);
+            console.log('editUser chamado para userId:', userId);
+            console.log('currentUser:', currentUser);
             
             const token = localStorage.getItem('token');
             
@@ -712,7 +690,7 @@
             })
             .then(response => response.json())
             .then(user => {
-                console.log('✅ Usuário carregado para edição:', user);
+                console.log('Usuário carregado para edição:', user);
                 
                 // Preencher formulário
                 document.getElementById('editNome').value = user.nome;
@@ -725,7 +703,7 @@
                 
                 // Mostrar modal
                 document.getElementById('editUserModal').classList.add('show');
-                console.log('✅ Modal de edição aberto');
+                console.log('Modal de edição aberto');
             })
             .catch(error => {
                 console.error('Erro ao carregar usuário:', error);
@@ -738,7 +716,7 @@
         }
         
         function editProfile() {
-            console.log('🔍 editProfile chamado para currentUser:', currentUser);
+            console.log('editProfile chamado para currentUser:', currentUser);
             
             if (!currentUser) {
                 console.log('Usuário não encontrado!');
@@ -756,7 +734,7 @@
             
             // Mostrar modal
             document.getElementById('editUserModal').classList.add('show');
-            console.log('✅ Modal de edição de perfil aberto');
+            console.log('Modal de edição de perfil aberto');
         }
         
         function deleteUser(userId) {
@@ -787,9 +765,9 @@
         }
         
         function approveUser(userId) {
-            console.log('🔍 approveUser chamado para userId:', userId);
+            console.log('approveUser chamado para userId:', userId);
             const token = localStorage.getItem('token');
-            console.log('🔍 Token encontrado:', token ? 'SIM' : 'NÃO');
+            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
             
             fetch(`/api/users/${userId}/approve`, {
                 method: 'PATCH',
@@ -799,7 +777,7 @@
                 }
             })
             .then(response => {
-                console.log('🔍 Status da resposta approve:', response.status);
+                console.log('Status da resposta approve:', response.status);
                 if (response.ok) {
                     console.log('Usuário aprovado com sucesso!');
                     // Recarrega as duas listas para garantir sincronia
@@ -818,12 +796,12 @@
         }
         
         function rejectUser(userId) {
-            console.log('🔍 rejectUser chamado para userId:', userId);
+            console.log('rejectUser chamado para userId:', userId);
             console.log('Recusando usuário');
 
             
             const token = localStorage.getItem('token');
-            console.log('🔍 Token encontrado:', token ? 'SIM' : 'NÃO');
+            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
             
             fetch(`/api/users/${userId}/reject`, {
                 method: 'PATCH',
@@ -833,7 +811,7 @@
                 }
             })
             .then(response => {
-                console.log('🔍 Status da resposta reject:', response.status);
+                console.log('Status da resposta reject:', response.status);
                 if (response.ok) {
                     console.log('Usuário recusado com sucesso!');
                     loadPendingUsers();
@@ -906,7 +884,7 @@
             const formData = new FormData(this);
             const data = Object.fromEntries(formData);
             
-            console.log('🔍 Dados do formulário de perfil:', data);
+            console.log('Dados do formulário de perfil:', data);
             
             // Validações
             if (!data.nome || !data.email) {

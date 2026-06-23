@@ -1,3 +1,4 @@
+
 * {
     margin: 0;
     padding: 0;
@@ -13,8 +14,19 @@ body {
     border-bottom: 1px solid #e5e7eb;
     padding: 1rem 2rem;
     display: flex;
-    justify-content: space-between;
+    justify-content: end;
     align-items: center;
+}
+
+header button{
+    border-radius: 100%;
+    border: none;
+
+    padding: 0.5rem;
+}
+
+header span{
+    color: #646464;
 }
 .logo {
     font-size: 1.5rem;
@@ -73,13 +85,7 @@ body {
     padding: 2rem;
     min-height: 100vh;
 }
-.card {
-    background: white;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1.5rem;
-}
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -100,9 +106,6 @@ body {
     border-radius: 0.5rem;
     margin-bottom: 1rem;
     transition: all 0.2s;
-}
-.file-item:hover {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .file-info h3 {
     font-size: 1rem;
@@ -141,12 +144,25 @@ body {
     align-items: center;
     gap: 0.25rem;
 }
-.btn-primary { background: #3b82f6; color: white; }
-.btn-primary:hover { background: #2563eb; }
-.btn-secondary { background: #f3f4f6; color: #374151; }
+.btn-primary {
+     color: #3b82f6; 
+
+     background: #ffffff00;
+     border: none;
+
+     cursor: pointer;
+}
+
+.btn-secondary {
+    background: #eeeded;
+    color: #374151;
+
+}
+
 .btn-secondary:hover { background: #e5e7eb; }
 .btn-danger { background: #ef4444; color: white; }
 .btn-danger:hover { background: #dc2626; }
+
 .loading {
     display: flex;
     align-items: center;
@@ -214,9 +230,7 @@ body {
     .sidebar {
         transform: translateX(0);
     }
-    .main-content {
-        margin-left: 250px;
-    }
+
     .menu-toggle {
         display: none;
     }

@@ -59,12 +59,12 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Obter dias de um evento
+// Obter dias de um evento (gera automaticamente se não existirem)
 router.get('/:id/days', requireAuth, async (req, res) => {
     try {
         const id = parseInt(req.params.id);
 
-        const { data: days, error } = await supabase
+        let { data: days, error } = await supabase
             .from('escala_dias')
             .select('*')
             .eq('escala_id', id)
@@ -72,6 +72,50 @@ router.get('/:id/days', requireAuth, async (req, res) => {
 
         if (error) {
             return res.status(500).json({ error: 'Erro ao obter dias do evento' });
+        }
+
+        // Backfill: se não há dias, gera agora
+        if (!days || days.length === 0) {
+            const { data: evento } = await supabase
+                .from('eventos')
+                .select('data_inicio, data_fim')
+                .eq('id', id)
+                .single();
+
+            if (evento) {
+                const { data: users } = await supabase
+                    .from('users')
+                    .select('id, nome')
+                    .eq('status', 'APPROVED')
+                    .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+                if (users && users.length > 0) {
+                    const diasGerados = generateEventDays(
+                        new Date(evento.data_inicio + 'T00:00:00'),
+                        new Date(evento.data_fim + 'T00:00:00'),
+                        users
+                    );
+
+                    if (diasGerados.length > 0) {
+                        await supabase.from('escala_dias').insert(
+                            diasGerados.map(d => ({
+                                escala_id: id,
+                                dia_semana: d.dia_semana,
+                                data_especifica: d.data_especifica,
+                                usuario_id: d.usuario_id
+                            }))
+                        );
+
+                        const { data: novosDias } = await supabase
+                            .from('escala_dias')
+                            .select('*')
+                            .eq('escala_id', id)
+                            .order('data_especifica', { ascending: true });
+
+                        days = novosDias || [];
+                    }
+                }
+            }
         }
 
         const userIds = Array.from(new Set((days || []).map(d => d.usuario_id).filter(Boolean)));
@@ -116,10 +160,62 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
             return res.status(500).json({ error: 'Erro ao criar evento', detail: insertError?.message });
         }
 
-        res.json({ message: 'Evento criado com sucesso', evento_id: insertedEvent.id });
+        const eventoId = insertedEvent.id;
+
+        // Buscar sonoplastas e diretores aprovados para montar a escala
+        const { data: users } = await supabase
+            .from('users')
+            .select('id, nome')
+            .eq('status', 'APPROVED')
+            .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+        if (users && users.length > 0) {
+            const dias = generateEventDays(
+                new Date(data_inicio + 'T00:00:00'),
+                new Date(data_fim + 'T00:00:00'),
+                users
+            );
+
+            await supabase.from('escala_dias').insert(
+                dias.map(d => ({
+                    escala_id: eventoId,
+                    dia_semana: d.dia_semana,
+                    data_especifica: d.data_especifica,
+                    usuario_id: d.usuario_id
+                }))
+            );
+        }
+
+        res.json({ message: 'Evento criado com sucesso', evento_id: eventoId });
     } catch (error) {
         console.error('Erro ao criar evento:', error);
         res.status(500).json({ error: 'Erro ao criar evento' });
+    }
+});
+
+// Atualizar evento
+router.put('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, res) => {
+    const { id } = req.params;
+    const { nome, descricao, data_inicio, data_fim } = req.body;
+
+    if (!nome || !data_inicio || !data_fim) {
+        return res.status(400).json({ error: 'Nome, data de início e data de término são obrigatórios' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('eventos')
+            .update({ nome, descricao: descricao || '', data_inicio, data_fim })
+            .eq('id', parseInt(id))
+            .select('id');
+
+        if (error || !data || data.length === 0) {
+            return res.status(500).json({ error: 'Erro ao atualizar evento' });
+        }
+
+        res.json({ message: 'Evento atualizado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar evento' });
     }
 });
 

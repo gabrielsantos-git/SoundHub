@@ -10,30 +10,48 @@
             <!-- Cabeçalho com logo e botão fechar (mobile) -->
             <div class="sidebar-header">
                 <div class="sidebar-logo">
-                    <span style="font-size:1.75rem;">🎵</span>
-                    <h1 style="color:#3b82f6;font-size:1.25rem;font-weight:700;margin:0;">SoundHub</h1>
+                    <img src="/assets/SounHub-02.svg" alt="SoundHub Logo" style="width:200px;height:100px;margin-right:10px;margin-top:-40px;">
                 </div>
                 <button class="sidebar-close" id="sidebarClose" onclick="closeSidebar()" aria-label="Fechar menu">&#10005;</button>
             </div>
 
             <nav style="flex:1;overflow-y:auto;">
                 <a href="/" class="sidebar-item" id="homeLink">
-                    <span class="sidebar-icon">🏠</span>Início
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house" viewBox="0 0 16 16">
+                    <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293zM13 7.207V13.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V7.207l5-5z"/>
+                    </svg>Início
                 </a>
                 <a href="/receive" class="sidebar-item" id="receiveLink">
-                    <span class="sidebar-icon">📥</span>Receber
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-qr-code-scan" viewBox="0 0 16 16">
+                    <path d="M0 .5A.5.5 0 0 1 .5 0h3a.5.5 0 0 1 0 1H1v2.5a.5.5 0 0 1-1 0zm12 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-1 0V1h-2.5a.5.5 0 0 1-.5-.5M.5 12a.5.5 0 0 1 .5.5V15h2.5a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5m15 0a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1 0-1H15v-2.5a.5.5 0 0 1 .5-.5M4 4h1v1H4z"/>
+                    <path d="M7 2H2v5h5zM3 3h3v3H3zm2 8H4v1h1z"/>
+                    <path d="M7 9H2v5h5zm-4 1h3v3H3zm8-6h1v1h-1z"/>
+                    <path d="M9 2h5v5H9zm1 1v3h3V3zM8 8v2h1v1H8v1h2v-2h1v2h1v-1h2v-1h-3V8zm2 2H9V9h1zm4 2h-1v1h-2v1h3zm-4 2v-1H8v1z"/>
+                    <path d="M12 9h2V8h-2z"/>
+                    </svg>Receber
                 </a>
                 <a href="/project" class="sidebar-item" id="projectLink">
-                    <span class="sidebar-icon">🎥</span>Projetar
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cast" viewBox="0 0 16 16">
+                    <path d="m7.646 9.354-3.792 3.792a.5.5 0 0 0 .353.854h7.586a.5.5 0 0 0 .354-.854L8.354 9.354a.5.5 0 0 0-.708 0"/>
+                    <path d="M11.414 11H14.5a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h3.086l-1 1H1.5A1.5 1.5 0 0 1 0 10.5v-7A1.5 1.5 0 0 1 1.5 2h13A1.5 1.5 0 0 1 16 3.5v7a1.5 1.5 0 0 1-1.5 1.5h-2.086z"/>
+                    </svg>Projetar
                 </a>
                 <a href="/accounts" class="sidebar-item" id="accountsLink">
-                    <span class="sidebar-icon">👥</span>Contas
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-gear" viewBox="0 0 16 16">
+                    <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/>
+                    </svg>Contas
                 </a>
                 <a href="/schedule" class="sidebar-item" id="scheduleLink">
-                    <span class="sidebar-icon">📅</span>Escalas
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-journal-text" viewBox="0 0 16 16">
+                    <path d="M5 10.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0-2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5"/>
+                    <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-1h1v1a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v1H1V2a2 2 0 0 1 2-2"/>
+                    <path d="M1 5v-.5a.5.5 0 0 1 1 0V5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0V8h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1zm0 3v-.5a.5.5 0 0 1 1 0v.5h.5a.5.5 0 0 1 0 1h-2a.5.5 0 0 1 0-1z"/>
+                    </svg>Escalas
                 </a>
                 <a href="/profile" class="sidebar-item" id="profileLink" style="display:none;">
-                    <span class="sidebar-icon">👤</span>Meu Perfil
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person" viewBox="0 0 16 16">
+                    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/>
+                    </svg>Meu Perfil
                 </a>
             </nav>
 
@@ -55,188 +73,10 @@
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
     `;
 
-    const style = document.createElement('style');
-    style.textContent = `
-        /* ── Layout base ── */
-        body {
-            margin: 0;
-            padding-left: 280px; /* espaço para a sidebar no desktop */
-            box-sizing: border-box;
-            transition: padding-left 0.3s ease;
-        }
-
-        /* ── Sidebar ── */
-        .sidebar {
-            position: fixed;
-            top: 0; left: 0;
-            width: 280px;
-            height: 100vh;
-            background: #ffffff;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-            display: flex;
-            flex-direction: column;
-            z-index: 1000;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-        }
-
-        /* Cabeçalho da sidebar */
-        .sidebar-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1.25rem 1.25rem 1rem;
-            border-bottom: 1px solid #f1f5f9;
-            flex-shrink: 0;
-        }
-
-        .sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        /* Botão fechar — oculto no desktop */
-        .sidebar-close {
-            display: none;
-            background: none;
-            border: none;
-            font-size: 1.1rem;
-            color: #6b7280;
-            cursor: pointer;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.375rem;
-            line-height: 1;
-            transition: background 0.15s;
-        }
-        .sidebar-close:hover { background: #f3f4f6; color: #111; }
-
-        /* Itens de navegação */
-        .sidebar-icon {
-            margin-right: 0.75rem;
-            font-size: 1.1rem;
-            width: 1.5rem;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .sidebar-item {
-            display: flex;
-            align-items: center;
-            padding: 0.7rem 1.25rem;
-            margin: 0.15rem 0.75rem;
-            border-radius: 0.5rem;
-            text-decoration: none;
-            color: #374151;
-            font-size: 0.9375rem;
-            font-weight: 500;
-            transition: background 0.15s, color 0.15s;
-        }
-        .sidebar-item:hover { background: #f1f5f9; color: #1d4ed8; }
-        .sidebar-item.active { background: #dbeafe; color: #1d4ed8; }
-
-        /* Rodapé com usuário */
-        .sidebar-footer {
-            padding: 1rem 1.25rem;
-            border-top: 1px solid #f1f5f9;
-            flex-shrink: 0;
-        }
-
-        .sidebar-user {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .sidebar-avatar {
-            width: 38px; height: 38px;
-            background: #dbeafe;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: #1d4ed8;
-            font-weight: 700;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-
-        .sidebar-user-info { flex: 1; min-width: 0; }
-        .sidebar-user-info #userName { font-weight: 600; color: #111827; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .sidebar-user-role { font-size: 0.75rem; color: #6b7280; margin-top: 0.1rem; }
-
-        .sidebar-logout {
-            width: 100%;
-            padding: 0.625rem;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.875rem;
-            transition: background 0.15s;
-        }
-        .sidebar-logout:hover { background: #dc2626; }
-
-        /* ── Hamburger ── */
-        .sidebar-hamburger {
-            display: none; /* oculto no desktop */
-            position: fixed;
-            top: 0.875rem;
-            left: 0.875rem;
-            z-index: 1001;
-            background: #3b82f6;
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            width: 2.5rem; height: 2.5rem;
-            font-size: 1.2rem;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 8px rgba(59,130,246,0.4);
-            transition: background 0.15s;
-        }
-        .sidebar-hamburger:hover { background: #2563eb; }
-
-        /* ── Overlay ── */
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.45);
-            z-index: 999;
-            backdrop-filter: blur(2px);
-        }
-        .sidebar-overlay.show { display: block; }
-
-        /* ── Mobile (< 768px) ── */
-        @media (max-width: 767px) {
-            body {
-                padding-left: 0 !important;
-                padding-top: 3.5rem; /* espaço para o hamburger */
-            }
-
-            .sidebar {
-                transform: translateX(-100%);
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-                box-shadow: 4px 0 24px rgba(0,0,0,0.18);
-            }
-
-            .sidebar-hamburger {
-                display: flex;
-            }
-
-            .sidebar-close {
-                display: flex;
-                align-items: center;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/css/sidebar.css';
+    document.head.appendChild(link);
 
     // Injetar HTML
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);

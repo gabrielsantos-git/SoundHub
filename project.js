@@ -128,7 +128,7 @@ async function checkGroupSelection() {
             if (selectedCount > 0) {
                 const message = document.getElementById('message');
                 if (message) {
-                    message.innerHTML = `<div class="success">📅 Grupo "${groupName}" carregado com ${selectedCount} mídias selecionadas</div>`;
+                    message.innerHTML = `<div class="success"> Grupo "${groupName}" carregado com ${selectedCount} mídias selecionadas</div>`;
                     setTimeout(() => {
                         message.innerHTML = '';
                     }, 5000);
@@ -236,7 +236,7 @@ function renderMediaByDate() {
     Object.entries(mediaByDate).forEach(([date, list]) => {
         html += `
             <div class="media-date-group">
-                <div class="media-date-header">📅 ${date}</div>
+                <div class="media-date-header"> ${date}</div>
                 <div class="media-grid">
                     ${list.map(media => createMediaItem(media)).join('')}
                 </div>
@@ -286,7 +286,7 @@ function formatDate(dateString) {
 function createMediaItem(media) {
     const isSelected = AppState.selectedMedia.has(media.id);
     const selectedClass = isSelected ? 'selected' : '';
-    const typeIcon = media.tipo === 'image' ? '🖼️' : '🎥';
+    const typeIcon = media.tipo === 'image' ? '' : '';
     const typeText = media.tipo === 'image' ? 'Imagem' : 'Video';
     
     return '<div class="media-item ' + selectedClass + '" onclick="toggleMediaSelection(\'' + media.id + '\')" id="media-' + media.id + '" data-media-id="' + media.id + '">' + 
@@ -322,13 +322,13 @@ function updateProjectionButton() {
     button.disabled = !hasSelection || !hasScreen || AppState.isProjecting;
     
     if (AppState.isProjecting) {
-        button.textContent = '⏸️ Projetando...';
+        button.textContent = 'Projetando...';
         button.className = 'btn btn-secondary';
     } else if (hasSelection && hasScreen) {
-        button.textContent = '▶️ Projetar';
+        button.textContent = 'Projetar';
         button.className = 'btn btn-primary';
     } else {
-        button.textContent = '▶️ Projetar';
+        button.textContent = 'Projetar';
         button.className = 'btn btn-primary';
     }
 }
@@ -418,12 +418,12 @@ function renderScreens() {
     const container = document.getElementById('screenContainer');
     
     if (AppState.availableScreens.length === 0) {
-        container.innerHTML = '<div class="empty-state"><h3>🖥️ Nenhuma Tela</h3><p>Nenhuma tela detectada.</p></div>';
+        container.innerHTML = '<div class="empty-state"><h3> Nenhuma Tela</h3><p>Nenhuma tela detectada.</p></div>';
         return;
     }
     
     if (AppState.availableScreens.length === 1) {
-        container.innerHTML = '<div class="empty-state"><h3>⚠️ Apenas 1 Tela</h3><p>E necessario pelo menos 2 telas para projecao.</p></div>';
+        container.innerHTML = '<div class="empty-state"><h3> Apenas 1 Tela</h3><p>E necessario pelo menos 2 telas para projecao.</p></div>';
         return;
     }
     
@@ -547,7 +547,7 @@ function renderMediaList(mediaList) {
     let html = '';
     mediaList.forEach(function(media, index) {
         const activeClass = index === AppState.currentMediaIndex ? 'active' : '';
-        const typeIcon = media.tipo === 'image' ? '🖼️' : '🎥';
+        const typeIcon = media.tipo === 'image' ? '' : '';
         
         html += '<div class="media-list-item ' + activeClass + '" onclick="jumpToMedia(' + index + ')" id="list-item-' + index + '">' +
             typeIcon + ' ' + media.nome +

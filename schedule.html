@@ -10,15 +10,6 @@
     <!-- Sidebar unificada será injetada pelo sidebar.js -->
     <script src="sidebar.js"></script>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">🎵 SoundHub</div>
-        <div class="user-info">
-            <span id="userName">Carregando...</span>
-            <span id="userRole" class="user-role">...</span>
-        </div>
-    </header>
-
     <!-- Main Content -->
     <main class="main-content">
         <!-- Abas -->
@@ -27,17 +18,20 @@
                 <h1 class="card-title">Gerenciar Escalas</h1>
                 <div id="adminActions" style="display: none;">
 <button class="btn btn-success" onclick="openCreateEventModal()">
-                        🎉 Novo Evento
+                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                        </svg> Novo evento
                     </button>
                 </div>
             </div>
             <div class="card-content">
                 <div style="display: flex; gap: 1rem; border-bottom: 1px solid #e5e7eb; margin-bottom: 1rem;">
                     <button class="tab-btn active" onclick="switchTab('schedules')" id="schedulesTab">
-                        Escalas Semanais
+                        Escalas semanais
                     </button>
                     <button class="tab-btn" onclick="switchTab('events')" id="eventsTab">
-                        Escalas de Eventos
+                        Escalas de eventos
                     </button>
                 </div>
 
@@ -125,6 +119,41 @@
                 <button type="button" class="btn btn-primary" onclick="submitCreateEvent()">
                     Criar Evento
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Evento -->
+    <div class="modal" id="editEventModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Evento</h2>
+                <button class="close-btn" onclick="closeEditEventModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editEventForm">
+                    <input type="hidden" id="editEventId">
+                    <div class="form-group">
+                        <label class="form-label" for="editEventName">Nome do Evento</label>
+                        <input type="text" id="editEventName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editEventDescription">Descrição</label>
+                        <textarea id="editEventDescription" class="form-input" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editEventStartDate">Data de Início</label>
+                        <input type="date" id="editEventStartDate" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="editEventEndDate">Data de Término</label>
+                        <input type="date" id="editEventEndDate" class="form-input" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditEventModal()">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditEvent()">Salvar Alterações</button>
             </div>
         </div>
     </div>
@@ -364,10 +393,29 @@
                             <span class="badge badge-blue">${schedule.tipo}</span>
                         </div>
                         <div>
-                            ${currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR' ? 
-                                `<button class="btn btn-secondary" onclick="openEditScheduleModal(${schedule.id})">
-                                    ✏️ Editar
-                                </button>` : ''}
+                            ${currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR' ?
+                                `<div class="dropdown-wrapper">
+                                    <button class="btn btn-secondary moreOptionGE" onclick="toggleDropdown(event, ${schedule.id})">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                        <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                                        </svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="dropdown-${schedule.id}">
+                                        <button class="dropdown-item" onclick="closeAllDropdowns(); openEditScheduleModal(${schedule.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+                                            </svg>
+                                            Editar
+                                        </button>
+                                        <button class="dropdown-item dropdown-item-danger" onclick="closeAllDropdowns(); deleteSchedule(${schedule.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                                            </svg>
+                                            Excluir
+                                        </button>
+                                    </div>
+                                </div>` : ''}
                         </div>
                     </div>
                     <div>
@@ -406,6 +454,26 @@
                         <div class="schedule-day-title">
                             <strong>${event.nome}</strong>
                             <span class="badge badge-green">Evento</span>
+                        </div>
+                        <div>
+                            ${currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR' ?
+                                `<div class="dropdown-wrapper">
+                                    <button class="btn btn-secondary moreOptionGE" onclick="toggleDropdown(event, 'ev-${event.id}')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-three-dots-vertical" viewBox="0 0 16 16">
+                                        <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                                        </svg>
+                                    </button>
+                                    <div class="dropdown-menu" id="dropdown-ev-${event.id}">
+                                        <button class="dropdown-item" onclick="closeAllDropdowns(); openEditEventModal(${event.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+                                            Editar
+                                        </button>
+                                        <button class="dropdown-item dropdown-item-danger" onclick="closeAllDropdowns(); deleteEvent(${event.id})">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                                            Excluir
+                                        </button>
+                                    </div>
+                                </div>` : ''}
                         </div>
                     </div>
                     <div>
@@ -490,7 +558,7 @@
             
             const daysHTML = days.map(day => `
                 <div class="schedule-user">
-                    <strong>${formatDate(day.data_especifica)}:</strong>
+                    <strong>${formatDate(day.data_especifica)} (${getDayDisplay(day.dia_semana)}):</strong>
                     ${day.usuario_nome}
                 </div>
             `).join('');
@@ -656,6 +724,114 @@
                 'domingo': 'Domingo'
             };
             return days[day] || day;
+        }
+
+        function toggleDropdown(event, id) {
+            event.stopPropagation();
+            const menu = document.getElementById(`dropdown-${id}`);
+            const isOpen = menu.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) menu.classList.add('open');
+        }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll('.dropdown-menu.open').forEach(m => m.classList.remove('open'));
+        }
+
+        document.addEventListener('click', closeAllDropdowns);
+
+        async function deleteEvent(eventId) {
+            if (!confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.')) return;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/events/${eventId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    loadEvents();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Erro ao excluir evento');
+                }
+            } catch (error) {
+                alert('Erro de conexão ao excluir evento');
+            }
+        }
+
+        function openEditEventModal(eventId) {
+            document.getElementById('editEventModal').classList.add('open');
+            loadEventForEdit(eventId);
+        }
+
+        function closeEditEventModal() {
+            document.getElementById('editEventModal').classList.remove('open');
+            document.getElementById('editEventForm').reset();
+        }
+
+        async function loadEventForEdit(eventId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/events/${eventId}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    const event = await response.json();
+                    document.getElementById('editEventId').value = event.id;
+                    document.getElementById('editEventName').value = event.nome;
+                    document.getElementById('editEventDescription').value = event.descricao || '';
+                    document.getElementById('editEventStartDate').value = event.data_inicio;
+                    document.getElementById('editEventEndDate').value = event.data_fim;
+                }
+            } catch (error) {
+                alert('Erro ao carregar evento');
+            }
+        }
+
+        async function submitEditEvent() {
+            const id = document.getElementById('editEventId').value;
+            const data = {
+                nome: document.getElementById('editEventName').value,
+                descricao: document.getElementById('editEventDescription').value,
+                data_inicio: document.getElementById('editEventStartDate').value,
+                data_fim: document.getElementById('editEventEndDate').value,
+            };
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/events/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    closeEditEventModal();
+                    loadEvents();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Erro ao salvar evento');
+                }
+            } catch (error) {
+                alert('Erro de conexão ao salvar evento');
+            }
+        }
+
+        async function deleteSchedule(scheduleId) {
+            if (!confirm('Tem certeza que deseja excluir esta escala? Esta ação não pode ser desfeita.')) return;
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/schedules/${scheduleId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.ok) {
+                    loadSchedules();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || 'Erro ao excluir escala');
+                }
+            } catch (error) {
+                alert('Erro de conexão ao excluir escala');
+            }
         }
 
         function toggleSidebar() {

@@ -134,10 +134,15 @@ body {
 
 .btn-primary { background: #3b82f6; color: white; }
 .btn-primary:hover { background: #2563eb; }
-.btn-secondary { background: #6b7280; color: white; }
-.btn-secondary:hover { background: #4b5563; }
+.btn-secondary { background: #39435700; color: rgb(0, 0, 0); }
 .btn-success { background: #10b981; color: white; }
 .btn-success:hover { background: #059669; }
+
+.btn-success svg{
+    width: 15px;
+    height: 15px;
+}
+
 .btn-danger { background: #ef4444; color: white; }
 .btn-danger:hover { background: #dc2626; }
 
@@ -348,9 +353,50 @@ body {
     color: #6b7280;
 }
 
+.dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 100;
+    min-width: 140px;
+    overflow: hidden;
+}
+
+.dropdown-menu.open {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #374151;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.dropdown-item:hover { background: #f3f4f6; }
+.dropdown-item-danger { color: #ef4444; }
+.dropdown-item-danger:hover { background: #fef2f2; }
+
 @media (min-width: 768px) {
     .sidebar { transform: translateX(0); }
-    .main-content { margin-left: 250px; }
     .menu-toggle { display: none; }
 }
 

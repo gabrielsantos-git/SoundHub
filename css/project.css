@@ -110,7 +110,7 @@ body {
 
 .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: end;
     align-items: center;
     margin-bottom: 1.5rem;
 }
@@ -140,6 +140,14 @@ body {
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+}
+
+.btn-primary-refresh { 
+    background: rgba(255, 255, 255, 0); 
+    color: #3b82f6;
+    
+    border: none;
+    cursor: pointer;
 }
 
 .btn-primary { background: #3b82f6; color: white; }
@@ -366,7 +374,6 @@ body {
 
 @media (min-width: 768px) {
     .sidebar { transform: translateX(0); }
-    .main-content { margin-left: 250px; }
     .menu-toggle { display: none; }
 }
 

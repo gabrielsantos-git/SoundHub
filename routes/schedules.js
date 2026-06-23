@@ -52,7 +52,7 @@ router.get('/:id', requireAuth, async (req, res) => {
             .from('escala_dias')
             .select('*')
             .eq('escala_id', id)
-            .order('dia_semana', { ascending: true });
+            .order('data_especifica', { ascending: true });
 
         if (daysError) {
             return res.status(500).json({ error: 'Erro ao obter dias da escala' });
@@ -80,7 +80,7 @@ router.get('/:id/days', requireAuth, async (req, res) => {
             .from('escala_dias')
             .select('*')
             .eq('escala_id', id)
-            .order('dia_semana', { ascending: true });
+            .order('data_especifica', { ascending: true });
 
         if (error) {
             return res.status(500).json({ error: 'Erro ao obter dias da escala' });
@@ -291,7 +291,33 @@ async function garantirEscalaDeMes(ano, mesIdx, adminId, users) {
         .eq('data_inicio', dataInicio)
         .limit(1);
 
-    if (existing && existing.length > 0) return; // já existe
+    if (existing && existing.length > 0) {
+        // Verificar se os dias estão corretos (só sabado/domingo/quarta)
+        const escalaId = existing[0].id;
+        const diasPermitidos = ['sabado', 'domingo', 'quarta'];
+        const { data: diasAtual } = await supabase
+            .from('escala_dias')
+            .select('id, dia_semana')
+            .eq('escala_id', escalaId);
+
+        const temDiaErrado = diasAtual && diasAtual.some(d => !diasPermitidos.includes(d.dia_semana));
+        if (!temDiaErrado) return; // dados corretos, nada a fazer
+
+        // Limpar e regenerar
+        await supabase.from('escala_dias').delete().eq('escala_id', escalaId);
+        const datasEscala = gerarDatasEscala(mesStr, diasPermitidos, users, ano);
+        if (datasEscala.length > 0) {
+            await supabase.from('escala_dias').insert(
+                datasEscala.map(d => ({
+                    escala_id: escalaId,
+                    dia_semana: d.dia_semana,
+                    data_especifica: d.data_especifica,
+                    usuario_id: d.usuario_id
+                }))
+            );
+        }
+        return;
+    }
 
     const ultimoDia = new Date(ano, mesNum, 0).getDate();
     const dataFim   = `${ano}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;

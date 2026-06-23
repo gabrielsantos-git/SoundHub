@@ -10,29 +10,15 @@
     <!-- Sidebar unificada será injetada pelo sidebar.js -->
     <script src="sidebar.js"></script>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">🎵 SoundHub</div>
-        <div class="user-info">
-            <span id="userName">Carregando...</span>
-            <span id="userRole" class="user-role">...</span>
-        </div>
-    </header>
-
     <!-- Main Content -->
     <main class="main-content">
         <!-- Normal View -->
         <div id="normalView">
-            <div class="card">
+            <div>
                 <div class="card-header">
-                    <h1 class="card-title">🎥 Sistema de Projeção</h1>
-                    <button class="btn btn-primary" onclick="refreshMedia()">
-                        🔄 Atualizar
+                    <button class="btn-primary-refresh" onclick="refreshMedia()">
+                        Atualizar
                     </button>
-                </div>
-                
-                <div id="projectionStatus" class="status ready">
-                    Sistema pronto para projeção
                 </div>
             </div>
 
@@ -40,7 +26,7 @@
                 <!-- Media Selection -->
                 <div>
                     <div class="card">
-                        <h2 class="card-title">📁 Mídias Disponíveis</h2>
+                        <h2 class="card-title">Mídias Disponíveis</h2>
                         
                         <div id="mediaContainer">
                             <div class="loading">
@@ -54,21 +40,21 @@
                 <!-- Screen Selection -->
                 <div>
                     <div class="card">
-                        <h2 class="card-title">🖥️ Telas Disponíveis</h2>
+                        <h2 class="card-title">Telas Disponíveis</h2>
                         
                         <div id="screenContainer">
                             <button class="btn btn-primary" onclick="detectScreens()">
-                                🔍 Detectar Telas
+                                Detectar Telas
                             </button>
                         </div>
                     </div>
 
                     <div class="card">
-                        <h2 class="card-title">🎯 Controle de Projeção</h2>
+                        <h2 class="card-title">Controle de Projeção</h2>
                         
                         <div id="projectionButtons">
                             <button class="btn btn-primary" id="projectBtn" disabled onclick="startProjection()">
-                                ▶️ Projetar
+                                Projetar
                             </button>
                         </div>
                     </div>
@@ -79,9 +65,9 @@
         <!-- Control Panel View -->
         <div id="controlPanel" class="control-panel">
             <div class="card-header">
-                <h1 class="card-title">🎮 Painel de Controle</h1>
+                <h1 class="card-title">Painel de Controle</h1>
                 <button class="btn btn-danger" onclick="endProjection()">
-                    ⏹️ Finalizar Projeção
+                    Finalizar Projeção
                 </button>
             </div>
 
@@ -106,21 +92,15 @@
 
             <div class="control-buttons">
                 <button class="btn btn-secondary" onclick="previousMedia()">
-                    ⏮️ Anterior
-                </button>
-                <button class="btn btn-primary" onclick="playPauseMedia()">
-                    ⏸️ Pausar
+                    Anterior
                 </button>
                 <button class="btn btn-secondary" onclick="nextMedia()">
-                    ⏭️ Próximo
-                </button>
-                <button class="btn btn-secondary" onclick="toggleProjectionFullscreen()">
-                    🖥️ Tela Cheia
+                    Próximo
                 </button>
             </div>
 
             <div class="card">
-                <h3 class="card-title">📋 Lista de Mídias</h3>
+                <h3 class="card-title">Lista de Mídias</h3>
                 <div id="mediaList" class="media-list">
                     <!-- Media list will be populated here -->
                 </div>

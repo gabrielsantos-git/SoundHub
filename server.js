@@ -137,9 +137,6 @@ app.get('/auth', (req, res) => {
   res.sendFile(path.join(__dirname, 'auth.html'));
 });
 
-app.get('/home', (req, res) => {
-  res.sendFile(path.join(__dirname, 'home.html'));
-});
 
 app.get('/project', (req, res) => {
   res.sendFile(path.join(__dirname, 'project.html'));
