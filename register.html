@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoundHub - Login</title>
+    <title>SoundHub - Cadastro</title>
     <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
@@ -13,22 +13,33 @@
         <div class="auth-form-panel">
             <div id="message" class="message"></div>
 
-            <h1 class="auth-form-title">Entrar na conta</h1>
-            <form id="loginForm" onsubmit="handleLogin(event)">
+            <h1 class="auth-form-title">Criar conta</h1>
+            <form id="registerForm" onsubmit="handleRegister(event)">
                 <div class="form-group">
-                    <label for="loginEmail">Endereço de email</label>
-                    <input type="email" id="loginEmail" name="email" placeholder="seu@email.com" required>
+                    <label for="registerName">Nome completo</label>
+                    <input type="text" id="registerName" name="nome" placeholder="Seu nome" required>
                 </div>
                 <div class="form-group">
-                    <label for="loginPassword">Senha</label>
-                    <input type="password" id="loginPassword" name="senha" placeholder="Sua senha" required>
+                    <label for="registerEmail">Endereço de email</label>
+                    <input type="email" id="registerEmail" name="email" placeholder="seu@email.com" required>
                 </div>
-                <button type="submit" class="btn-submit" id="loginBtn">
-                    <span id="loginBtnText">Entrar</span>
-                    <div class="loading-spinner" id="loginSpinner" style="display:none;"></div>
+                <div class="form-group">
+                    <label for="registerPassword">Senha</label>
+                    <input type="password" id="registerPassword" name="senha" placeholder="Mínimo 6 caracteres" minlength="6" required>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirmar senha</label>
+                    <input type="password" id="confirmPassword" name="confirmSenha" placeholder="Repita a senha" minlength="6" required>
+                </div>
+                <button type="submit" class="btn-submit" id="registerBtn">
+                    <span id="registerBtnText">Cadastrar</span>
+                    <div class="loading-spinner" id="registerSpinner" style="display:none;"></div>
                 </button>
+                <div class="info-box">
+                    Após o cadastro, aguarde a aprovação de um administrador para acessar o sistema.
+                </div>
             </form>
-            <p class="auth-switch">Não tem uma conta? <a href="/register">Cadastre-se</a></p>
+            <p class="auth-switch">Já tem uma conta? <a href="/auth">Entrar</a></p>
         </div>
 
         <!-- Painel direito: imagem de mesa de som -->
@@ -54,25 +65,26 @@
             spinner.style.display = loading ? 'block' : 'none';
         }
 
-        async function handleLogin(event) {
+        async function handleRegister(event) {
             event.preventDefault();
             const form = event.target;
             const data = Object.fromEntries(new FormData(form));
+            if (data.senha !== data.confirmSenha) { showMessage('As senhas não coincidem.', 'error'); return; }
+            if (data.senha.length < 6) { showMessage('A senha deve ter pelo menos 6 caracteres.', 'error'); return; }
             setLoading(form, true);
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data),
+                    body: JSON.stringify({ nome: data.nome, email: data.email, senha: data.senha }),
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    localStorage.setItem('token', result.token);
-                    localStorage.setItem('user', JSON.stringify(result.user));
-                    showMessage('Login realizado! Redirecionando...', 'success');
-                    setTimeout(() => { window.location.href = '/'; }, 1000);
+                    showMessage('Cadastro realizado! Aguarde aprovação para acessar.', 'success');
+                    form.reset();
+                    setTimeout(() => { window.location.href = '/auth'; }, 2000);
                 } else {
-                    showMessage(result.message || 'Erro ao fazer login', 'error');
+                    showMessage(result.message || 'Erro ao cadastrar', 'error');
                 }
             } catch {
                 showMessage('Erro de conexão. Tente novamente.', 'error');
