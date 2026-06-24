@@ -89,10 +89,15 @@
 
             <!-- Seção de Perfil -->
             <div id="profileContent" class="tab-content" style="display: none;">
-                <div class="card">
-                    <div class="card-header">
+                <div class="profile-panels">
+                    <div class="profile-info-panel">
+                        <div class="profile-avatar-circle" id="profileAvatarCircle">?</div>
+                        <div class="profile-display-name" id="profileDisplayName">Carregando...</div>
+                        <div class="profile-display-role" id="profileDisplayRole"></div>
+                        <p class="profile-info-text">Gerencie suas informações pessoais e senha de acesso</p>
                     </div>
-                    <div class="table-container">
+                    <div class="profile-form-panel">
+                        <h2 class="profile-form-title">Meu Perfil</h2>
                         <form id="profileForm">
                             <div class="form-group">
                                 <label for="profileNome">Nome Completo</label>
@@ -112,7 +117,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Cargo Atual</label>
-                                <input type="text" id="profileCargo" readonly style="background: #f3f4f6; padding: 0.5rem; border-radius: 4px;">
+                                <input type="text" id="profileCargo" readonly>
                             </div>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">
@@ -236,6 +241,7 @@
                     // Ajustar interface baseado no cargo
                     if (currentUser.cargo === 'SONOPLASTA') {
                         console.log('Entrando no modo SONOPLASTA...');
+                        document.body.classList.add('sonoplasta-profile');
                         // Para SONOPLASTA: mostrar apenas aba de perfil
                         // Esconder abas de gerenciamento
                         const activeTab = document.getElementById('activeTab');
@@ -331,7 +337,14 @@
                 if (profileNome) profileNome.value = currentUser.nome || '';
                 if (profileEmail) profileEmail.value = currentUser.email || '';
                 if (profileCargo) profileCargo.value = getCargoDisplay(currentUser.cargo) || '';
-                
+
+                const profileAvatarCircle = document.getElementById('profileAvatarCircle');
+                const profileDisplayName = document.getElementById('profileDisplayName');
+                const profileDisplayRole = document.getElementById('profileDisplayRole');
+                if (profileAvatarCircle) profileAvatarCircle.textContent = (currentUser.nome || '?').charAt(0).toUpperCase();
+                if (profileDisplayName) profileDisplayName.textContent = currentUser.nome || '';
+                if (profileDisplayRole) profileDisplayRole.textContent = getCargoDisplay(currentUser.cargo) || '';
+
                 console.log('Dados do perfil carregados com sucesso');
             } catch (error) {
                 console.error('Erro ao carregar dados do perfil:', error);
