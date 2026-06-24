@@ -26,10 +26,4 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "crons": [
-    {
-      "path": "/api/cleanup",
-      "schedule": "0 3 * * *"
-    }
-  ]
 }

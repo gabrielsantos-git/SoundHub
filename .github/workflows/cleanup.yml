@@ -1,0 +1,16 @@
+name: LGPD Cleanup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 03:00 UTC todos os dias
+  workflow_dispatch:       # permite rodar manualmente pelo GitHub
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar limpeza periódica
+        run: |
+          curl -sf -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cleanup"
