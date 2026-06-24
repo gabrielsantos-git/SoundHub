@@ -205,21 +205,42 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
   try {
     const userId = parseInt(req.params.id);
 
-    // Verificar se usuário existe
     const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
     if (!existing) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    // Remover o usuário de todos os dias de escala onde estava escalado
+    // Remover das escalas
     await supabase.from('escala_dias').delete().eq('usuario_id', userId);
 
-    // Transferir escalas e eventos criados por ele para o admin que está fazendo a exclusão
+    // Transferir escalas e eventos criados para o admin executor
     await supabase.from('escalas').update({ criado_por: req.user.id }).eq('criado_por', userId);
     await supabase.from('eventos').update({ criado_por: req.user.id }).eq('criado_por', userId);
 
-    // Desvincula arquivos do usuário mas mantém usuario_nome para rastreabilidade
-    await supabase.from('files').update({ usuario_id: null }).eq('usuario_id', userId);
+    // Buscar arquivos PENDING e REJECTED do usuário para deletar
+    const { data: filesToDelete } = await supabase
+      .from('files')
+      .select('id, caminho')
+      .eq('usuario_id', userId)
+      .in('status', ['PENDING', 'REJECTED']);
+
+    if (filesToDelete && filesToDelete.length > 0) {
+      // Remover do Supabase Storage
+      const paths = filesToDelete.map(f => f.caminho).filter(Boolean);
+      if (paths.length > 0) {
+        await supabase.storage.from('files').remove(paths);
+      }
+      // Remover do banco
+      const ids = filesToDelete.map(f => f.id);
+      await supabase.from('files').delete().in('id', ids);
+    }
+
+    // Arquivos APPROVED permanecem no sistema — apenas desvincula o usuario_id
+    await supabase
+      .from('files')
+      .update({ usuario_id: null })
+      .eq('usuario_id', userId)
+      .eq('status', 'APPROVED');
 
     const { error } = await supabase.from('users').delete().eq('id', userId);
 
