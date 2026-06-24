@@ -7,11 +7,31 @@
     <link rel="stylesheet" href="/css/upload.css">
 </head>
 <body>
-    <div class="upload-container">
-        <div class="header">
-            <h1>Upload via QR Code</h1>
-            <p>Envie seu arquivo para o SoundHub</p>
+    <!-- Painel esquerdo: info -->
+    <div class="upload-info-panel">
+        <div class="brand">SoundHub</div>
+        <h2>Envio de arquivos</h2>
+        <p>Use este formulário para enviar imagens, vídeos ou PDFs diretamente para o sistema.</p>
+        <div class="steps">
+            <div class="step">
+                <div class="step-num">1</div>
+                <span>Digite seu nome para identificação</span>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <span>Selecione os arquivos que deseja enviar</span>
+            </div>
+            <div class="step">
+                <div class="step-num">3</div>
+                <span>Clique em "Enviar Arquivos" e aguarde a confirmação</span>
+            </div>
         </div>
+    </div>
+
+    <!-- Painel direito: formulário -->
+    <div class="upload-form-panel">
+        <p class="panel-title">Enviar arquivos</p>
+        <p class="panel-subtitle">Preencha os dados abaixo para concluir o envio.</p>
 
         <form id="uploadForm">
             <div class="form-group">
