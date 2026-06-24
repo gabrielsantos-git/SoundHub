@@ -7,37 +7,37 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #f5f5f5;
+    background: #eff6ff;
 }
 
 .auth-wrapper {
     display: flex;
     width: 100%;
-    max-width: 900px;
-    min-height: 520px;
-    background: white;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-    margin: 2rem;
+    min-height: 100vh;
 }
 
 /* ── Painel esquerdo: formulário ── */
 .auth-form-panel {
-    flex: 1;
-    padding: 3rem 2.5rem;
+    width: 480px;
+    flex-shrink: 0;
+    padding: 3rem 3.5rem;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    background: white;
+    border-right: 1px solid #dbeafe;
 }
 
 .auth-form-title {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #1e3a5f;
+    margin-bottom: 0.5rem;
+}
+
+.auth-form-subtitle {
+    color: #6b7280;
+    font-size: 0.875rem;
     margin-bottom: 2rem;
 }
 
@@ -48,7 +48,7 @@ body {
 label {
     display: block;
     margin-bottom: 0.4rem;
-    color: #444;
+    color: #374151;
     font-weight: 500;
     font-size: 0.875rem;
 }
@@ -58,22 +58,22 @@ input[type="email"],
 input[type="password"] {
     width: 100%;
     padding: 0.65rem 0.9rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid #bfdbfe;
     border-radius: 6px;
     font-size: 0.9rem;
     color: #1a1a1a;
-    background: #fafafa;
+    background: #f0f7ff;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 input:focus {
     outline: none;
     border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     background: white;
 }
 
-input::placeholder { color: #aaa; }
+input::placeholder { color: #9ca3af; }
 
 .btn-submit {
     width: 100%;
@@ -81,7 +81,7 @@ input::placeholder { color: #aaa; }
     margin-top: 0.5rem;
     border: none;
     border-radius: 6px;
-    background: #2d7a3a;
+    background: #3b82f6;
     color: white;
     font-size: 0.95rem;
     font-weight: 600;
@@ -93,7 +93,7 @@ input::placeholder { color: #aaa; }
     gap: 0.5rem;
 }
 
-.btn-submit:hover { background: #236130; }
+.btn-submit:hover { background: #2563eb; }
 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .auth-switch {
@@ -106,7 +106,7 @@ input::placeholder { color: #aaa; }
 .auth-switch a {
     color: #3b82f6;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .auth-switch a:hover { text-decoration: underline; }
@@ -127,9 +127,9 @@ input::placeholder { color: #aaa; }
 }
 
 .message.success {
-    background: #f0fdf4;
-    color: #16a34a;
-    border: 1px solid #bbf7d0;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
     display: block;
 }
 
@@ -147,7 +147,7 @@ input::placeholder { color: #aaa; }
 .loading-spinner {
     width: 18px;
     height: 18px;
-    border: 2px solid rgba(255,255,255,0.5);
+    border: 2px solid rgba(255, 255, 255, 0.5);
     border-top-color: white;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -159,8 +159,8 @@ input::placeholder { color: #aaa; }
 
 /* ── Painel direito: imagem ── */
 .auth-image-panel {
-    width: 45%;
-    background: #111;
+    flex: 1;
+    background: #1e3a5f;
     position: relative;
     overflow: hidden;
 }
@@ -169,13 +169,22 @@ input::placeholder { color: #aaa; }
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.85;
+    opacity: 0.55;
     display: block;
 }
 
+.auth-image-panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.5) 0%, rgba(30, 58, 95, 0.7) 100%);
+}
+
 /* ── Responsivo ── */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .auth-image-panel { display: none; }
-    .auth-wrapper { margin: 1rem; border-radius: 12px; }
-    .auth-form-panel { padding: 2rem 1.5rem; }
+    .auth-form-panel {
+        width: 100%;
+        padding: 2.5rem 1.75rem;
+    }
 }
