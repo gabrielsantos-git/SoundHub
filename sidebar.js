@@ -124,7 +124,7 @@
                 </svg>
                 <span>Escalas</span>
             </a>
-            <button class="bottom-nav-item" id="bn-settings" onclick="openSettingsModal()">
+            <button class="bottom-nav-item" id="bn-settings" onclick="toggleMobileSettings()">
                 <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
                     <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
                     <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.892-1.64-.901-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/>
@@ -140,25 +140,25 @@
             </button>
         </nav>
 
-        <!-- Modal de configurações (mobile) -->
-        <div class="settings-modal-overlay" id="settingsModalOverlay" onclick="closeSettingsModal()"></div>
-        <div class="settings-modal" id="settingsModal" role="dialog" aria-modal="true" aria-label="Configurações">
-            <div class="settings-modal-header">
-                <span>Configurações</span>
-                <button class="settings-modal-close" onclick="closeSettingsModal()" aria-label="Fechar">&#10005;</button>
-            </div>
-            <a href="/accounts" class="settings-modal-item" id="sm-accounts">
+        <!-- Dropdown de configurações (mobile) -->
+        <div class="mob-settings-overlay" id="mobSettingsOverlay" onclick="closeMobileSettings()"></div>
+        <div class="mob-settings-dropdown" id="mobSettingsDropdown">
+            <a href="/accounts" class="mob-settings-item" id="sm-accounts">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>
                 Contas
             </a>
-            <a href="/profile" class="settings-modal-item" id="sm-profile">
+            <a href="/profile" class="mob-settings-item" id="sm-profile">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/></svg>
                 Minha Conta
             </a>
-            <a href="/privacidade" class="settings-modal-item" target="_blank" rel="noopener">
+            <a href="/privacidade" class="mob-settings-item" target="_blank" rel="noopener">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/><path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/></svg>
                 Privacidade
             </a>
+            <button class="mob-settings-item mob-settings-logout" onclick="logout()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z"/></svg>
+                Sair
+            </button>
         </div>
     `;
 
@@ -196,24 +196,26 @@
         btn.setAttribute('aria-expanded', isOpen);
     };
 
-    // ── Modal de Configurações (mobile) ──
-    window.openSettingsModal = function() {
-        document.getElementById('settingsModal').classList.add('show');
-        document.getElementById('settingsModalOverlay').classList.add('show');
-        document.body.style.overflow = 'hidden';
+    // ── Dropdown de Configurações (mobile) ──
+    window.toggleMobileSettings = function() {
+        const dropdown = document.getElementById('mobSettingsDropdown');
+        const overlay  = document.getElementById('mobSettingsOverlay');
+        const isOpen   = dropdown.classList.toggle('show');
+        overlay.classList.toggle('show', isOpen);
+        const btn = document.getElementById('bn-settings');
+        if (btn) btn.classList.toggle('active', isOpen || ['/accounts','/profile'].includes(window.location.pathname));
     };
 
-    window.closeSettingsModal = function() {
-        document.getElementById('settingsModal').classList.remove('show');
-        document.getElementById('settingsModalOverlay').classList.remove('show');
-        document.body.style.overflow = '';
+    window.closeMobileSettings = function() {
+        document.getElementById('mobSettingsDropdown').classList.remove('show');
+        document.getElementById('mobSettingsOverlay').classList.remove('show');
     };
 
     // ESC fecha tudo
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             window.closeSidebar();
-            window.closeSettingsModal();
+            window.closeMobileSettings();
         }
     });
 
