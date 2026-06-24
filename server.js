@@ -15,6 +15,7 @@ const qrRoutes = require('./routes/qr');
 const userRoutes = require('./routes/users');
 const scheduleRoutes = require('./routes/schedules');
 const eventRoutes = require('./routes/events');
+const cleanupRoutes = require('./routes/cleanup');
 
 const app = express();
 const isVercel = !!process.env.VERCEL;
@@ -86,6 +87,7 @@ app.use('/api/qr', qrRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/cleanup', cleanupRoutes);
 
 // Serve arquivos estáticos (HTML, JS, CSS, imagens)
 app.get('/receive', (req, res) => {
