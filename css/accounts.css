@@ -425,3 +425,22 @@ select {
         font-size: 0.8rem;
     }
 }
+
+.tabs-header {
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 480px) {
+    .tabs-header {
+        gap: 0;
+    }
+    .tab-btn {
+        flex: 1;
+        padding: 0.6rem 0.25rem;
+        font-size: 0.75rem;
+        text-align: center;
+    }
+}

@@ -156,11 +156,16 @@ body {
 }
 .sidebar-overlay.show { display: block; }
 
+/* Esconde hamburger quando sidebar está aberta */
+body.sidebar-open .sidebar-hamburger {
+    display: none;
+}
+
 /* ── Mobile (< 768px) ── */
 @media (max-width: 767px) {
     body {
         padding-left: 0 !important;
-        padding-top: 3.5rem; /* espaço para o hamburger */
+        padding-top: 3.5rem;
     }
 
     .sidebar {
@@ -176,8 +181,21 @@ body {
         display: flex;
     }
 
+    .sidebar-header {
+        align-items: flex-start;
+        padding: 1rem 1rem 0.75rem;
+    }
+
+    .sidebar-logo img {
+        margin-top: 0 !important;
+        width: 140px !important;
+        height: auto !important;
+    }
+
     .sidebar-close {
         display: flex;
         align-items: center;
+        margin-top: 0.25rem;
+        flex-shrink: 0;
     }
 }

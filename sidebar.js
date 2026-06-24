@@ -87,12 +87,14 @@
         const overlay = document.getElementById('sidebarOverlay');
         const isOpen = sidebar.classList.toggle('open');
         overlay.classList.toggle('show', isOpen);
+        document.body.classList.toggle('sidebar-open', isOpen);
         document.body.style.overflow = isOpen ? 'hidden' : '';
     };
 
     window.closeSidebar = function() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('show');
+        document.body.classList.remove('sidebar-open');
         document.body.style.overflow = '';
     };
 
