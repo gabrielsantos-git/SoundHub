@@ -301,7 +301,8 @@ async function garantirEscalaDeMes(ano, mesIdx, adminId, users) {
             .eq('escala_id', escalaId);
 
         const temDiaErrado = diasAtual && diasAtual.some(d => !diasPermitidos.includes(d.dia_semana));
-        if (!temDiaErrado) return; // dados corretos, nada a fazer
+        const semDias = !diasAtual || diasAtual.length === 0;
+        if (!temDiaErrado && !semDias) return; // dados corretos, nada a fazer
 
         // Limpar e regenerar
         await supabase.from('escala_dias').delete().eq('escala_id', escalaId);
