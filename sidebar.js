@@ -263,11 +263,11 @@
             show(receiveLink);
             show(projectLink);
             show(accountsLink);
-            hide(profileLink);
+            show(profileLink);
             show(bnReceive);
             show(bnProject);
             show(smAccounts);
-            hide(smProfile);
+            show(smProfile);
         } else if (user.cargo === 'SONOPLASTA') {
             show(receiveLink);
             show(projectLink);

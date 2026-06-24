@@ -16,6 +16,7 @@ const userRoutes = require('./routes/users');
 const scheduleRoutes = require('./routes/schedules');
 const eventRoutes = require('./routes/events');
 const cleanupRoutes = require('./routes/cleanup');
+const profileRoutes = require('./routes/profile');
 
 const app = express();
 const isVercel = !!process.env.VERCEL;
@@ -88,6 +89,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/cleanup', cleanupRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Serve arquivos estáticos (HTML, JS, CSS, imagens)
 app.get('/receive', (req, res) => {
@@ -157,7 +159,7 @@ app.get('/accounts', (req, res) => {
 });
 
 app.get('/profile', (req, res) => {
-  res.sendFile(path.join(__dirname, 'accounts.html'));
+  res.sendFile(path.join(__dirname, 'profile.html'));
 });
 
 app.get('/display', (req, res) => {

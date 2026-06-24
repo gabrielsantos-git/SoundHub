@@ -1,0 +1,53 @@
+const nodemailer = require('nodemailer');
+
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  });
+}
+
+const from = () => `"SoundHub" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`;
+
+function tpl(code, title, desc) {
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f1f5f9;margin:0;padding:24px">
+<div style="max-width:440px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 16px rgba(0,0,0,.08)">
+  <div style="text-align:center;margin-bottom:20px;font-size:1.25rem;font-weight:800;color:#1d4ed8">SoundHub</div>
+  <h2 style="color:#111827;font-size:1.1rem;margin:0 0 8px">${title}</h2>
+  <p style="color:#6b7280;margin:0 0 20px;font-size:.9375rem">${desc}</p>
+  <div style="background:#eff6ff;border-radius:12px;padding:18px;text-align:center;margin-bottom:20px">
+    <span style="font-size:2.25rem;font-weight:800;letter-spacing:.3rem;color:#1d4ed8">${code}</span>
+  </div>
+  <p style="color:#9ca3af;font-size:.8125rem;margin:0;text-align:center">
+    Este código expira em <strong>10 minutos</strong>.<br>Se não foi você, ignore este email.
+  </p>
+</div></body></html>`;
+}
+
+async function sendPasswordCode(to, code) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Código para alteração de senha',
+    html: tpl(code, 'Alteração de Senha', 'Use o código abaixo para confirmar a alteração da sua senha:')
+  });
+}
+
+async function sendEmailOldCode(to, code) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Confirme sua identidade',
+    html: tpl(code, 'Verificação de Identidade', 'Para alterar seu email, confirme sua identidade com o código abaixo:')
+  });
+}
+
+async function sendEmailNewCode(to, code) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Confirme seu novo email',
+    html: tpl(code, 'Confirmar Novo Email', 'Use o código abaixo para confirmar seu novo endereço de email:')
+  });
+}
+
+module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode };
