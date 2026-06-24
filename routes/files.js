@@ -438,4 +438,38 @@ router.post('/download-zip', async (req, res) => {
   }
 });
 
+// Excluir arquivo
+router.delete('/:id', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (req, res) => {
+  try {
+    const fileId = parseInt(req.params.id);
+
+    const { data: file, error: getError } = await supabase
+      .from('files')
+      .select('id, caminho')
+      .eq('id', fileId)
+      .single();
+
+    if (getError || !file) {
+      return res.status(404).json({ error: 'Arquivo não encontrado' });
+    }
+
+    // Remove do Supabase Storage
+    await supabase.storage.from('files').remove([file.caminho]);
+
+    // Remove do banco de dados
+    const { error: dbError } = await supabase
+      .from('files')
+      .delete()
+      .eq('id', fileId);
+
+    if (dbError) {
+      return res.status(500).json({ error: 'Erro ao excluir arquivo' });
+    }
+
+    res.json({ message: 'Arquivo excluído com sucesso' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir arquivo' });
+  }
+});
+
 module.exports = router;
