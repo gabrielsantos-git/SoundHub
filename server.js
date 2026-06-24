@@ -141,6 +141,10 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'register.html'));
 });
 
+app.get('/privacidade', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacidade.html'));
+});
+
 
 app.get('/project', (req, res) => {
   res.sendFile(path.join(__dirname, 'project.html'));

@@ -141,15 +141,15 @@ router.get('/me', async (req, res) => {
 
 // Registrar usuário
 router.post('/register', async (req, res) => {
-  console.log("Dados recebidos no registro:", req.body);
-  
   try {
-    const { nome, email, senha } = req.body;
-
-    console.log("Dados extraídos:", { nome, email, senha: senha ? '***' : undefined });
+    const { nome, email, senha, consentimento } = req.body;
 
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
+    }
+
+    if (!consentimento) {
+      return res.status(400).json({ error: 'É necessário aceitar a Política de Privacidade para criar uma conta' });
     }
 
     // Verificar se email já existe
@@ -171,6 +171,9 @@ router.post('/register', async (req, res) => {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(senha, 10);
 
+    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket.remoteAddress || 'desconhecido';
+    const agora = new Date().toISOString();
+
     // Inserir novo usuário (aguardando aprovação)
     const { data: newUser, error: insertError } = await supabase
       .from('users')
@@ -180,7 +183,10 @@ router.post('/register', async (req, res) => {
         senha: hashedPassword,
         cargo: 'SONOPLASTA',
         status: 'PENDING',
-        data_cadastro: new Date().toISOString()
+        data_cadastro: agora,
+        consentimento_em: agora,
+        consentimento_ip: ip,
+        politica_versao: '1.0'
       })
       .select()
       .single();

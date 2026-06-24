@@ -46,6 +46,12 @@
                         </button>
                     </div>
                 </div>
+                <div class="form-group consent-group">
+                    <label class="consent-label">
+                        <input type="checkbox" id="consentCheck" required>
+                        <span>Li e aceito a <a href="/privacidade" target="_blank">Política de Privacidade</a> e autorizo o tratamento dos meus dados conforme a LGPD.</span>
+                    </label>
+                </div>
                 <button type="submit" class="btn-submit" id="registerBtn">
                     <span id="registerBtnText">Cadastrar</span>
                     <div class="loading-spinner" id="registerSpinner" style="display:none;"></div>
@@ -84,6 +90,7 @@
             event.preventDefault();
             const form = event.target;
             const data = Object.fromEntries(new FormData(form));
+            if (!document.getElementById('consentCheck').checked) { showMessage('Você precisa aceitar a Política de Privacidade para continuar.', 'error'); return; }
             if (data.senha !== data.confirmSenha) { showMessage('As senhas não coincidem.', 'error'); return; }
             if (data.senha.length < 6) { showMessage('A senha deve ter pelo menos 6 caracteres.', 'error'); return; }
             setLoading(form, true);
@@ -91,7 +98,7 @@
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nome: data.nome, email: data.email, senha: data.senha }),
+                    body: JSON.stringify({ nome: data.nome, email: data.email, senha: data.senha, consentimento: true }),
                 });
                 const result = await response.json();
                 if (response.ok) {
