@@ -6,6 +6,7 @@ const supabase = require('../supabase');
 const archiver = require('archiver');
 const qrStore = require('../qrStore');
 const { requireAuth, requireRoles } = require('../middleware/auth');
+const { logAudit, getIp } = require('../utils/audit');
 const router = express.Router();
 
 // Configuração do multer usando memory storage para Vercel serverless
@@ -296,6 +297,8 @@ router.patch('/:id/approve', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), as
       return res.status(404).json({ error: 'Arquivo não encontrado' });
     }
 
+    logAudit({ usuarioId: req.user.id, acao: 'FILE_APPROVED', recurso: 'files', recursoId: fileId, ip: getIp(req) }).catch(() => {});
+
     res.json({
       message: 'Arquivo aprovado com sucesso',
       file: {
@@ -323,6 +326,8 @@ router.patch('/:id/reject', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), asy
     if (error || !data) {
       return res.status(404).json({ error: 'Arquivo não encontrado' });
     }
+
+    logAudit({ usuarioId: req.user.id, acao: 'FILE_REJECTED', recurso: 'files', recursoId: fileId, ip: getIp(req) }).catch(() => {});
 
     res.json({
       message: 'Arquivo rejeitado com sucesso',
@@ -465,6 +470,8 @@ router.delete('/:id', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (re
     if (dbError) {
       return res.status(500).json({ error: 'Erro ao excluir arquivo' });
     }
+
+    logAudit({ usuarioId: req.user.id, acao: 'FILE_DELETED', recurso: 'files', recursoId: fileId, ip: getIp(req) }).catch(() => {});
 
     res.json({ message: 'Arquivo excluído com sucesso' });
   } catch (error) {

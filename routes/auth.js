@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
 const { getJwtSecret } = require('../config/jwt');
+const { logAudit, getIp } = require('../utils/audit');
 const router = express.Router();
 
 // Login
@@ -70,6 +71,8 @@ router.post('/login', async (req, res) => {
       getJwtSecret(),
       { expiresIn: '24h' }
     );
+
+    logAudit({ usuarioId: user.id, acao: 'LOGIN', ip: getIp(req) }).catch(() => {});
 
     res.json({
       message: 'Login successful',
@@ -195,6 +198,8 @@ router.post('/register', async (req, res) => {
       console.error('Erro ao cadastrar usuário:', insertError);
       return res.status(500).json({ error: 'Erro interno do servidor' });
     }
+
+    logAudit({ usuarioId: newUser.id, acao: 'REGISTER', recurso: 'users', recursoId: newUser.id, detalhes: { nome, email }, ip: getIp(req) }).catch(() => {});
 
     res.json({
       message: 'Cadastro realizado com sucesso! Aguarde aprovação para acessar.',

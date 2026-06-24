@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 const { reajustarEscalasParaNovoUsuario } = require('./schedules');
+const { logAudit, getIp } = require('../utils/audit');
 const router = express.Router();
 
 // Listar todos os usuários (aprovados)
@@ -44,6 +45,37 @@ router.get('/pending', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (r
   } catch (error) {
     console.error('Erro ao listar usuários pendentes:', error);
     res.status(500).json({ error: 'Erro ao listar usuários pendentes' });
+  }
+});
+
+// Exportar dados pessoais (LGPD - Portabilidade)
+router.get('/me/export', requireAuth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [{ data: user }, { data: files }] = await Promise.all([
+      supabase
+        .from('users')
+        .select('id, nome, email, cargo, status, data_cadastro, consentimento_em, politica_versao')
+        .eq('id', userId)
+        .single(),
+      supabase
+        .from('files')
+        .select('id, nome, tipo, tamanho, status, data_upload, aprovado_em, rejeitado_em')
+        .eq('usuario_id', userId)
+    ]);
+
+    logAudit({ usuarioId: userId, acao: 'DATA_EXPORTED', ip: getIp(req) }).catch(() => {});
+
+    res.setHeader('Content-Disposition', 'attachment; filename="meus-dados-soundhub.json"');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.json({
+      exportado_em: new Date().toISOString(),
+      usuario: user || {},
+      arquivos: files || []
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao exportar dados' });
   }
 });
 
@@ -145,6 +177,8 @@ router.patch('/:id/cargo', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), asyn
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
+    logAudit({ usuarioId: req.user.id, acao: 'CARGO_CHANGED', recurso: 'users', recursoId: userId, detalhes: { cargo }, ip: getIp(req) }).catch(() => {});
+
     res.json({ message: 'Cargo atualizado com sucesso' });
   } catch (error) {
     res.status(500).json({ error: 'Erro ao atualizar cargo' });
@@ -166,6 +200,8 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
     if (error || !data) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+
+    logAudit({ usuarioId: req.user.id, acao: 'USER_APPROVED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
 
     // Reajustar escalas ativas para incluir o novo SONOPLASTA ou DIRETOR
     if (data.cargo === 'SONOPLASTA' || data.cargo === 'DIRETOR') {
@@ -193,6 +229,8 @@ router.patch('/:id/reject', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), asy
     if (error || !data) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+
+    logAudit({ usuarioId: req.user.id, acao: 'USER_REJECTED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
 
     res.json({ message: 'Usuário rejeitado com sucesso' });
   } catch (error) {
@@ -247,6 +285,8 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
     if (error) {
       return res.status(500).json({ error: 'Erro ao excluir usuário' });
     }
+
+    logAudit({ usuarioId: req.user.id, acao: 'USER_DELETED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
 
     res.json({ message: 'Usuário excluído com sucesso' });
   } catch (error) {
