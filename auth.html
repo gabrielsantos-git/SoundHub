@@ -3,348 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoundHub - Login e Registro</title>
+    <title>SoundHub - Login</title>
     <link rel="stylesheet" href="/css/auth.css">
 </head>
 <body>
-    <div class="auth-container">
-        <!-- Header -->
-        <div class="auth-header">
-            <div class="logo"></div>
-            <h1 class="auth-title">SoundHub</h1>
-            <p class="auth-subtitle">Sistema de mídia para igrejas</p>
-        </div>
+    <div class="auth-wrapper">
 
-        <!-- Tabs -->
-        <div class="auth-tabs">
-            <button class="auth-tab active" onclick="switchTab('login')">
-                Login
-            </button>
-            <button class="auth-tab" onclick="switchTab('register')">
-                Cadastro
-            </button>
-        </div>
-
-        <!-- Content -->
-        <div class="auth-content">
+        <!-- Painel esquerdo: formulário -->
+        <div class="auth-form-panel">
             <div id="message" class="message"></div>
 
-            <!-- Login Form -->
+            <!-- LOGIN -->
             <div id="loginPanel" class="form-panel active">
+                <h1 class="auth-form-title">Entrar na conta</h1>
                 <form id="loginForm" onsubmit="handleLogin(event)">
                     <div class="form-group">
-                        <label for="loginEmail">Email</label>
-                        <input 
-                            type="email" 
-                            id="loginEmail" 
-                            name="email" 
-                            placeholder="seu@email.com"
-                            required
-                        >
+                        <label for="loginEmail">Endereço de email</label>
+                        <input type="email" id="loginEmail" name="email" placeholder="seu@email.com" required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="loginPassword">Senha</label>
-                        <input 
-                            type="password" 
-                            id="loginPassword" 
-                            name="senha" 
-                            placeholder="Sua senha"
-                            required
-                        >
+                        <input type="password" id="loginPassword" name="senha" placeholder="Sua senha" required>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <button type="submit" class="btn-submit" id="loginBtn">
                         <span id="loginBtnText">Entrar</span>
-                        <div class="loading-spinner" id="loginSpinner" style="display: none;"></div>
+                        <div class="loading-spinner" id="loginSpinner" style="display:none;"></div>
                     </button>
                 </form>
+                <p class="auth-switch">Não tem uma conta? <a href="#" onclick="switchPanel('register'); return false;">Cadastre-se</a></p>
             </div>
 
-            <!-- Register Form -->
+            <!-- CADASTRO -->
             <div id="registerPanel" class="form-panel">
+                <h1 class="auth-form-title">Criar conta</h1>
                 <form id="registerForm" onsubmit="handleRegister(event)">
                     <div class="form-group">
-                        <label for="registerName">Nome Completo</label>
-                        <input 
-                            type="text" 
-                            id="registerName" 
-                            name="nome" 
-                            placeholder="Seu nome completo"
-                            required
-                        >
+                        <label for="registerName">Nome completo</label>
+                        <input type="text" id="registerName" name="nome" placeholder="Seu nome" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="registerEmail">Email</label>
-                        <input 
-                            type="email" 
-                            id="registerEmail" 
-                            name="email" 
-                            placeholder="seu@email.com"
-                            required
-                        >
+                        <label for="registerEmail">Endereço de email</label>
+                        <input type="email" id="registerEmail" name="email" placeholder="seu@email.com" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="registerPassword">Senha (mínimo 6 caracteres)</label>
-                        <input 
-                            type="password" 
-                            id="registerPassword" 
-                            name="senha" 
-                            placeholder="Crie uma senha"
-                            minlength="6"
-                            required
-                        >
+                        <label for="registerPassword">Senha</label>
+                        <input type="password" id="registerPassword" name="senha" placeholder="Mínimo 6 caracteres" minlength="6" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="confirmPassword">Confirmar Senha</label>
-                        <input 
-                            type="password" 
-                            id="confirmPassword" 
-                            name="confirmSenha" 
-                            placeholder="Confirme sua senha"
-                            minlength="6"
-                            required
-                        >
+                        <label for="confirmPassword">Confirmar senha</label>
+                        <input type="password" id="confirmPassword" name="confirmSenha" placeholder="Repita a senha" minlength="6" required>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary" id="registerBtn">
+                    <button type="submit" class="btn-submit" id="registerBtn">
                         <span id="registerBtnText">Cadastrar</span>
-                        <div class="loading-spinner" id="registerSpinner" style="display: none;"></div>
+                        <div class="loading-spinner" id="registerSpinner" style="display:none;"></div>
                     </button>
-                    
                     <div class="info-box">
-                        <strong>Importante:</strong>
                         Após o cadastro, aguarde a aprovação de um administrador para acessar o sistema.
                     </div>
                 </form>
+                <p class="auth-switch">Já tem uma conta? <a href="#" onclick="switchPanel('login'); return false;">Entrar</a></p>
             </div>
         </div>
 
-        <!-- Back Link -->
-        <div class="back-link">
-            <a href="/">Voltar ao início</a>
+        <!-- Painel direito: imagem de mesa de som -->
+        <div class="auth-image-panel">
+            <img src="https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&q=80" alt="Mesa de som">
         </div>
     </div>
 
     <script>
-        // Switch between tabs
-        function switchTab(tab) {
-            const tabs = document.querySelectorAll('.auth-tab');
-            const panels = document.querySelectorAll('.form-panel');
-            const message = document.getElementById('message');
-            
-            // Hide all panels and remove active class from tabs
-            panels.forEach(panel => panel.classList.remove('active'));
-            tabs.forEach(t => t.classList.remove('active'));
-            
-            // Clear message when switching tabs
-            message.className = 'message';
-            message.textContent = '';
-            
-            if (tab === 'login') {
-                tabs[0].classList.add('active');
-                document.getElementById('loginPanel').classList.add('active');
-            } else {
-                tabs[1].classList.add('active');
-                document.getElementById('registerPanel').classList.add('active');
-            }
+        function switchPanel(panel) {
+            document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(panel + 'Panel').classList.add('active');
+            const msg = document.getElementById('message');
+            msg.className = 'message';
+            msg.textContent = '';
         }
 
-        // Show message
         function showMessage(text, type) {
             const message = document.getElementById('message');
             message.textContent = text;
             message.className = `message ${type}`;
-            
-            // Auto hide after 5 seconds for success messages
-            if (type === 'success') {
-                setTimeout(() => {
-                    message.className = 'message';
-                    message.textContent = '';
-                }, 5000);
-            }
+            if (type === 'success') setTimeout(() => { message.className = 'message'; message.textContent = ''; }, 5000);
         }
 
-        // Set loading state
         function setLoading(form, loading) {
-            const btn = form.querySelector('.btn');
+            const btn = form.querySelector('.btn-submit');
             const btnText = btn.querySelector('span[id*="Text"]');
             const spinner = btn.querySelector('.loading-spinner');
-            
-            if (loading) {
-                btn.disabled = true;
-                btnText.style.display = 'none';
-                spinner.style.display = 'block';
-            } else {
-                btn.disabled = false;
-                btnText.style.display = 'block';
-                spinner.style.display = 'none';
-            }
+            btn.disabled = loading;
+            btnText.style.display = loading ? 'none' : 'inline';
+            spinner.style.display = loading ? 'block' : 'none';
         }
 
-        // Handle login
         async function handleLogin(event) {
             event.preventDefault();
-            
             const form = event.target;
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            
+            const data = Object.fromEntries(new FormData(form));
             setLoading(form, true);
-            
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data),
                 });
-                
-                try {
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        // Store token and user data
-                        localStorage.setItem('token', result.token);
-                        localStorage.setItem('user', JSON.stringify(result.user));
-                        
-                        showMessage('Login realizado com sucesso! Redirecionando...', 'success');
-                        
-                        // Redirect to home after 1 second
-                        setTimeout(() => {
-                            window.location.href = '/';
-                        }, 1000);
-                    } else {
-                        showMessage(result.message || 'Erro ao fazer login', 'error');
-                    }
-                } catch (parseError) {
-                    console.error('Erro ao processar resposta de login:', parseError);
-                    showMessage('Erro ao processar resposta do servidor', 'error');
+                const result = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    showMessage('Login realizado! Redirecionando...', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 1000);
+                } else {
+                    showMessage(result.message || 'Erro ao fazer login', 'error');
                 }
-            } catch (error) {
+            } catch {
                 showMessage('Erro de conexão. Tente novamente.', 'error');
             } finally {
                 setLoading(form, false);
             }
         }
 
-        // Handle register
         async function handleRegister(event) {
             event.preventDefault();
-            
             const form = event.target;
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData);
-            
-            // Validate passwords match
-            if (data.senha !== data.confirmSenha) {
-                showMessage('As senhas não coincidem.', 'error');
-                return;
-            }
-            
-            // Validate password length
-            if (data.senha.length < 6) {
-                showMessage('A senha deve ter pelo menos 6 caracteres.', 'error');
-                return;
-            }
-            
+            const data = Object.fromEntries(new FormData(form));
+            if (data.senha !== data.confirmSenha) { showMessage('As senhas não coincidem.', 'error'); return; }
+            if (data.senha.length < 6) { showMessage('A senha deve ter pelo menos 6 caracteres.', 'error'); return; }
             setLoading(form, true);
-            
             try {
-                // Verifique se os nomes batem exatamente com o que o backend espera
-                const payload = {
-                    nome: data.nome,
-                    email: data.email,
-                    senha: data.senha // O backend espera 'senha', certifique-se que o input tem name="senha"
-                };
-                
-                console.log('Payload enviado no registro:', payload);
-                
                 const response = await fetch('/api/auth/register', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome: data.nome, email: data.email, senha: data.senha }),
                 });
-                
-                try {
-                    const result = await response.json();
-                    
-                    if (response.ok) {
-                        showMessage('Cadastro realizado com sucesso! Aguarde aprovação para acessar.', 'success');
-                        form.reset();
-                        
-                        // Switch to login tab after 2 seconds
-                        setTimeout(() => {
-                            switchTab('login');
-                        }, 2000);
-                    } else {
-                        // Se o servidor retornar 500, pegamos a mensagem que enviamos no passo 1
-                        const errorMessage = result.detalhe ? `${result.message}: ${result.detalhe}` : result.message;
-                        showMessage(errorMessage || 'Erro crítico no servidor', 'error');
-                    }
-                } catch (parseError) {
-                    // Se o servidor retornar erro 500 mas não for JSON
-                    console.error('Erro ao processar resposta de cadastro:', parseError);
-                    showMessage('Erro no servidor (Resposta inválida). Verifique o console do Node.', 'error');
+                const result = await response.json();
+                if (response.ok) {
+                    showMessage('Cadastro realizado! Aguarde aprovação para acessar.', 'success');
+                    form.reset();
+                    setTimeout(() => { switchPanel('login'); }, 2000);
+                } else {
+                    showMessage(result.message || 'Erro ao cadastrar', 'error');
                 }
-            } catch (error) {
+            } catch {
                 showMessage('Erro de conexão. Tente novamente.', 'error');
             } finally {
                 setLoading(form, false);
             }
         }
 
-        // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', function() {
-            // Usar setTimeout para evitar erros de message channel
-            setTimeout(() => {
-                try {
-                    const token = localStorage.getItem('token');
-                    
-                    if (token) {
-                        // Verify token is still valid
-                        fetch('/api/auth/me', {
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
-                        })
-                        .then(response => {
-                            try {
-                                if (response.ok) {
-                                    // User is logged in, redirect to home
-                                    window.location.href = '/';
-                                } else {
-                                    // Token is invalid, remove it
-                                    localStorage.removeItem('token');
-                                    localStorage.removeItem('user');
-                                }
-                            } catch (redirectError) {
-                                console.warn('Erro ao verificar token:', redirectError);
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('user');
-                            }
-                        })
-                        .catch((tokenError) => {
-                            try {
-                                console.warn('Erro na verificação de token:', tokenError);
-                                // Error checking token, remove it
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('user');
-                            } catch (cleanupError) {
-                                console.warn('Erro ao limpar token:', cleanupError);
-                            }
-                        });
-                    }
-                } catch (domError) {
-                    console.warn('Erro no DOMContentLoaded:', domError);
-                }
-            }, 100); // Pequeno delay para evitar race conditions
+            const token = localStorage.getItem('token');
+            if (token) {
+                fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+                    .then(r => { if (r.ok) window.location.href = '/'; else { localStorage.removeItem('token'); localStorage.removeItem('user'); } })
+                    .catch(() => { localStorage.removeItem('token'); localStorage.removeItem('user'); });
+            }
         });
     </script>
 </body>
