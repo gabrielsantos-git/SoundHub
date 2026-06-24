@@ -741,7 +741,6 @@
         document.addEventListener('click', closeAllDropdowns);
 
         async function deleteEvent(eventId) {
-            if (!confirm('Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.')) return;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`/api/events/${eventId}`, {
@@ -750,12 +749,9 @@
                 });
                 if (response.ok) {
                     loadEvents();
-                } else {
-                    const err = await response.json();
-                    alert(err.error || 'Erro ao excluir evento');
                 }
             } catch (error) {
-                alert('Erro de conexão ao excluir evento');
+                console.error('Erro ao excluir evento:', error);
             }
         }
 
@@ -816,7 +812,6 @@
         }
 
         async function deleteSchedule(scheduleId) {
-            if (!confirm('Tem certeza que deseja excluir esta escala? Esta ação não pode ser desfeita.')) return;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch(`/api/schedules/${scheduleId}`, {
@@ -825,12 +820,9 @@
                 });
                 if (response.ok) {
                     loadSchedules();
-                } else {
-                    const err = await response.json();
-                    alert(err.error || 'Erro ao excluir escala');
                 }
             } catch (error) {
-                alert('Erro de conexão ao excluir escala');
+                console.error('Erro ao excluir escala:', error);
             }
         }
 

@@ -381,3 +381,34 @@ body {
     .grid { grid-template-columns: 1fr; }
     .preview-container { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 767px) {
+    .main-content {
+        padding: 1rem;
+    }
+    .header {
+        padding: 0.75rem 1rem;
+    }
+    .card {
+        padding: 1rem;
+    }
+    .card-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .media-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        max-height: 350px;
+    }
+    .control-buttons {
+        flex-wrap: wrap;
+    }
+    .control-buttons .btn {
+        flex: 1;
+        min-width: 120px;
+        justify-content: center;
+    }
+    .monitor-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+}

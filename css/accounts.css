@@ -385,3 +385,43 @@ select {
         display: none;
     }
 }
+
+@media (max-width: 767px) {
+    .main-content {
+        padding: 1rem;
+    }
+    .header {
+        padding: 0.75rem 1rem;
+    }
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table {
+        min-width: 550px;
+    }
+    .table th,
+    .table td {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    .modal-content {
+        padding: 1.25rem;
+        width: 95%;
+        margin: 0 auto;
+    }
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .card {
+        padding: 1rem;
+    }
+    .tab-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+}

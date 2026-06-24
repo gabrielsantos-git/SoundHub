@@ -93,10 +93,10 @@ body {
 }
 
 .card {
-    background: white;
+    background: rgba(255, 255, 255, 0);
     border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     margin-bottom: 2rem;
+    margin-top: -55px;
     overflow: hidden;
 }
 
@@ -403,4 +403,69 @@ body {
 @media (max-width: 768px) {
     .main-content { padding: 1rem; }
     .checkbox-group { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 767px) {
+    .header {
+        padding: 0.75rem 1rem;
+    }
+    .main-content {
+        padding: 1rem;
+        margin-top: 0;
+    }
+    .card {
+        margin-top: 0;
+    }
+    .card-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        padding: 1rem;
+    }
+    .card-title {
+        font-size: 1.25rem;
+    }
+    .card-content {
+        padding: 1rem;
+    }
+    .table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .table {
+        min-width: 500px;
+    }
+    .table th,
+    .table td {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    .tab-btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    .modal-content {
+        width: 95%;
+        margin: 0 auto;
+    }
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+        padding: 1rem;
+    }
+    .modal-footer {
+        flex-direction: column-reverse;
+        gap: 0.5rem;
+    }
+    .modal-footer .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .schedule-day-header {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .dropdown-menu {
+        right: auto;
+        left: 0;
+    }
 }
