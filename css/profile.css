@@ -1,107 +1,94 @@
+/* ── Base ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    background: #f9fafb;
+    color: #1f2937;
+}
+
 /* ── Layout ── */
-.profile-main {
-    display: flex;
+.main-content {
+    padding: 2rem;
     min-height: 100vh;
-    background: #f1f5f9;
 }
 
-/* ── Painel esquerdo (azul) ── */
-.profile-aside {
-    width: 280px;
-    flex-shrink: 0;
-    background: linear-gradient(160deg, #1e3a8a 0%, #3b82f6 100%);
+/* ── Cards ── */
+.card {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+/* ── Header do perfil ── */
+.profile-header-card {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 3rem 1.5rem 2rem;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
+    gap: 1.25rem;
 }
 
-/* ── Avatar ── */
 .profile-avatar-wrap {
     position: relative;
-    margin-bottom: 1.25rem;
+    flex-shrink: 0;
 }
 
 .profile-avatar {
-    width: 100px;
-    height: 100px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.18);
-    border: 3px solid rgba(255,255,255,0.35);
+    background: #dbeafe;
+    border: 2px solid #bfdbfe;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 1.75rem;
     font-weight: 700;
-    color: white;
+    color: #1d4ed8;
     overflow: hidden;
-}
-
-.profile-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .avatar-edit-btn {
     position: absolute;
-    bottom: 3px;
-    right: 3px;
-    width: 28px;
-    height: 28px;
-    background: white;
+    bottom: 1px;
+    right: 1px;
+    width: 24px;
+    height: 24px;
+    background: #3b82f6;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #3b82f6;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    color: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
     transition: background 0.15s;
 }
 
-.avatar-edit-btn:hover { background: #eff6ff; }
+.avatar-edit-btn:hover { background: #2563eb; }
 
-.aside-name {
-    color: white;
-    font-weight: 700;
-    font-size: 1.0625rem;
-    text-align: center;
-    margin-bottom: 0.3rem;
-    word-break: break-word;
-}
-
-.aside-role {
-    color: rgba(255,255,255,0.72);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    text-align: center;
-}
-
-/* ── Conteúdo ── */
-.profile-content {
+.profile-header-info {
     flex: 1;
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    max-width: 680px;
+    min-width: 0;
 }
 
-/* ── Card / Seção ── */
-.profile-card {
-    background: white;
-    border-radius: 14px;
-    padding: 1.375rem 1.5rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+.profile-header-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+.profile-header-role {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+/* ── Títulos de seção ── */
 .card-title {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #9ca3af;
     text-transform: uppercase;
@@ -178,9 +165,9 @@
     letter-spacing: 0.04em;
 }
 
-.badge-admin     { background: #faf5ff; color: #7c3aed; }
-.badge-diretor   { background: #eff6ff; color: #1d4ed8; }
-.badge-sonoplasta{ background: #f0fdf4; color: #15803d; }
+.badge-admin      { background: #faf5ff; color: #7c3aed; }
+.badge-diretor    { background: #eff6ff; color: #1d4ed8; }
+.badge-sonoplasta { background: #f0fdf4; color: #15803d; }
 
 /* ── Inputs ── */
 .field-input {
@@ -308,7 +295,6 @@
 .privacy-rows {
     display: flex;
     flex-direction: column;
-    gap: 0;
     margin-bottom: 1rem;
 }
 
@@ -403,6 +389,7 @@
     z-index: 9000;
     white-space: nowrap;
     max-width: calc(100vw - 2rem);
+    font-family: inherit;
 }
 
 .profile-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -477,29 +464,13 @@
 
 .btn-confirm-delete:hover { background: #b91c1c; }
 
-/* ── Mobile (< 768px) ── */
+/* ── Mobile ── */
 @media (max-width: 767px) {
-    .profile-main {
-        flex-direction: column;
-        min-height: auto;
-    }
+    .main-content { padding: 0.75rem 0.75rem 5.5rem; }
 
-    .profile-aside {
-        width: 100%;
-        height: auto;
-        position: static;
-        padding: 2.25rem 1.25rem 1.75rem;
-    }
+    .card { border-radius: 12px; padding: 1.125rem; }
 
-    .profile-avatar { width: 84px; height: 84px; font-size: 2.1rem; }
-
-    .profile-content {
-        padding: 0.75rem 0.75rem 5.5rem;
-        max-width: 100%;
-        gap: 0.75rem;
-    }
-
-    .profile-card { border-radius: 12px; padding: 1.125rem 1.125rem; }
+    .profile-avatar { width: 60px; height: 60px; font-size: 1.5rem; }
 
     .data-action-row { flex-direction: column; }
     .btn-export, .btn-delete-acct { justify-content: center; width: 100%; }

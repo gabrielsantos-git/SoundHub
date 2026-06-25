@@ -3,198 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Perfil — SoundHub</title>
+    <title>Minha Conta — SoundHub</title>
     <link rel="stylesheet" href="/css/profile.css">
 </head>
 <body>
     <script src="sidebar.js"></script>
 
-    <main class="profile-main">
+    <main class="main-content">
 
-        <!-- Painel esquerdo: avatar + nome + cargo -->
-        <aside class="profile-aside">
+        <!-- Header: avatar + nome + cargo -->
+        <div class="card profile-header-card">
             <div class="profile-avatar-wrap">
                 <div class="profile-avatar" id="avatarEl">
                     <img id="avatarImg" alt="Foto de perfil" style="display:none;width:100%;height:100%;object-fit:cover">
                     <span id="avatarInitial">?</span>
                 </div>
                 <label class="avatar-edit-btn" for="photoInput" title="Alterar foto">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11z"/>
                     </svg>
                 </label>
                 <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadPhoto(this)">
             </div>
-            <div class="aside-name" id="asideName">Carregando...</div>
-            <div class="aside-role" id="asideRole"></div>
-        </aside>
-
-        <!-- Conteúdo principal -->
-        <div class="profile-content">
-
-            <!-- ── Informações Pessoais ── -->
-            <section class="profile-card">
-                <div class="card-title">Informações Pessoais</div>
-
-                <!-- Nome -->
-                <div id="nameViewGroup" class="field-group">
-                    <div class="field-label">Nome</div>
-                    <div class="field-row">
-                        <span class="field-value" id="displayName">—</span>
-                        <button class="btn-field-action" onclick="startEditName()">Editar</button>
-                    </div>
-                </div>
-                <div id="nameEditGroup" class="field-group" style="display:none">
-                    <div class="field-label">Nome</div>
-                    <input type="text" id="nameInput" class="field-input" placeholder="Seu nome completo">
-                    <div class="field-btn-row">
-                        <button class="btn-sm-primary" onclick="saveName()">Salvar</button>
-                        <button class="btn-sm-cancel" onclick="cancelEditName()">Cancelar</button>
-                    </div>
-                </div>
-
-                <div class="field-divider"></div>
-
-                <!-- Cargo -->
-                <div class="field-group">
-                    <div class="field-label">Cargo</div>
-                    <div class="field-row">
-                        <span class="field-value" id="displayCargo">—</span>
-                        <span class="field-badge" id="cargoBadge"></span>
-                    </div>
-                </div>
-
-                <div class="field-divider"></div>
-
-                <!-- Email -->
-                <div id="emailViewGroup" class="field-group">
-                    <div class="field-label">Email</div>
-                    <div class="field-row">
-                        <span class="field-value" id="displayEmail">—</span>
-                        <button class="btn-field-action" onclick="startEmailChange()">Alterar</button>
-                    </div>
-                </div>
-
-                <!-- Fluxo alterar email -->
-                <div id="emailChangeFlow" style="display:none">
-                    <!-- Passo 1: enviar código para email atual -->
-                    <div class="flow-step" id="emailStep1">
-                        <p class="flow-desc">Vamos verificar sua identidade. Enviaremos um código para <strong id="currentEmailMask"></strong>.</p>
-                        <div class="flow-actions">
-                            <button class="btn-sm-primary" id="btnSendOldCode" onclick="sendEmailOldCode()">Enviar código</button>
-                            <button class="btn-sm-cancel" onclick="cancelEmailChange()">Cancelar</button>
-                        </div>
-                    </div>
-                    <!-- Passo 2: verificar código do email atual -->
-                    <div class="flow-step" id="emailStep2" style="display:none">
-                        <p class="flow-desc">Digite o código enviado para seu email atual:</p>
-                        <div class="code-entry">
-                            <input type="text" id="emailOldCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric">
-                            <button class="btn-sm-primary" onclick="verifyEmailOld()">Verificar</button>
-                        </div>
-                        <button class="btn-link-small" onclick="resendEmailOldCode()">Reenviar código</button>
-                    </div>
-                    <!-- Passo 3: digitar novo email -->
-                    <div class="flow-step" id="emailStep3" style="display:none">
-                        <p class="flow-desc">Identidade confirmada! Digite seu novo email:</p>
-                        <input type="email" id="newEmailInput" class="field-input" placeholder="novo@email.com">
-                        <div class="flow-actions" style="margin-top:0.75rem">
-                            <button class="btn-sm-primary" onclick="sendEmailNewCode()">Enviar código</button>
-                            <button class="btn-sm-cancel" onclick="cancelEmailChange()">Cancelar</button>
-                        </div>
-                    </div>
-                    <!-- Passo 4: confirmar código do novo email -->
-                    <div class="flow-step" id="emailStep4" style="display:none">
-                        <p class="flow-desc">Digite o código enviado para <strong id="newEmailMask"></strong>:</p>
-                        <div class="code-entry">
-                            <input type="text" id="emailNewCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric">
-                            <button class="btn-sm-primary" onclick="changeEmail()">Confirmar</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── Segurança ── -->
-            <section class="profile-card">
-                <div class="card-title">Segurança</div>
-
-                <div id="pwdViewGroup" class="field-group">
-                    <div class="field-label">Senha</div>
-                    <div class="field-row">
-                        <span class="field-value" style="letter-spacing:0.15rem;color:#9ca3af">••••••••</span>
-                        <button class="btn-field-action" onclick="startPasswordChange()">Alterar</button>
-                    </div>
-                </div>
-
-                <!-- Fluxo alterar senha -->
-                <div id="passwordChangeFlow" style="display:none">
-                    <!-- Passo 1: enviar código -->
-                    <div class="flow-step" id="pwdStep1">
-                        <p class="flow-desc">Enviaremos um código para <strong id="pwdEmailMask"></strong> para confirmar a alteração.</p>
-                        <div class="flow-actions">
-                            <button class="btn-sm-primary" id="btnSendPwdCode" onclick="sendPasswordCode()">Enviar código</button>
-                            <button class="btn-sm-cancel" onclick="cancelPasswordChange()">Cancelar</button>
-                        </div>
-                    </div>
-                    <!-- Passo 2: código + nova senha -->
-                    <div class="flow-step" id="pwdStep2" style="display:none">
-                        <p class="flow-desc">Digite o código recebido e defina sua nova senha:</p>
-                        <div class="field-group" style="margin-bottom:0.75rem">
-                            <label class="field-label">Código recebido</label>
-                            <input type="text" id="pwdCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" style="margin-top:0.375rem">
-                        </div>
-                        <div class="field-group" style="margin-bottom:0.75rem">
-                            <label class="field-label">Nova senha</label>
-                            <input type="password" id="newPasswordInput" class="field-input" placeholder="Mínimo 6 caracteres">
-                        </div>
-                        <div class="field-group" style="margin-bottom:1rem">
-                            <label class="field-label">Confirmar nova senha</label>
-                            <input type="password" id="confirmPasswordInput" class="field-input" placeholder="Repita a senha">
-                        </div>
-                        <div class="flow-actions">
-                            <button class="btn-sm-primary" onclick="changePassword()">Salvar senha</button>
-                            <button class="btn-sm-cancel" onclick="cancelPasswordChange()">Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ── Privacidade ── -->
-            <section class="profile-card">
-                <div class="card-title">Privacidade</div>
-                <div class="privacy-rows">
-                    <div class="privacy-row">
-                        <span class="privacy-label">Consentimento aceito em</span>
-                        <span class="privacy-value" id="consentDate">—</span>
-                    </div>
-                    <div class="privacy-row">
-                        <span class="privacy-label">Versão da política</span>
-                        <span class="privacy-value" id="policyVersion">—</span>
-                    </div>
-                </div>
-                <a href="/privacidade" target="_blank" rel="noopener" class="btn-privacy-link">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/><path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/></svg>
-                    Ver Política de Privacidade
-                </a>
-            </section>
-
-            <!-- ── Meus Dados ── -->
-            <section class="profile-card">
-                <div class="card-title">Meus Dados</div>
-                <p class="card-desc">Pela LGPD, você tem direito de acessar, exportar ou excluir seus dados pessoais a qualquer momento.</p>
-                <div class="data-action-row">
-                    <button class="btn-export" onclick="exportData()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>
-                        Exportar meus dados
-                    </button>
-                    <button class="btn-delete-acct" onclick="openDeleteModal()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
-                        Excluir minha conta
-                    </button>
-                </div>
-            </section>
-
+            <div class="profile-header-info">
+                <div class="profile-header-name" id="asideName">Carregando...</div>
+                <div class="profile-header-role" id="asideRole"></div>
+            </div>
         </div>
+
+        <!-- ── Informações Pessoais ── -->
+        <div class="card">
+            <div class="card-title">Informações Pessoais</div>
+
+            <!-- Nome -->
+            <div id="nameViewGroup" class="field-group">
+                <div class="field-label">Nome</div>
+                <div class="field-row">
+                    <span class="field-value" id="displayName">—</span>
+                    <button class="btn-field-action" onclick="startEditName()">Editar</button>
+                </div>
+            </div>
+            <div id="nameEditGroup" class="field-group" style="display:none">
+                <div class="field-label">Nome</div>
+                <input type="text" id="nameInput" class="field-input" placeholder="Seu nome completo">
+                <div class="field-btn-row">
+                    <button class="btn-sm-primary" onclick="saveName()">Salvar</button>
+                    <button class="btn-sm-cancel" onclick="cancelEditName()">Cancelar</button>
+                </div>
+            </div>
+
+            <div class="field-divider"></div>
+
+            <!-- Cargo -->
+            <div class="field-group">
+                <div class="field-label">Cargo</div>
+                <div class="field-row">
+                    <span class="field-value" id="displayCargo">—</span>
+                    <span class="field-badge" id="cargoBadge"></span>
+                </div>
+            </div>
+
+            <div class="field-divider"></div>
+
+            <!-- Email -->
+            <div id="emailViewGroup" class="field-group">
+                <div class="field-label">Email</div>
+                <div class="field-row">
+                    <span class="field-value" id="displayEmail">—</span>
+                    <button class="btn-field-action" onclick="startEmailChange()">Alterar</button>
+                </div>
+            </div>
+
+            <!-- Fluxo alterar email -->
+            <div id="emailChangeFlow" style="display:none">
+                <div class="flow-step" id="emailStep1">
+                    <p class="flow-desc">Vamos verificar sua identidade. Enviaremos um código para <strong id="currentEmailMask"></strong>.</p>
+                    <div class="flow-actions">
+                        <button class="btn-sm-primary" id="btnSendOldCode" onclick="sendEmailOldCode()">Enviar código</button>
+                        <button class="btn-sm-cancel" onclick="cancelEmailChange()">Cancelar</button>
+                    </div>
+                </div>
+                <div class="flow-step" id="emailStep2" style="display:none">
+                    <p class="flow-desc">Digite o código enviado para seu email atual:</p>
+                    <div class="code-entry">
+                        <input type="text" id="emailOldCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric">
+                        <button class="btn-sm-primary" onclick="verifyEmailOld()">Verificar</button>
+                    </div>
+                    <button class="btn-link-small" onclick="resendEmailOldCode()">Reenviar código</button>
+                </div>
+                <div class="flow-step" id="emailStep3" style="display:none">
+                    <p class="flow-desc">Identidade confirmada! Digite seu novo email:</p>
+                    <input type="email" id="newEmailInput" class="field-input" placeholder="novo@email.com">
+                    <div class="flow-actions" style="margin-top:0.75rem">
+                        <button class="btn-sm-primary" onclick="sendEmailNewCode()">Enviar código</button>
+                        <button class="btn-sm-cancel" onclick="cancelEmailChange()">Cancelar</button>
+                    </div>
+                </div>
+                <div class="flow-step" id="emailStep4" style="display:none">
+                    <p class="flow-desc">Digite o código enviado para <strong id="newEmailMask"></strong>:</p>
+                    <div class="code-entry">
+                        <input type="text" id="emailNewCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric">
+                        <button class="btn-sm-primary" onclick="changeEmail()">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Segurança ── -->
+        <div class="card">
+            <div class="card-title">Segurança</div>
+
+            <div id="pwdViewGroup" class="field-group">
+                <div class="field-label">Senha</div>
+                <div class="field-row">
+                    <span class="field-value" style="letter-spacing:0.15rem;color:#9ca3af">••••••••</span>
+                    <button class="btn-field-action" onclick="startPasswordChange()">Alterar</button>
+                </div>
+            </div>
+
+            <div id="passwordChangeFlow" style="display:none">
+                <div class="flow-step" id="pwdStep1">
+                    <p class="flow-desc">Enviaremos um código para <strong id="pwdEmailMask"></strong> para confirmar a alteração.</p>
+                    <div class="flow-actions">
+                        <button class="btn-sm-primary" id="btnSendPwdCode" onclick="sendPasswordCode()">Enviar código</button>
+                        <button class="btn-sm-cancel" onclick="cancelPasswordChange()">Cancelar</button>
+                    </div>
+                </div>
+                <div class="flow-step" id="pwdStep2" style="display:none">
+                    <p class="flow-desc">Digite o código recebido e defina sua nova senha:</p>
+                    <div class="field-group" style="margin-bottom:0.75rem">
+                        <label class="field-label">Código recebido</label>
+                        <input type="text" id="pwdCodeInput" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" style="margin-top:0.375rem">
+                    </div>
+                    <div class="field-group" style="margin-bottom:0.75rem">
+                        <label class="field-label">Nova senha</label>
+                        <input type="password" id="newPasswordInput" class="field-input" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="field-group" style="margin-bottom:1rem">
+                        <label class="field-label">Confirmar nova senha</label>
+                        <input type="password" id="confirmPasswordInput" class="field-input" placeholder="Repita a senha">
+                    </div>
+                    <div class="flow-actions">
+                        <button class="btn-sm-primary" onclick="changePassword()">Salvar senha</button>
+                        <button class="btn-sm-cancel" onclick="cancelPasswordChange()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Privacidade ── -->
+        <div class="card">
+            <div class="card-title">Privacidade</div>
+            <div class="privacy-rows">
+                <div class="privacy-row">
+                    <span class="privacy-label">Consentimento aceito em</span>
+                    <span class="privacy-value" id="consentDate">—</span>
+                </div>
+                <div class="privacy-row">
+                    <span class="privacy-label">Versão da política</span>
+                    <span class="privacy-value" id="policyVersion">—</span>
+                </div>
+            </div>
+            <a href="/privacidade" target="_blank" rel="noopener" class="btn-privacy-link">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M5.338 1.59a61 61 0 0 0-2.837.856.48.48 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.7 10.7 0 0 0 2.287 2.233c.346.244.652.42.893.533q.18.085.293.118a1 1 0 0 0 .101.025 1 1 0 0 0 .1-.025q.114-.034.294-.118c.24-.113.547-.29.893-.533a10.7 10.7 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524zM5.072.56C6.157.265 7.31 0 8 0s1.843.265 2.928.56c1.11.3 2.229.655 2.887.87a1.54 1.54 0 0 1 1.044 1.262c.596 4.477-.787 7.795-2.465 9.99a11.8 11.8 0 0 1-2.517 2.453 7 7 0 0 1-1.048.625c-.28.132-.581.24-.829.24s-.548-.108-.829-.24a7 7 0 0 1-1.048-.625 11.8 11.8 0 0 1-2.517-2.453C1.928 10.487.545 7.169 1.141 2.692A1.54 1.54 0 0 1 2.185 1.43 63 63 0 0 1 5.072.56"/><path d="M10.854 5.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793l2.646-2.647a.5.5 0 0 1 .708 0"/></svg>
+                Ver Política de Privacidade
+            </a>
+        </div>
+
+        <!-- ── Meus Dados ── -->
+        <div class="card">
+            <div class="card-title">Meus Dados</div>
+            <p class="card-desc">Pela LGPD, você tem direito de acessar, exportar ou excluir seus dados pessoais a qualquer momento.</p>
+            <div class="data-action-row">
+                <button class="btn-export" onclick="exportData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/></svg>
+                    Exportar meus dados
+                </button>
+                <button class="btn-delete-acct" onclick="openDeleteModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                    Excluir minha conta
+                </button>
+            </div>
+        </div>
+
     </main>
 
     <!-- Toast -->
@@ -354,7 +345,6 @@
     }
 
     async function resendEmailOldCode() {
-        const btn = document.getElementById('btnSendOldCode');
         const res = await apiFetch('/api/profile/send-email-old-code', { method:'POST' });
         const data = await res.json();
         if (!res.ok) { showToast(data.error || 'Erro ao reenviar', 'error'); return; }
