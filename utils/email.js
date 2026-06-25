@@ -50,4 +50,12 @@ async function sendEmailNewCode(to, code) {
   });
 }
 
-module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode };
+async function sendRegisterCode(to, code) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Confirme seu email para cadastro',
+    html: tpl(code, 'Confirmar Email', 'Use o código abaixo para confirmar seu endereço de email e concluir o cadastro:')
+  });
+}
+
+module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode, sendRegisterCode };
