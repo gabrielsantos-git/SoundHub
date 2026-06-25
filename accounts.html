@@ -7,34 +7,25 @@
     <link rel="stylesheet" href="/css/accounts.css">
 </head>
 <body>
-    <!-- Sidebar unificada será injetada pelo sidebar.js -->
     <script src="sidebar.js"></script>
 
-    <!-- Main Content -->
     <main class="main-content">
-        <div class="card0">
-            <div class="card-header">
-                <button class="btn-primary-refresh" onclick="refreshUsers()">
-                    Atualizar
-                </button>
-            </div>
-        </div>
 
-        <!-- Abas -->
+        <!-- Card principal com abas -->
         <div class="card">
-            <div class="tabs-header">
-                <button class="tab-btn active" onclick="switchTab('active')" id="activeTab">
-                    Contas Ativas
-                </button>
-                <button class="tab-btn" onclick="switchTab('pending')" id="pendingTab">
-                    Contas Pendentes
-                </button>
-                <button class="tab-btn" onclick="switchTab('profile')" id="profileTab">
-                    Meu Perfil
-                </button>
+            <div class="card-header">
+                <div class="tabs-header">
+                    <button class="tab-btn active" onclick="switchTab('active')" id="activeTab">
+                        Contas Ativas
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('pending')" id="pendingTab">
+                        Contas Pendentes
+                    </button>
+                </div>
+                <button class="btn-refresh" onclick="refreshUsers()">Atualizar</button>
             </div>
 
-            <!-- Tabela de Contas Ativas -->
+            <!-- Contas Ativas -->
             <div id="activeContent" class="tab-content">
                 <div class="table-container">
                     <table class="table">
@@ -49,11 +40,8 @@
                         </thead>
                         <tbody id="usersTableBody">
                             <tr>
-                                <td colspan="5" style="text-align: center; padding: 2rem;">
-                                    <div class="loading">
-                                        <div class="spinner"></div>
-                                        <div>Carregando usuários...</div>
-                                    </div>
+                                <td colspan="5" style="text-align:center;padding:2rem;">
+                                    <div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div>
                                 </td>
                             </tr>
                         </tbody>
@@ -61,8 +49,8 @@
                 </div>
             </div>
 
-            <!-- Tabela de Contas Pendentes -->
-            <div id="pendingContent" class="tab-content" style="display: none;">
+            <!-- Contas Pendentes -->
+            <div id="pendingContent" class="tab-content" style="display:none">
                 <div class="table-container">
                     <table class="table">
                         <thead>
@@ -75,60 +63,16 @@
                         </thead>
                         <tbody id="pendingUsersTableBody">
                             <tr>
-                                <td colspan="4" style="text-align: center; padding: 2rem;">
-                                    <div class="loading">
-                                        <div class="spinner"></div>
-                                        <div>Carregando pendências...</div>
-                                    </div>
+                                <td colspan="4" style="text-align:center;padding:2rem;">
+                                    <div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <!-- Seção de Perfil -->
-            <div id="profileContent" class="tab-content" style="display: none;">
-                <div class="profile-panels">
-                    <div class="profile-info-panel">
-                        <div class="profile-avatar-circle" id="profileAvatarCircle">?</div>
-                        <div class="profile-display-name" id="profileDisplayName">Carregando...</div>
-                        <div class="profile-display-role" id="profileDisplayRole"></div>
-                        <p class="profile-info-text">Gerencie suas informações pessoais e senha de acesso</p>
-                    </div>
-                    <div class="profile-form-panel">
-                        <h2 class="profile-form-title">Meu Perfil</h2>
-                        <form id="profileForm">
-                            <div class="form-group">
-                                <label for="profileNome">Nome Completo</label>
-                                <input type="text" id="profileNome" name="nome" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="profileEmail">Email</label>
-                                <input type="email" id="profileEmail" name="email" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="profileSenha">Nova Senha (deixe em branco para manter atual)</label>
-                                <input type="password" id="profileSenha" name="senha" placeholder="Digite nova senha ou deixe em branco">
-                            </div>
-                            <div class="form-group">
-                                <label for="profileConfirmSenha">Confirmar Nova Senha</label>
-                                <input type="password" id="profileConfirmSenha" name="confirmSenha" placeholder="Confirme sua nova senha">
-                            </div>
-                            <div class="form-group">
-                                <label>Cargo Atual</label>
-                                <input type="text" id="profileCargo" readonly>
-                            </div>
-                            <div class="form-group">
-                                <button type="submit" class="btn btn-primary">
-                                    Atualizar Meu Perfil
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
         </div>
+
     </main>
 
     <!-- Modal de Edição de Usuário -->
@@ -160,887 +104,168 @@
                     </select>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        Salvar Alterações
-                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal de Autenticação -->
-    <div class="overlay" id="authOverlay">
-        <div class="auth-required">
-            <h2>Acesso Restrito</h2>
-            <p>Apenas Diretores podem acessar esta página.</p>
-            <a href="/auth" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">
-                Fazer Login
-            </a>
-            <button class="btn btn-secondary" onclick="window.location.href='/'">
-                Voltar ao Início
-            </button>
-        </div>
-    </div>
-
     <script>
         let currentUser = null;
-        
-        // Verificar autenticação ao carregar
-        document.addEventListener('DOMContentLoaded', function() {
-            checkAuth();
-        });
-        
+
+        document.addEventListener('DOMContentLoaded', checkAuth);
+
         async function checkAuth() {
-            console.log('accounts.html - Verificando autenticação...');
             const token = localStorage.getItem('token');
-            const authOverlay = document.getElementById('authOverlay');
-            
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-            console.log('Token completo:', token);
-            
-            if (!token) {
-                console.log('Token não encontrado, redirecionando para /auth');
-                // Redirecionar automaticamente para página de autenticação
-                window.location.href = '/auth';
-                return;
-            }
-            
+            if (!token) { window.location.href = '/auth'; return; }
+
             try {
-                console.log('Enviando requisição para /api/auth/me...');
-                const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
-                });
-                
-                console.log('Status da resposta:', response.status);
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('Usuário autenticado:', data.user);
-                    currentUser = data.user;
-                    updateUserInterface();
-                    
-                    // Verificar permissão
-                    console.log('Verificando permissão para cargo:', currentUser.cargo);
-                    console.log('Cargo é SONOPLASTA?', currentUser.cargo === 'SONOPLASTA');
-                    console.log('Cargo é DIRETOR?', currentUser.cargo === 'DIRETOR');
-                    console.log('Cargo é ADMIN?', currentUser.cargo === 'ADMIN');
-                    
-                    if (currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN' && currentUser.cargo !== 'SONOPLASTA') {
-                        console.log('❌ Permissão negada para cargo:', currentUser.cargo);
-                        showAuthRequired();
-                        return;
-                    }
-                    
-                    console.log('Permissão concedida, carregando...');
-                    
-                    // Ajustar interface baseado no cargo
-                    if (currentUser.cargo === 'SONOPLASTA') {
-                        console.log('Entrando no modo SONOPLASTA...');
-                        document.body.classList.add('sonoplasta-profile');
-                        // Para SONOPLASTA: mostrar apenas aba de perfil
-                        // Esconder abas de gerenciamento
-                        const activeTab = document.getElementById('activeTab');
-                        const pendingTab = document.getElementById('pendingTab');
-                        const profileTab = document.getElementById('profileTab');
-                        
-                        console.log('Elementos das abas encontrados:', {
-                            activeTab: !!activeTab,
-                            pendingTab: !!pendingTab,
-                            profileTab: !!profileTab
-                        });
-                        
-                        if (activeTab) activeTab.style.display = 'none';
-                        if (pendingTab) pendingTab.style.display = 'none';
-                        if (profileTab) profileTab.style.display = 'block';
-                        
-                        // Esconder conteúdos
-                        const activeContent = document.getElementById('activeContent');
-                        const pendingContent = document.getElementById('pendingContent');
-                        const profileContent = document.getElementById('profileContent');
-                        
-                        console.log('Elementos dos conteúdos encontrados:', {
-                            activeContent: !!activeContent,
-                            pendingContent: !!pendingContent,
-                            profileContent: !!profileContent
-                        });
-                        
-                        if (activeContent) activeContent.style.display = 'none';
-                        if (pendingContent) pendingContent.style.display = 'none';
-                        if (profileContent) profileContent.style.display = 'block';
-                        
-                        if (profileTab) profileTab.classList.add('active');
-                        
-                        console.log('Carregando dados do perfil...');
-                        loadProfileData();
-                    } else {
-                        console.log('Entrando no modo ADMIN/DIRETOR...');
-                        // Para ADMIN/DIRETOR: mostrar todas as funcionalidades
-                        loadUsers();
-                    }
-                } else {
-                    console.log('Resposta não OK:', response.status);
-                    localStorage.removeItem('token');
-                    showAuthRequired();
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) { localStorage.removeItem('token'); window.location.href = '/auth'; return; }
+
+                const data = await res.json();
+                currentUser = data.user;
+
+                if (currentUser.cargo !== 'DIRETOR' && currentUser.cargo !== 'ADMIN') {
+                    window.location.href = '/profile';
+                    return;
                 }
-            } catch (error) {
-                console.error('Erro na verificação:', error);
-                showAuthRequired();
-            }
-        }
-        
-        function showAuthRequired() {
-            console.log('showAuthRequired chamado - redirecionando para /auth');
-            // Redirecionar automaticamente para página de autenticação
-            window.location.href = '/auth';
-        }
-        
-        function showProfileSection() {
-            console.log('showProfileSection chamado');
-            
-            // Atualizar abas
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('profileTab').classList.add('active');
-            
-            // Atualizar conteúdo
-            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-            document.getElementById('profileContent').style.display = 'block';
-            
-            // Carregar dados do perfil
-            loadProfileData();
-        }
-        
-        function loadProfileData() {
-            console.log('loadProfileData chamado para currentUser:', currentUser);
-            
-            if (!currentUser) {
-                console.log('currentUser não disponível');
-                return;
-            }
-            
-            try {
-                // Preencher formulário de perfil
-                const profileNome = document.getElementById('profileNome');
-                const profileEmail = document.getElementById('profileEmail');
-                const profileCargo = document.getElementById('profileCargo');
-                
-                console.log('Elementos do perfil encontrados:', {
-                    profileNome: !!profileNome,
-                    profileEmail: !!profileEmail,
-                    profileCargo: !!profileCargo
-                });
-                
-                if (profileNome) profileNome.value = currentUser.nome || '';
-                if (profileEmail) profileEmail.value = currentUser.email || '';
-                if (profileCargo) profileCargo.value = getCargoDisplay(currentUser.cargo) || '';
 
-                const profileAvatarCircle = document.getElementById('profileAvatarCircle');
-                const profileDisplayName = document.getElementById('profileDisplayName');
-                const profileDisplayRole = document.getElementById('profileDisplayRole');
-                if (profileAvatarCircle) profileAvatarCircle.textContent = (currentUser.nome || '?').charAt(0).toUpperCase();
-                if (profileDisplayName) profileDisplayName.textContent = currentUser.nome || '';
-                if (profileDisplayRole) profileDisplayRole.textContent = getCargoDisplay(currentUser.cargo) || '';
-
-                console.log('Dados do perfil carregados com sucesso');
-            } catch (error) {
-                console.error('Erro ao carregar dados do perfil:', error);
-            }
-        }
-        
-        function getCargoDisplay(cargo) {
-            console.log('getCargoDisplay chamado com cargo:', cargo);
-            switch (cargo) {
-                case 'ADMIN':
-                    return 'Administrador';
-                case 'DIRETOR':
-                    return 'Diretor';
-                case 'SONOPLASTA':
-                    return 'Sonoplasta';
-                default:
-                    console.log('Cargo não reconhecido:', cargo);
-                    return cargo || 'Desconhecido';
-            }
-        }
-        
-        function getStatusDisplay(status) {
-            console.log('getStatusDisplay chamado com status:', status);
-            switch (status) {
-                case 'APPROVED':
-                    return 'Aprovado';
-                case 'PENDING':
-                    return 'Pendente';
-                case 'REJECTED':
-                    return 'Rejeitado';
-                default:
-                    console.log('Status não reconhecido:', status);
-                    return status || 'Desconhecido';
-            }
-        }
-        
-        function updateUserInterface() {
-            console.log('updateUserInterface chamado com currentUser:', currentUser);
-            
-            if (!currentUser) {
-                console.log('currentUser é null/undefined');
-                return;
-            }
-            
-            console.log('Atualizando interface com usuário:', currentUser.nome, currentUser.cargo);
-            
-            const userNameEl = document.getElementById('userName');
-            const userRoleEl = document.getElementById('userRole');
-            
-            if (userNameEl) {
-                userNameEl.textContent = currentUser.nome;
-                console.log('Nome do usuário atualizado:', currentUser.nome);
-            } else {
-                console.log('Elemento userName não encontrado');
-            }
-            
-            if (userRoleEl) {
-                userRoleEl.textContent = getCargoDisplay(currentUser.cargo);
-                console.log('Cargo do usuário atualizado:', getCargoDisplay(currentUser.cargo));
-            } else {
-                console.log('Elemento userRole não encontrado');
-            }
-            
-            // Verificar se o botão de editar perfil existe
-            const editProfileBtn = document.querySelector('button[onclick="editProfile()"]');
-            if (editProfileBtn) {
-                console.log('Botão de editar perfil encontrado:', editProfileBtn);
-                console.log('Botão visível:', editProfileBtn.style.display !== 'none');
-            } else {
-                console.log('Botão de editar perfil NÃO encontrado');
-            }
-            
-            // Ajustar visibilidade das abas baseado no cargo
-            if (currentUser.cargo === 'SONOPLASTA') {
-                document.getElementById('pendingTab').style.display = 'none';
-            }
-
-            // Sidebar gerenciada pelo sidebar.js
-            if (typeof updateSidebar === 'function') updateSidebar(currentUser);
-        }
-        
-        function getCargoDisplay(cargo) {
-            const cargoMap = {
-                'ADMIN': 'Administrador',
-                'DIRETOR': 'Diretor',
-                'SONOPLASTA': 'Sonoplasta'
-            };
-            return cargoMap[cargo] || cargo;
-        }
-        
-        function switchTab(tab) {
-            // Atualizar botões das abas
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(tab + 'Tab').classList.add('active');
-            
-            // Atualizar conteúdo das abas
-            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-            document.getElementById(tab + 'Content').style.display = 'block';
-            
-            // Carregar dados da aba selecionada
-            if (tab === 'active') {
+                if (typeof updateSidebar === 'function') updateSidebar(currentUser);
                 loadUsers();
-            } else if (tab === 'pending') {
-                loadPendingUsers();
-            } else if (tab === 'profile') {
-                loadProfileData();
+            } catch (e) {
+                window.location.href = '/auth';
             }
         }
-        
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+            document.getElementById(tab + 'Content').style.display = 'block';
+            if (tab === 'active') loadUsers();
+            else loadPendingUsers();
+        }
+
+        function refreshUsers() {
+            const active = document.querySelector('.tab-btn.active');
+            if (active && active.id === 'pendingTab') loadPendingUsers();
+            else loadUsers();
+        }
+
         function loadUsers() {
             const token = localStorage.getItem('token');
-            const usersTableBody = document.getElementById('usersTableBody');
-            
-            usersTableBody.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 2rem;">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <div>Carregando usuários...</div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            
-            fetch('/api/users', {
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-            .then(response => response.json())
-            .then(users => {
-                if (users.length === 0) {
-                    usersTableBody.innerHTML = `
+            const tbody = document.getElementById('usersTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div></td></tr>`;
+
+            fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(users => {
+                    if (!users.length) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Nenhum usuário encontrado</h3><p>Nenhum usuário cadastrado no sistema.</p></div></td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = users.map(u => `
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 2rem;">
-                                <div class="empty-state">
-                                    <h3>Nenhum usuário encontrado</h3>
-                                    <p>Nenhum usuário cadastrado no sistema.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-                
-                const usersHTML = users.map(user => `
-                    <tr>
-                        <td>
-                            <div class="user-info-cell">
-                                <div class="user-name">${user.nome}</div>
-                                <div class="user-email">${user.email}</div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge badge-${getCargoBadgeClass(user.cargo)} cargo-clickable" 
-                                  onclick="changeCargo(${user.id}, '${user.cargo}')" 
-                                  title="Clique para alterar">
-                                ${getCargoDisplay(user.cargo)}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge badge-${getStatusBadgeClass(user.status)}">
-                                ${getStatusDisplay(user.status)}
-                            </span>
-                        </td>
-                        <td>${new Date(user.data_cadastro).toLocaleDateString('pt-BR')}</td>
-                        <td>
-                            <div class="actions">
-                                ${currentUser.cargo === 'SONOPLASTA' ? '' : `
-                                    <button class="btn btn-secondary" onclick="editUser(${user.id})">
-                                        Editar
-                                    </button>
-                                `}
-                                ${currentUser.cargo === 'SONOPLASTA' || (currentUser.cargo === 'ADMIN' && user.id === currentUser.id) ? '' : `
-                                    <button class="btn btn-danger" onclick="deleteUser(${user.id})">
-                                        Excluir
-                                    </button>
-                                `}
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
-                
-                usersTableBody.innerHTML = usersHTML;
-            })
-            .catch(error => {
-                console.error('Erro ao carregar usuários:', error);
-                usersTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 2rem;">
-                            <div class="empty-state">
-                                <h3>Erro ao Carregar</h3>
-                                <p>Não foi possível carregar os usuários.</p>
-                                <button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+                            <td><div class="user-info-cell"><div class="user-name">${u.nome}</div><div class="user-email">${u.email}</div></div></td>
+                            <td><span class="badge badge-${getCargoBadgeClass(u.cargo)}">${getCargoDisplay(u.cargo)}</span></td>
+                            <td><span class="badge badge-${getStatusBadgeClass(u.status)}">${getStatusDisplay(u.status)}</span></td>
+                            <td>${new Date(u.data_cadastro).toLocaleDateString('pt-BR')}</td>
+                            <td><div class="actions">
+                                <button class="btn btn-secondary" onclick="editUser(${u.id})">Editar</button>
+                                ${u.id !== currentUser.id ? `<button class="btn btn-danger" onclick="deleteUser(${u.id})">Excluir</button>` : ''}
+                            </div></td>
+                        </tr>`).join('');
+                })
+                .catch(() => {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar os usuários.</p><button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button></div></td></tr>`;
+                });
         }
-        
+
         function loadPendingUsers() {
             const token = localStorage.getItem('token');
-            const pendingTableBody = document.getElementById('pendingUsersTableBody');
-            
-            pendingTableBody.innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                            <div>Carregando pendências...</div>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            
-            fetch('/api/users/pending', {
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-            .then(response => response.json())
-            .then(users => {
-                if (!Array.isArray(users) || users.length === 0) {
-                    pendingTableBody.innerHTML = `
+            const tbody = document.getElementById('pendingUsersTableBody');
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div></td></tr>`;
+
+            fetch('/api/users/pending', { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(users => {
+                    if (!Array.isArray(users) || !users.length) {
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Nenhuma conta pendente</h3><p>Nenhuma conta aguardando aprovação.</p></div></td></tr>`;
+                        return;
+                    }
+                    tbody.innerHTML = users.map(u => `
                         <tr>
-                            <td colspan="4" style="text-align: center; padding: 2rem;">
-                                <div class="empty-state">
-                                    <h3>Nenhuma conta pendente</h3>
-                                    <p>Nenhuma conta aguardando aprovação.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                    return;
-                }
-                
-                const usersHTML = users.map(user => `
-                    <tr>
-                        <td>${user.nome}</td>
-                        <td>${user.email}</td>
-                        <td>${new Date(user.data_cadastro).toLocaleDateString('pt-BR')}</td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn btn-success" onclick="approveUser(${user.id})">
-                                    Aprovar
-                                </button>
-                                <button class="btn btn-danger" onclick="rejectUser(${user.id})">
-                                    Recusar
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
-                
-                pendingTableBody.innerHTML = usersHTML;
-            })
-            .catch(error => {
-                console.error('Erro ao carregar usuários pendentes:', error);
-                pendingTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align: center; padding: 2rem;">
-                            <div class="empty-state">
-                                <h3>Erro ao Carregar</h3>
-                                <p>Não foi possível carregar as contas pendentes.</p>
-                                <button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
+                            <td>${u.nome}</td>
+                            <td>${u.email}</td>
+                            <td>${new Date(u.data_cadastro).toLocaleDateString('pt-BR')}</td>
+                            <td><div class="actions">
+                                <button class="btn btn-success" onclick="approveUser(${u.id})">Aprovar</button>
+                                <button class="btn btn-danger" onclick="rejectUser(${u.id})">Recusar</button>
+                            </div></td>
+                        </tr>`).join('');
+                })
+                .catch(() => {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar as contas pendentes.</p><button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button></div></td></tr>`;
+                });
         }
-        
-        function getCargoBadgeClass(cargo) {
-            const classMap = {
-                'ADMIN': 'purple',
-                'DIRETOR': 'blue',
-                'SONOPLASTA': 'green'
-            };
-            return classMap[cargo] || 'gray';
-        }
-        
-        function getStatusBadgeClass(status) {
-            const classMap = {
-                'APPROVED': 'green',
-                'PENDING': 'yellow',
-                'REJECTED': 'red'
-            };
-            return classMap[status] || 'gray';
-        }
-        
-        function getStatusDisplay(status) {
-            const statusMap = {
-                'APPROVED': 'Aprovado',
-                'PENDING': 'Pendente',
-                'REJECTED': 'Recusado'
-            };
-            return statusMap[status] || status;
-        }
-        
-        function changeCargo(userId, currentCargo) {
-            if (currentUser.cargo === 'SONOPLASTA') {
-                console.log('Você não tem permissão para alterar cargos.');
-                return;
-            }
-            
-            // ADMIN não pode alterar seu próprio cargo para evitar problemas
-            if (currentUser.cargo === 'ADMIN' && userId === currentUser.id) {
-                console.log('ADMIN não pode alterar seu próprio cargo.');
-                return;
-            }
-            
-            const newCargo = currentCargo; // Removido prompt por solicitação do usuário
-            if (!newCargo) return;
-            
-            const validCargos = ['SONOPLASTA', 'DIRETOR', 'ADMIN'];
-            if (!validCargos.includes(newCargo)) {
-                console.log('Cargo inválido. Use: SONOPLASTA, DIRETOR ou ADMIN');
-                return;
-            }
-            
-            const token = localStorage.getItem('token');
-            fetch(`/api/users/${userId}/cargo`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ cargo: newCargo })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (response.ok) {
-                    console.log('Cargo atualizado com sucesso!');
-                    loadUsers();
-                } else {
-                    console.log(data.error || 'Erro ao atualizar cargo');
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao atualizar cargo:', error);
-                console.log('Erro de conexão ao atualizar cargo');
-            });
-        }
-        
+
         function editUser(userId) {
-            console.log('editUser chamado para userId:', userId);
-            console.log('currentUser:', currentUser);
-            
             const token = localStorage.getItem('token');
-            
-            fetch(`/api/users/${userId}`, {
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-            .then(response => response.json())
-            .then(user => {
-                console.log('Usuário carregado para edição:', user);
-                
-                // Preencher formulário
-                document.getElementById('editNome').value = user.nome;
-                document.getElementById('editEmail').value = user.email;
-                document.getElementById('editSenha').value = '';
-                document.getElementById('editCargo').value = user.cargo;
-                
-                // Armazenar ID do usuário
-                document.getElementById('editUserForm').dataset.userId = userId;
-                
-                // Mostrar modal
-                document.getElementById('editUserModal').classList.add('show');
-                console.log('Modal de edição aberto');
-            })
-            .catch(error => {
-                console.error('Erro ao carregar usuário:', error);
-                console.log('Erro ao carregar dados do usuário');
-            });
+            fetch(`/api/users/${userId}`, { headers: { 'Authorization': 'Bearer ' + token } })
+                .then(r => r.json())
+                .then(user => {
+                    document.getElementById('editNome').value = user.nome;
+                    document.getElementById('editEmail').value = user.email;
+                    document.getElementById('editSenha').value = '';
+                    document.getElementById('editCargo').value = user.cargo;
+                    document.getElementById('editUserForm').dataset.userId = userId;
+                    document.getElementById('editUserModal').classList.add('show');
+                });
         }
-        
+
         function closeEditModal() {
             document.getElementById('editUserModal').classList.remove('show');
         }
-        
-        function editProfile() {
-            console.log('editProfile chamado para currentUser:', currentUser);
-            
-            if (!currentUser) {
-                console.log('Usuário não encontrado!');
-                return;
-            }
-            
-            // Preencher formulário com dados do usuário atual
-            document.getElementById('editNome').value = currentUser.nome;
-            document.getElementById('editEmail').value = currentUser.email;
-            document.getElementById('editSenha').value = '';
-            document.getElementById('editCargo').value = currentUser.cargo;
-            
-            // Armazenar ID do usuário
-            document.getElementById('editUserForm').dataset.userId = currentUser.id;
-            
-            // Mostrar modal
-            document.getElementById('editUserModal').classList.add('show');
-            console.log('Modal de edição de perfil aberto');
-        }
-        
-        function deleteUser(userId) {
-            if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.')) {
-                return;
-            }
-            
-            const token = localStorage.getItem('token');
-            fetch(`/api/users/${userId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (response.ok) {
-                    console.log('Usuário excluído com sucesso!');
-                    loadUsers();
-                } else {
-                    console.log(data.error || 'Erro ao excluir usuário');
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao excluir usuário:', error);
-                console.log('Erro de conexão ao excluir usuário');
-            });
-        }
-        
-        function approveUser(userId) {
-            console.log('approveUser chamado para userId:', userId);
-            const token = localStorage.getItem('token');
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-            
-            fetch(`/api/users/${userId}/approve`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('Status da resposta approve:', response.status);
-                if (response.ok) {
-                    console.log('Usuário aprovado com sucesso!');
-                    // Recarrega as duas listas para garantir sincronia
-                    loadPendingUsers();
-                    loadUsers(); 
-                } else {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Erro ao aprovar usuário');
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao aprovar usuário:', error);
-                console.log(error.message || 'Erro de conexão ao aprovar usuário');
-            });
-        }
-        
-        function rejectUser(userId) {
-            console.log('rejectUser chamado para userId:', userId);
-            console.log('Recusando usuário');
 
-            
+        async function deleteUser(userId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
             const token = localStorage.getItem('token');
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-            
-            fetch(`/api/users/${userId}/reject`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => {
-                console.log('Status da resposta reject:', response.status);
-                if (response.ok) {
-                    console.log('Usuário recusado com sucesso!');
-                    loadPendingUsers();
-                } else {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Erro ao recusar usuário');
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao recusar usuário:', error);
-                console.log(error.message || 'Erro de conexão ao recusar usuário');
-            });
+            const res = await fetch(`/api/users/${userId}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) loadUsers();
         }
-        
-        function refreshUsers() {
-            const activeTab = document.querySelector('.tab-btn.active').id.replace('Tab', '');
-            if (activeTab === 'active') {
-                loadUsers();
-            } else {
-                loadPendingUsers();
-            }
+
+        async function approveUser(userId) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/${userId}/approve`, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) { loadPendingUsers(); loadUsers(); }
         }
-        
-        // Event listener para formulário de edição
+
+        async function rejectUser(userId) {
+            const token = localStorage.getItem('token');
+            const res = await fetch(`/api/users/${userId}/reject`, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.ok) loadPendingUsers();
+        }
+
         document.getElementById('editUserForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const userId = this.dataset.userId;
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
-            
-            // Remover senha se estiver vazia
-            if (!data.senha) {
-                delete data.senha;
-            }
-            
+            const data = Object.fromEntries(new FormData(this));
+            if (!data.senha) delete data.senha;
             const token = localStorage.getItem('token');
-            try {
-                const response = await fetch(`/api/users/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    console.log('Usuário atualizado com sucesso!');
-                    closeEditModal();
-                    loadUsers();
-                    if (userId == currentUser.id) {
-                        currentUser = result.user;
-                        updateUserInterface();
-                    }
-                } else {
-                    console.log(result.error || 'Erro ao atualizar usuário');
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar usuário:', error);
-                console.log('Erro de conexão ao atualizar usuário');
-            }
+            const res = await fetch(`/api/users/${userId}`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) { closeEditModal(); loadUsers(); }
         });
 
-        // Event listener para formulário de perfil
-        document.getElementById('profileForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
-            
-            console.log('Dados do formulário de perfil:', data);
-            
-            // Validações
-            if (!data.nome || !data.email) {
-                console.log('Nome e email são obrigatórios.');
-                return;
-            }
-            
-            if (data.senha && data.senha.length < 6) {
-                console.log('A senha deve ter pelo menos 6 caracteres.');
-                return;
-            }
-            
-            if (data.senha && data.senha !== data.confirmSenha) {
-                console.log('As senhas não coincidem.');
-                return;
-            }
-            
-            // Remover confirmação de senha do payload
-            delete data.confirmSenha;
-            
-            // Se senha estiver vazia, remover do payload
-            if (!data.senha) {
-                delete data.senha;
-            }
-            
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/users/profile', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok) {
-                    console.log('Perfil atualizado com sucesso!');
-                    
-                    // Atualizar dados do usuário atual
-                    if (result.user) {
-                        currentUser = result.user;
-                        localStorage.setItem('user', JSON.stringify(currentUser));
-                        loadProfileData();
-                    }
-                } else {
-                    console.log(result.error || 'Erro ao atualizar perfil');
-                }
-            } catch (error) {
-                console.error('Erro ao atualizar perfil:', error);
-                console.log('Erro de conexão. Tente novamente.');
-            }
-        });
-        
-                
-        function getStatusBadge(status) {
-            switch (status) {
-                case 'APPROVED':
-                    return '<span class="badge badge-green">Aprovado</span>';
-                case 'PENDING':
-                    return '<span class="badge badge-yellow">Pendente</span>';
-                case 'REJECTED':
-                    return '<span class="badge badge-red">Rejeitado</span>';
-                default:
-                    return '<span class="badge badge-gray">Desconhecido</span>';
-            }
-        }
-        
-        function getRoleBadge(role) {
-            switch (role) {
-                case 'DIRETOR':
-                    return '<span class="badge badge-purple">Diretor</span>';
-                case 'SONOPLASTA':
-                    return '<span class="badge badge-blue">Sonoplasta</span>';
-                default:
-                    return '<span class="badge badge-gray">Usuário</span>';
-            }
-        }
-        
-                
-        async function updateRole(userId, newRole) {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
-                const response = await fetch(`/api/users/${userId}/role`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ cargo: newRole })
-                });
-                
-                if (response.ok) {
-                    loadUsers();
-                } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                } else {
-                    console.log('Erro ao atualizar cargo');
-                }
-            } catch (error) {
-                console.log('Erro de conexão');
-            }
-        }
-        
-        async function deleteUser(userId) {
-            console.log('Excluindo usuário');
-            
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
-                const response = await fetch(`/api/users/${userId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    loadUsers();
-                } else if (response.status === 401 || response.status === 403) {
-                    localStorage.removeItem('token');
-                    showAuthRequired();
-                } else {
-                    console.log('Erro ao excluir usuário');
-                }
-            } catch (error) {
-                console.log('Erro de conexão');
-            }
-        }
-        
-            </script>
+        function getCargoDisplay(c) { return { ADMIN:'Administrador', DIRETOR:'Diretor', SONOPLASTA:'Sonoplasta' }[c] || c; }
+        function getCargoBadgeClass(c) { return { ADMIN:'purple', DIRETOR:'blue', SONOPLASTA:'green' }[c] || 'gray'; }
+        function getStatusDisplay(s) { return { APPROVED:'Aprovado', PENDING:'Pendente', REJECTED:'Recusado' }[s] || s; }
+        function getStatusBadgeClass(s) { return { APPROVED:'green', PENDING:'yellow', REJECTED:'red' }[s] || 'gray'; }
+    </script>
 </body>
 </html>
