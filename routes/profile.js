@@ -14,16 +14,22 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 *
 router.get('/', requireAuth, async (req, res) => {
   const { data: user, error } = await supabase
     .from('users')
-    .select('id, nome, email, cargo, foto_perfil, consentimento_em, politica_versao, data_cadastro')
+    .select('id, nome, email, cargo, consentimento_em, politica_versao, data_cadastro')
     .eq('id', req.user.id)
     .single();
 
   if (error || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
-  if (user.foto_perfil) {
-    const { data } = await supabase.storage.from('avatars').createSignedUrl(user.foto_perfil, 3600);
-    user.foto_url = data?.signedUrl || null;
-  }
+  // foto_perfil: coluna opcional — só tenta se o ALTER TABLE já foi executado
+  try {
+    const { data: fotoRow } = await supabase
+      .from('users').select('foto_perfil').eq('id', req.user.id).single();
+    if (fotoRow?.foto_perfil) {
+      const { data: urlData } = await supabase.storage
+        .from('avatars').createSignedUrl(fotoRow.foto_perfil, 3600);
+      user.foto_url = urlData?.signedUrl || null;
+    }
+  } catch {}
 
   res.json(user);
 });
