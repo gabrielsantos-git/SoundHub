@@ -18,15 +18,6 @@
     <!-- Main Content -->
     <main class="main-content">
 
-        <!-- Widget: Próximos dias de escala (visível para SONOPLASTA e DIRETOR) -->
-        <div id="scheduleWidget" style="display:none;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:1.25rem 1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;">
-                <h2 style="font-size:1rem;font-weight:600;color:#1f2937;margin:0;">Próximos dias de escala</h2>
-                <a href="/schedule" style="font-size:0.8125rem;color:#3b82f6;text-decoration:none;">Ver escala completa</a>
-            </div>
-            <div id="scheduleDaysList"></div>
-        </div>
-
         <div class="card">
             <div class="card-header">
                 <h1 class="card-title">Bem-vindo ao SoundHub</h1>
@@ -40,6 +31,18 @@
                     <div class="spinner"></div>
                     <div>Carregando arquivos...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Widget: Próximos dias de escala (visível para SONOPLASTA e DIRETOR) -->
+        <div id="scheduleWidget" style="display:none;background:#fff;border-radius:12px;border:1px solid #e5e7eb;margin-top:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04);overflow:hidden;">
+            <button onclick="toggleScheduleWidget()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;background:none;border:none;cursor:pointer;text-align:left;">
+                <h2 style="font-size:1rem;font-weight:600;color:#1f2937;margin:0;">Próximos dias de escala</h2>
+                <svg id="scheduleChevron" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition:transform .2s;transform:rotate(0deg)"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div id="scheduleWidgetBody" style="display:none;padding:0 1.5rem 1.25rem;">
+                <div id="scheduleDaysList"></div>
+                <a href="/schedule" style="display:inline-block;margin-top:0.75rem;font-size:0.8125rem;color:#3b82f6;text-decoration:none;">Ver escala completa →</a>
             </div>
         </div>
     </main>
@@ -396,6 +399,14 @@
             }
         }
         
+        function toggleScheduleWidget() {
+            const body = document.getElementById('scheduleWidgetBody');
+            const chevron = document.getElementById('scheduleChevron');
+            const open = body.style.display === 'none';
+            body.style.display = open ? 'block' : 'none';
+            chevron.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+
         async function loadMySchedule() {
             if (!currentUser || currentUser.cargo === 'ADMIN') return;
             const token = localStorage.getItem('token');
