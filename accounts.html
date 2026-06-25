@@ -174,7 +174,7 @@
                             <td><span class="badge badge-${getStatusBadgeClass(u.status)}">${getStatusDisplay(u.status)}</span></td>
                             <td>${new Date(u.data_cadastro).toLocaleDateString('pt-BR')}</td>
                             <td><div class="actions">
-                                <button class="btn btn-secondary" onclick="editUser(${u.id})">Editar</button>
+                                ${u.id !== currentUser.id ? `<button class="btn btn-secondary" onclick="editUser(${u.id})">Editar</button>` : ''}
                                 ${u.id !== currentUser.id ? `<button class="btn btn-danger" onclick="deleteUser(${u.id})">Excluir</button>` : ''}
                             </div></td>
                         </tr>`).join('');
