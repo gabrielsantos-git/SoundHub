@@ -79,11 +79,10 @@
 
             <div class="sidebar-footer">
                 <div class="sidebar-user">
-                    <label class="sidebar-avatar" for="sidebarPhotoInput" title="Alterar foto de perfil" style="cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;">
+                    <div class="sidebar-avatar" style="position:relative;overflow:hidden;flex-shrink:0;">
                         <span id="userInitial">U</span>
                         <img id="sidebarAvatarImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;">
-                    </label>
-                    <input type="file" id="sidebarPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadSidebarPhoto(this)">
+                    </div>
                     <div class="sidebar-user-info">
                         <div id="userName">Usuário</div>
                         <div id="userRole" class="sidebar-user-role">Cargo</div>
@@ -244,27 +243,6 @@
         }
     }
 
-    window.uploadSidebarPhoto = async function(input) {
-        const file = input.files[0];
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) return;
-        const token = localStorage.getItem('token');
-        const fd = new FormData();
-        fd.append('foto', file);
-        try {
-            const res = await fetch('/api/profile/photo', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token },
-                body: fd
-            });
-            const data = await res.json();
-            if (res.ok && data.foto_url) {
-                setSidebarPhoto(data.foto_url);
-                localStorage.setItem('userFoto', data.foto_url);
-            }
-        } catch {}
-        input.value = '';
-    };
 
     // ── Atualizar visibilidade e estado ──
     window.updateSidebar = function(user) {
