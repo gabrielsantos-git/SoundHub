@@ -156,11 +156,6 @@
         </div>
     `;
 
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = '/css/sidebar.css';
-    document.head.appendChild(link);
-
     document.body.insertAdjacentHTML('afterbegin', sidebarHTML);
 
     // ── Sidebar desktop ──
