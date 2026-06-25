@@ -79,9 +79,11 @@
 
             <div class="sidebar-footer">
                 <div class="sidebar-user">
-                    <div class="sidebar-avatar">
+                    <label class="sidebar-avatar" for="sidebarPhotoInput" title="Alterar foto de perfil" style="cursor:pointer;position:relative;overflow:hidden;flex-shrink:0;">
                         <span id="userInitial">U</span>
-                    </div>
+                        <img id="sidebarAvatarImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                    </label>
+                    <input type="file" id="sidebarPhotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="uploadSidebarPhoto(this)">
                     <div class="sidebar-user-info">
                         <div id="userName">Usuário</div>
                         <div id="userRole" class="sidebar-user-role">Cargo</div>
@@ -225,7 +227,43 @@
     window.logout = function() {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        localStorage.removeItem('userFoto');
         window.location.href = '/auth';
+    };
+
+    function setSidebarPhoto(url) {
+        const img     = document.getElementById('sidebarAvatarImg');
+        const initial = document.getElementById('userInitial');
+        if (img && url) {
+            img.src = url;
+            img.style.display = 'block';
+            if (initial) initial.style.display = 'none';
+        } else if (img) {
+            img.style.display = 'none';
+            if (initial) initial.style.display = '';
+        }
+    }
+
+    window.uploadSidebarPhoto = async function(input) {
+        const file = input.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) return;
+        const token = localStorage.getItem('token');
+        const fd = new FormData();
+        fd.append('foto', file);
+        try {
+            const res = await fetch('/api/profile/photo', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: fd
+            });
+            const data = await res.json();
+            if (res.ok && data.foto_url) {
+                setSidebarPhoto(data.foto_url);
+                localStorage.setItem('userFoto', data.foto_url);
+            }
+        } catch {}
+        input.value = '';
     };
 
     // ── Atualizar visibilidade e estado ──
@@ -239,6 +277,11 @@
         if (userName)    userName.textContent    = user.nome  || 'Usuário';
         if (userRole)    userRole.textContent    = user.cargo || 'Cargo';
         if (userInitial) userInitial.textContent = (user.nome || 'U').charAt(0).toUpperCase();
+
+        // Foto de perfil: usa a da resposta da API ou o cache do localStorage
+        const fotoUrl = user.foto_url || localStorage.getItem('userFoto');
+        setSidebarPhoto(fotoUrl || null);
+        if (user.foto_url) localStorage.setItem('userFoto', user.foto_url);
 
         const show = el => { if (el) el.style.display = 'flex'; };
         const hide = el => { if (el) el.style.display = 'none'; };
