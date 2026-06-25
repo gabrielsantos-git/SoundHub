@@ -197,7 +197,7 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
 });
 
 // Listar arquivos
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
     const { data: files, error } = await supabase
       .from('files')
@@ -251,7 +251,7 @@ router.get(
 });
 
 // Listar arquivos aprovados
-router.get('/approved', async (req, res) => {
+router.get('/approved', requireAuth, async (req, res) => {
   try {
     const { data: files, error } = await supabase
       .from('files')
@@ -342,7 +342,7 @@ router.patch('/:id/reject', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), asy
 });
 
 // Download de arquivo
-router.get('/download/:id', async (req, res) => {
+router.get('/download/:id', requireAuth, async (req, res) => {
   try {
     const fileId = parseInt(req.params.id);
 
@@ -376,7 +376,7 @@ router.get('/download/:id', async (req, res) => {
 });
 
 // Download de múltiplos arquivos como ZIP
-router.post('/download-zip', async (req, res) => {
+router.post('/download-zip', requireAuth, async (req, res) => {
   try {
     const { fileIds, groupName } = req.body;
     

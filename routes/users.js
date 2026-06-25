@@ -9,20 +9,23 @@ const router = express.Router();
 // Listar todos os usuários (aprovados)
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const isAdmin = ['ADMIN', 'DIRETOR'].includes(req.user.cargo);
+    const fields = isAdmin
+      ? 'id, nome, email, cargo, status, data_cadastro'
+      : 'id, nome, cargo';
+
     const { data: users, error } = await supabase
       .from('users')
-      .select('id, nome, email, cargo, status, data_cadastro')
+      .select(fields)
       .eq('status', 'APPROVED')
       .order('data_cadastro', { ascending: false });
-    
+
     if (error) {
-      console.error('Erro ao listar usuários:', error);
       return res.status(500).json({ error: 'Erro ao listar usuários' });
     }
-    
+
     res.json(users || []);
   } catch (error) {
-    console.error('Erro ao listar usuários:', error);
     res.status(500).json({ error: 'Erro ao listar usuários' });
   }
 });

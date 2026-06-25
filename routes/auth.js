@@ -38,9 +38,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    console.error('Usuário encontrado:', user.email, 'Status:', user.status);
-
-    // Verificar senha (aceita hash e texto puro temporariamente)
+    // Verificar senha
     if (!user.senha) {
       console.error('Usuário não tem senha');
       return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -49,15 +47,12 @@ router.post('/login', async (req, res) => {
     let validPassword = false;
     try {
       validPassword = await bcrypt.compare(senha, user.senha);
-      console.error('Senha válida:', validPassword);
     } catch (error) {
       console.error('Erro ao comparar senha:', error);
       validPassword = false;
     }
 
-    const isTextPassword = senha === user.senha;
-    
-    if (!validPassword && !isTextPassword) {
+    if (!validPassword) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
@@ -210,10 +205,7 @@ router.post('/register', async (req, res) => {
     console.error('--- ERRO CRÍTICO NO REGISTRO ---');
     console.error(error); 
     
-    res.status(500).json({ 
-        message: 'Erro interno do servidor.',
-        detalhe: error.message 
-    });
+    res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });
 
