@@ -4,6 +4,7 @@ const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 const { reajustarEscalasParaNovoUsuario } = require('./schedules');
 const { logAudit, getIp } = require('../utils/audit');
+const { sendAccountApproved, sendAccountDeleted } = require('../utils/email');
 const router = express.Router();
 
 // Listar todos os usuários (aprovados)
@@ -197,7 +198,7 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
       .from('users')
       .update({ status: 'APPROVED', aprovado_em: new Date().toISOString() })
       .eq('id', userId)
-      .select('id, cargo')
+      .select('id, cargo, nome, email')
       .single();
 
     if (error || !data) {
@@ -205,6 +206,7 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
     }
 
     logAudit({ usuarioId: req.user.id, acao: 'USER_APPROVED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
+    sendAccountApproved(data.email, data.nome).catch(() => {});
 
     // Reajustar escalas ativas para incluir o novo SONOPLASTA ou DIRETOR
     if (data.cargo === 'SONOPLASTA' || data.cargo === 'DIRETOR') {
@@ -246,7 +248,7 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
   try {
     const userId = parseInt(req.params.id);
 
-    const { data: existing } = await supabase.from('users').select('id').eq('id', userId).single();
+    const { data: existing } = await supabase.from('users').select('id, nome, email').eq('id', userId).single();
     if (!existing) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
@@ -290,6 +292,7 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
     }
 
     logAudit({ usuarioId: req.user.id, acao: 'USER_DELETED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
+    sendAccountDeleted(existing.email, existing.nome).catch(() => {});
 
     res.json({ message: 'Usuário excluído com sucesso' });
   } catch (error) {

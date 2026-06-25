@@ -84,4 +84,51 @@ async function sendScheduleEmail(to, nome, dias) {
   });
 }
 
-module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode, sendRegisterCode, sendScheduleEmail };
+function tplSimples(titulo, corpo, corDestaque = '#1d4ed8', bgDestaque = '#eff6ff') {
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f1f5f9;margin:0;padding:24px">
+<div style="max-width:440px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 16px rgba(0,0,0,.08)">
+  <div style="text-align:center;margin-bottom:20px;font-size:1.25rem;font-weight:800;color:#1d4ed8">SoundHub</div>
+  <h2 style="color:#111827;font-size:1.1rem;margin:0 0 12px">${titulo}</h2>
+  <div style="background:${bgDestaque};border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#374151;font-size:.9375rem;line-height:1.6">${corpo}</div>
+  <p style="color:#9ca3af;font-size:.8125rem;margin:0;text-align:center">SoundHub — Sistema de Mídia</p>
+</div></body></html>`;
+}
+
+async function sendAccountPending(to, nome) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Cadastro recebido, aguardando aprovação',
+    html: tplSimples(
+      'Cadastro recebido!',
+      `Olá, <strong>${nome}</strong>!<br><br>Seu cadastro no SoundHub foi concluído com sucesso. Sua conta está <strong>aguardando aprovação</strong> de um Diretor ou Administrador.<br><br>Você receberá um novo email assim que sua conta for aprovada.`
+    )
+  });
+}
+
+async function sendAccountApproved(to, nome) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Sua conta foi aprovada!',
+    html: tplSimples(
+      'Conta aprovada!',
+      `Olá, <strong>${nome}</strong>!<br><br>Boa notícia! Sua conta no SoundHub foi <strong>aprovada</strong>. Você já pode acessar o sistema normalmente.`,
+      '#16a34a',
+      '#dcfce7'
+    )
+  });
+}
+
+async function sendAccountDeleted(to, nome) {
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Sua conta foi removida',
+    html: tplSimples(
+      'Conta removida',
+      `Olá, <strong>${nome}</strong>.<br><br>Sua conta no SoundHub foi <strong>removida</strong> por um administrador. Caso acredite que isso foi um engano, entre em contato com o responsável pelo sistema.`,
+      '#dc2626',
+      '#fee2e2'
+    )
+  });
+}
+
+module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode, sendRegisterCode, sendScheduleEmail, sendAccountPending, sendAccountApproved, sendAccountDeleted };

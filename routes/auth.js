@@ -5,7 +5,7 @@ const supabase = require('../supabase');
 const { getJwtSecret } = require('../config/jwt');
 const { logAudit, getIp } = require('../utils/audit');
 const codes = require('../utils/codeStore');
-const { sendRegisterCode } = require('../utils/email');
+const { sendRegisterCode, sendAccountPending } = require('../utils/email');
 const router = express.Router();
 
 // Login
@@ -222,6 +222,7 @@ router.post('/register', async (req, res) => {
     }
 
     logAudit({ usuarioId: newUser.id, acao: 'REGISTER', recurso: 'users', recursoId: newUser.id, detalhes: { nome, email }, ip }).catch(() => {});
+    sendAccountPending(email, nome).catch(() => {});
 
     res.json({
       message: 'Cadastro realizado com sucesso! Aguarde aprovação para acessar.',
