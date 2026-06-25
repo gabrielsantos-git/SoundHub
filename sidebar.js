@@ -53,31 +53,25 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>Contas
                 </a>
 
-                <!-- Dropdown de Configurações -->
-                <div class="sidebar-dropdown" id="settingsDropdown">
-                    <button class="sidebar-item sidebar-dropdown-btn" id="settingsBtn" onclick="toggleSettingsDropdown()" aria-expanded="false">
-                        ${GEAR_SVG}
-                        <span style="flex:1;text-align:left;">Configurações</span>
-                        ${CHEVRON_SVG}
-                    </button>
-                    <div class="sidebar-dropdown-menu" id="settingsMenu">
-                        <a href="/accounts" class="sidebar-item sidebar-subitem" id="accountsLink">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>
-                            Contas
-                        </a>
-                        <a href="/profile" class="sidebar-item sidebar-subitem" id="profileLink">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/></svg>
-                            Minha Conta
-                        </a>
-                        <a href="/privacidade" class="sidebar-item sidebar-subitem" target="_blank" rel="noopener">
-                            ${SHIELD_SVG}
-                            Privacidade
-                        </a>
-                    </div>
-                </div>
             </nav>
 
-            <div class="sidebar-footer">
+            <div class="sidebar-footer" style="position:relative;">
+                <!-- Dropdown de configurações (abre para cima) -->
+                <div id="settingsMenu" style="display:none;position:absolute;bottom:calc(100% + 0.5rem);left:0;right:0;background:white;border:1px solid #e5e7eb;border-radius:0.75rem;box-shadow:0 4px 16px rgba(0,0,0,0.12);overflow:hidden;z-index:100;">
+                    <a href="/accounts" class="sidebar-item sidebar-subitem" id="accountsLink" style="padding:0.625rem 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m.256 7a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1zm3.63-4.54c.18-.613 1.048-.613 1.229 0l.043.148a.64.64 0 0 0 .921.382l.136-.074c.561-.306 1.175.308.87.869l-.075.136a.64.64 0 0 0 .382.92l.149.045c.612.18.612 1.048 0 1.229l-.15.043a.64.64 0 0 0-.38.921l.074.136c.305.561-.309 1.175-.87.87l-.136-.075a.64.64 0 0 0-.92.382l-.045.149c-.18.612-1.048.612-1.229 0l-.043-.15a.64.64 0 0 0-.921-.38l-.136.074c-.561.305-1.175-.309-.87-.87l.075-.136a.64.64 0 0 0-.382-.92l-.148-.045c-.613-.18-.613-1.048 0-1.229l.148-.043a.64.64 0 0 0 .382-.921l-.074-.136c-.306-.561.308-1.175.869-.87l.136.075a.64.64 0 0 0 .92-.382zM14 12.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0"/></svg>
+                        Contas
+                    </a>
+                    <a href="/profile" class="sidebar-item sidebar-subitem" id="profileLink" style="padding:0.625rem 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16"><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z"/></svg>
+                        Minha Conta
+                    </a>
+                    <a href="/privacidade" class="sidebar-item sidebar-subitem" target="_blank" rel="noopener" style="padding:0.625rem 1rem;">
+                        ${SHIELD_SVG}
+                        Privacidade
+                    </a>
+                </div>
+
                 <div class="sidebar-user">
                     <div class="sidebar-avatar" style="position:relative;overflow:hidden;flex-shrink:0;">
                         <span id="userInitial">U</span>
@@ -88,6 +82,9 @@
                         <div id="userRole" class="sidebar-user-role">Cargo</div>
                     </div>
                 </div>
+                <button id="settingsBtn" onclick="toggleSettingsDropdown()" title="Configurações" aria-expanded="false" style="background:none;border:none;padding:0.375rem;cursor:pointer;color:#6b7280;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color 0.15s,background 0.15s;">
+                    ${GEAR_SVG}
+                </button>
                 <button onclick="logout()" class="sidebar-logout">Sair</button>
             </div>
         </div>
@@ -183,15 +180,23 @@
         document.body.style.overflow = '';
     };
 
-    // ── Dropdown de Configurações (desktop) ──
+    // ── Dropdown de Configurações (rodapé desktop) ──
     window.toggleSettingsDropdown = function() {
-        const menu    = document.getElementById('settingsMenu');
-        const chevron = document.getElementById('settingsChevron');
-        const btn     = document.getElementById('settingsBtn');
-        const isOpen  = menu.classList.toggle('open');
-        chevron.classList.toggle('open', isOpen);
-        btn.setAttribute('aria-expanded', isOpen);
+        const menu   = document.getElementById('settingsMenu');
+        const btn    = document.getElementById('settingsBtn');
+        const isOpen = menu.style.display === 'block';
+        menu.style.display = isOpen ? 'none' : 'block';
+        btn.setAttribute('aria-expanded', !isOpen);
+        btn.style.color = isOpen ? '' : '#3b82f6';
+        btn.style.background = isOpen ? '' : '#eff6ff';
     };
+
+    function closeSettingsMenu() {
+        const menu = document.getElementById('settingsMenu');
+        const btn  = document.getElementById('settingsBtn');
+        if (menu) menu.style.display = 'none';
+        if (btn)  { btn.setAttribute('aria-expanded', 'false'); btn.style.color = ''; btn.style.background = ''; }
+    }
 
     // ── Dropdown de Configurações (mobile) ──
     window.toggleMobileSettings = function() {
@@ -213,6 +218,16 @@
         if (e.key === 'Escape') {
             window.closeSidebar();
             window.closeMobileSettings();
+            closeSettingsMenu();
+        }
+    });
+
+    // Clique fora fecha o dropdown de configurações
+    document.addEventListener('click', function(e) {
+        const menu = document.getElementById('settingsMenu');
+        const btn  = document.getElementById('settingsBtn');
+        if (menu && menu.style.display === 'block' && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+            closeSettingsMenu();
         }
     });
 
@@ -326,17 +341,11 @@
             item.classList.toggle('active', !!href && href === currentPath);
         });
 
-        // Botão de configurações ativo se estiver em /accounts ou /profile
+        // Gear ativo se estiver em página de settings
         const settingsBtn = document.getElementById('settingsBtn');
-        if (settingsBtn) settingsBtn.classList.toggle('active', isSettingsPage);
-
-        // Auto-abrir dropdown se estiver na página de configurações
-        if (isSettingsPage) {
-            const menu    = document.getElementById('settingsMenu');
-            const chevron = document.getElementById('settingsChevron');
-            if (menu)    menu.classList.add('open');
-            if (chevron) chevron.classList.add('open');
-            if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'true');
+        if (settingsBtn) {
+            settingsBtn.style.color     = isSettingsPage ? '#3b82f6' : '';
+            settingsBtn.style.background = isSettingsPage ? '#eff6ff' : '';
         }
 
         // Marcar item ativo na bottom nav
