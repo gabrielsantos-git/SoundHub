@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
+const { sendScheduleEmail } = require('../utils/email');
 
 // Listar escalas — apenas mês atual + próximo mês; dispara geração automática
 router.get('/', requireAuth, async (req, res) => {
@@ -30,6 +31,25 @@ router.get('/', requireAuth, async (req, res) => {
         res.json(schedules || []);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao listar escalas' });
+    }
+});
+
+// Próximos dias do usuário logado na escala
+router.get('/my-days', requireAuth, async (req, res) => {
+    try {
+        const hoje = new Date().toISOString().split('T')[0];
+        const { data: days, error } = await supabase
+            .from('escala_dias')
+            .select('id, escala_id, dia_semana, data_especifica')
+            .eq('usuario_id', req.user.id)
+            .gte('data_especifica', hoje)
+            .order('data_especifica', { ascending: true })
+            .limit(8);
+
+        if (error) return res.status(500).json({ error: 'Erro ao buscar dias' });
+        res.json(days || []);
+    } catch (e) {
+        res.status(500).json({ error: 'Erro interno' });
     }
 });
 
@@ -175,6 +195,9 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
             return res.status(500).json({ error: 'Erro ao criar dias da escala' });
         }
 
+        // Enviar emails para cada usuário com seus dias — fire-and-forget
+        _enviarEmailsEscala(escalaId, datasEscala, users).catch(() => {});
+
         res.json({ message: 'Escala mensal criada com sucesso', escala_id: escalaId });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao criar escala' });
@@ -198,6 +221,10 @@ router.put('/:id/days', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (
                 .eq('id', day.id)
                 .eq('escala_id', parseInt(id));
         }
+
+        // Enviar emails com a escala atualizada — fire-and-forget
+        _enviarEmailsEscalaById(parseInt(id)).catch(() => {});
+
         res.json({ message: 'Escala atualizada com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao atualizar escala' });
@@ -487,6 +514,65 @@ async function reajustarEscalasParaNovoUsuario(userId) {
             .from('escala_dias')
             .update({ usuario_id: userId })
             .eq('id', diaParaCeder.id);
+    }
+}
+
+// Agrupa dias por usuario_id e envia um email para cada um
+async function _enviarEmailsEscala(escalaId, datasEscala, users) {
+    const hoje = new Date().toISOString().split('T')[0];
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    // Agrupar dias futuros por usuário
+    const porUsuario = {};
+    for (const d of datasEscala) {
+        if (!d.usuario_id || d.data_especifica < hoje) continue;
+        if (!porUsuario[d.usuario_id]) porUsuario[d.usuario_id] = [];
+        porUsuario[d.usuario_id].push(d);
+    }
+
+    // Buscar emails dos usuários
+    const ids = Object.keys(porUsuario).map(Number);
+    if (!ids.length) return;
+    const { data: usersWithEmail } = await supabase
+        .from('users').select('id, nome, email').in('id', ids);
+    if (!usersWithEmail) return;
+
+    for (const u of usersWithEmail) {
+        const dias = porUsuario[u.id];
+        if (!dias || !dias.length) continue;
+        sendScheduleEmail(u.email, u.nome, dias).catch(() => {});
+    }
+}
+
+// Versão que busca os dias direto do banco (usada após edição)
+async function _enviarEmailsEscalaById(escalaId) {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const { data: dias } = await supabase
+        .from('escala_dias')
+        .select('usuario_id, data_especifica')
+        .eq('escala_id', escalaId)
+        .gte('data_especifica', hoje)
+        .order('data_especifica', { ascending: true });
+
+    if (!dias || !dias.length) return;
+
+    const ids = [...new Set(dias.map(d => d.usuario_id).filter(Boolean))];
+    const { data: users } = await supabase
+        .from('users').select('id, nome, email').in('id', ids);
+    if (!users) return;
+
+    const porUsuario = {};
+    for (const d of dias) {
+        if (!d.usuario_id) continue;
+        if (!porUsuario[d.usuario_id]) porUsuario[d.usuario_id] = [];
+        porUsuario[d.usuario_id].push(d);
+    }
+
+    for (const u of users) {
+        const diasUsuario = porUsuario[u.id];
+        if (!diasUsuario || !diasUsuario.length) continue;
+        sendScheduleEmail(u.email, u.nome, diasUsuario).catch(() => {});
     }
 }
 

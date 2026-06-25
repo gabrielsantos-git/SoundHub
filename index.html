@@ -17,6 +17,16 @@
 
     <!-- Main Content -->
     <main class="main-content">
+
+        <!-- Widget: Próximos dias de escala (visível para SONOPLASTA e DIRETOR) -->
+        <div id="scheduleWidget" style="display:none;background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:1.25rem 1.5rem;margin-bottom:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.04)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.875rem;">
+                <h2 style="font-size:1rem;font-weight:600;color:#1f2937;margin:0;">Próximos dias de escala</h2>
+                <a href="/schedule" style="font-size:0.8125rem;color:#3b82f6;text-decoration:none;">Ver escala completa</a>
+            </div>
+            <div id="scheduleDaysList"></div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <h1 class="card-title">Bem-vindo ao SoundHub</h1>
@@ -24,7 +34,7 @@
                     Atualizar
                 </button>
             </div>
-            
+
             <div id="filesContainer">
                 <div class="loading">
                     <div class="spinner"></div>
@@ -97,6 +107,7 @@
                     currentUser = data.user;
                     updateUserInterface();
                     loadFiles();
+                    loadMySchedule();
                 } else {
                     console.log('Falha na autenticação, status:', response.status);
                     const errorData = await response.json();
@@ -385,6 +396,39 @@
             }
         }
         
+        async function loadMySchedule() {
+            if (!currentUser || currentUser.cargo === 'ADMIN') return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch('/api/schedules/my-days', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) return;
+                const days = await res.json();
+                const widget = document.getElementById('scheduleWidget');
+                const list = document.getElementById('scheduleDaysList');
+                if (!days.length) {
+                    widget.style.display = 'block';
+                    list.innerHTML = '<p style="color:#9ca3af;font-size:0.875rem;margin:0;">Nenhum dia agendado nos próximos dias.</p>';
+                    return;
+                }
+                const DIA_LABEL = { sabado:'Sábado', domingo:'Domingo', quarta:'Quarta-feira', segunda:'Segunda-feira', terca:'Terça-feira', quinta:'Quinta-feira', sexta:'Sexta-feira' };
+                const hoje = new Date().toISOString().split('T')[0];
+                list.innerHTML = days.map(d => {
+                    const data = new Date(d.data_especifica + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const isHoje = d.data_especifica === hoje;
+                    const label = DIA_LABEL[d.dia_semana] || d.dia_semana;
+                    return `<div style="display:flex;align-items:center;gap:0.75rem;padding:0.5rem 0;border-bottom:1px solid #f3f4f6;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${isHoje ? '#22c55e' : '#3b82f6'};flex-shrink:0;"></span>
+                        <span style="font-size:0.9375rem;color:#374151;flex:1;">${label}, ${data}</span>
+                        ${isHoje ? '<span style="font-size:0.75rem;background:#dcfce7;color:#16a34a;padding:2px 8px;border-radius:9999px;font-weight:600;">Hoje</span>' : ''}
+                    </div>`;
+                }).join('');
+                // remover borda do último item
+                const last = list.lastElementChild;
+                if (last) last.style.borderBottom = 'none';
+                widget.style.display = 'block';
+            } catch (e) { /* silencioso */ }
+        }
+
         function refreshFiles() {
             const filesContainer = document.getElementById('filesContainer');
             filesContainer.innerHTML = `

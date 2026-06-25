@@ -58,4 +58,30 @@ async function sendRegisterCode(to, code) {
   });
 }
 
-module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode, sendRegisterCode };
+async function sendScheduleEmail(to, nome, dias) {
+  const diasHtml = dias.map(d => {
+    const data = new Date(d.data_especifica + 'T12:00:00').toLocaleDateString('pt-BR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
+    return `<li style="padding:5px 0;color:#374151;font-size:.9375rem;text-transform:capitalize">${data}</li>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f1f5f9;margin:0;padding:24px">
+<div style="max-width:480px;margin:0 auto;background:#fff;border-radius:16px;padding:32px;box-shadow:0 2px 16px rgba(0,0,0,.08)">
+  <div style="text-align:center;margin-bottom:20px;font-size:1.25rem;font-weight:800;color:#1d4ed8">SoundHub</div>
+  <h2 style="color:#111827;font-size:1.1rem;margin:0 0 8px">Seus dias de escala</h2>
+  <p style="color:#6b7280;margin:0 0 20px;font-size:.9375rem">Olá, <strong>${nome}</strong>! Confira abaixo os seus próximos dias na escala de sonoplastia:</p>
+  <div style="background:#eff6ff;border-radius:12px;padding:18px 24px;margin-bottom:20px">
+    <ul style="margin:0;padding-left:20px">${diasHtml}</ul>
+  </div>
+  <p style="color:#9ca3af;font-size:.8125rem;margin:0;text-align:center">Acesse o SoundHub para ver a escala completa.</p>
+</div></body></html>`;
+
+  await createTransporter().sendMail({
+    from: from(), to,
+    subject: 'SoundHub — Seus dias na escala',
+    html
+  });
+}
+
+module.exports = { sendPasswordCode, sendEmailOldCode, sendEmailNewCode, sendRegisterCode, sendScheduleEmail };
