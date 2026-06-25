@@ -52,22 +52,31 @@ router.post('/photo', requireAuth, upload.single('foto'), async (req, res) => {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.file.mimetype))
     return res.status(400).json({ error: 'Formato inválido. Use JPG, PNG ou WebP.' });
 
-  const userId = req.user.id;
-  const ext = req.file.mimetype.split('/')[1] === 'jpeg' ? 'jpg' : req.file.mimetype.split('/')[1];
-  const filePath = `${userId}/avatar.${ext}`;
+  try {
+    const userId = req.user.id;
+    const ext = req.file.mimetype.split('/')[1] === 'jpeg' ? 'jpg' : req.file.mimetype.split('/')[1];
+    const filePath = `${userId}/avatar.${ext}`;
 
-  const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
-  if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
+    const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
+    if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
 
-  const { error: upErr } = await supabase.storage
-    .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    const { error: upErr } = await supabase.storage
+      .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
 
-  if (upErr) return res.status(500).json({ error: 'Erro ao enviar foto' });
+    if (upErr) {
+      console.error('Supabase storage upload error:', upErr);
+      return res.status(500).json({ error: 'Erro ao enviar foto', detail: upErr.message });
+    }
 
-  await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
+    const { error: dbErr } = await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
+    if (dbErr) console.error('DB update foto_perfil error:', dbErr);
 
-  const { data: urlData } = await supabase.storage.from('avatars').createSignedUrl(filePath, 3600);
-  res.json({ foto_url: urlData?.signedUrl });
+    const { data: urlData } = await supabase.storage.from('avatars').createSignedUrl(filePath, 3600);
+    res.json({ foto_url: urlData?.signedUrl });
+  } catch (e) {
+    console.error('Photo upload exception:', e);
+    res.status(500).json({ error: 'Erro ao enviar foto', detail: e.message });
+  }
 });
 
 // POST /api/profile/send-password-code
