@@ -72,19 +72,19 @@
                     </a>
                 </div>
 
-                <div class="sidebar-user">
+                <div class="sidebar-user" style="flex:1;min-width:0;">
                     <div class="sidebar-avatar" style="position:relative;overflow:hidden;flex-shrink:0;">
                         <span id="userInitial">U</span>
                         <img id="sidebarAvatarImg" src="" alt="" style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%;">
                     </div>
-                    <div class="sidebar-user-info">
+                    <div class="sidebar-user-info" style="flex:1;min-width:0;">
                         <div id="userName">Usuário</div>
                         <div id="userRole" class="sidebar-user-role">Cargo</div>
                     </div>
+                    <button id="settingsBtn" onclick="toggleSettingsDropdown()" title="Configurações" aria-expanded="false" style="background:none;border:none;padding:0.375rem;cursor:pointer;color:#6b7280;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color 0.15s,background 0.15s;">
+                        ${GEAR_SVG}
+                    </button>
                 </div>
-                <button id="settingsBtn" onclick="toggleSettingsDropdown()" title="Configurações" aria-expanded="false" style="background:none;border:none;padding:0.375rem;cursor:pointer;color:#6b7280;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color 0.15s,background 0.15s;">
-                    ${GEAR_SVG}
-                </button>
                 <button onclick="logout()" class="sidebar-logout">Sair</button>
             </div>
         </div>
