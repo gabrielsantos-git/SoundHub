@@ -146,6 +146,18 @@ router.post('/register', async (req, res) => {
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
     }
+    if (String(nome).trim().length < 2 || String(nome).trim().length > 100) {
+      return res.status(400).json({ error: 'Nome deve ter entre 2 e 100 caracteres' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    if (String(senha).length < 8) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' });
+    }
+    if (String(senha).length > 128) {
+      return res.status(400).json({ error: 'Senha muito longa' });
+    }
     if (!consentimento) {
       return res.status(400).json({ error: 'É necessário aceitar a Política de Privacidade para criar uma conta' });
     }

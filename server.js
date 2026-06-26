@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
@@ -73,6 +74,12 @@ initializeDatabase().catch(error => {
   console.error('❌ Erro ao inicializar banco de dados:', error);
 });
 
+// Headers de segurança HTTP (anti-clickjacking, MIME sniff, XSS, HSTS, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // desativado: o app usa inline scripts nas páginas HTML
+  crossOriginEmbedderPolicy: false // desativado: permite carregar recursos externos (Supabase storage)
+}));
+
 const allowedOrigin = process.env.FRONTEND_URL || process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : null;
@@ -120,15 +127,12 @@ app.get('/favicon.ico', (req, res) => {
   }
 });
 
-// Serve arquivos JS estáticos
+// Serve apenas arquivos JS de frontend (whitelist explícita)
+const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js']);
 app.get('/:filename.js', (req, res) => {
   const filename = req.params.filename + '.js';
-  const filePath = path.join(__dirname, filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).json({ error: 'File not found' });
-  }
+  if (!PUBLIC_JS.has(filename)) return res.status(404).end();
+  res.sendFile(path.join(__dirname, filename));
 });
 
 // Middleware de logging para debug

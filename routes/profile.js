@@ -107,7 +107,8 @@ router.post('/send-password-code', requireAuth, codeLimiter, async (req, res) =>
 router.post('/change-password', requireAuth, async (req, res) => {
   const { code, novaSenha } = req.body;
   if (!code || !novaSenha) return res.status(400).json({ error: 'Código e nova senha são obrigatórios' });
-  if (novaSenha.length < 6) return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+  if (novaSenha.length < 8) return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' });
+  if (novaSenha.length > 128) return res.status(400).json({ error: 'Senha muito longa' });
 
   const entry = codes.get(`pwd-${req.user.id}`);
   if (!entry || entry.code !== code) return res.status(400).json({ error: 'Código inválido ou expirado' });
