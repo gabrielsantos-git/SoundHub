@@ -13,7 +13,8 @@ const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB
+    fileSize: 50 * 1024 * 1024, // 50MB por arquivo
+    files: 10                    // máximo 10 arquivos por requisição
   },
   fileFilter: function (req, file, cb) {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi', 'video/mov', 'application/pdf'];
@@ -38,7 +39,7 @@ router.use((error, req, res, next) => {
     if (error.code === 'LIMIT_UNEXPECTED_FILE') {
       return res.status(400).json({ error: 'Campo de arquivo inesperado.' });
     }
-    return res.status(400).json({ error: 'Erro no upload: ' + error.message });
+    return res.status(400).json({ error: 'Erro no upload de arquivo.' });
   } else if (error) {
     console.error('Erro no upload:', error);
     return res.status(500).json({ error: 'Erro interno no upload.' });
@@ -48,12 +49,7 @@ router.use((error, req, res, next) => {
 
 // Upload de múltiplos arquivos
 router.post('/upload', upload.array('arquivos'), async (req, res) => {
-  console.error('=== UPLOAD REQUEST ===');
-  console.error('Body:', req.body);
-  console.error('Files:', req.files);
-  
   const qrToken = req.body?.token;
-  console.error('QR Token:', qrToken);
   
   const lockResult = qrToken ? qrStore.lock(qrToken) : { valid: false };
   console.error('Lock result:', lockResult);

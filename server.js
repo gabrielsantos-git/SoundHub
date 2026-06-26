@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -76,8 +77,18 @@ const allowedOrigin = process.env.FRONTEND_URL || process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : null;
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : {}));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Rate limit global para todas as rotas /api (proteção DoS)
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em instantes.' }
+});
+app.use('/api/', apiLimiter);
 
 // Serve os arquivos da pasta raiz (onde estão os HTMLs e JS)
 app.use(express.static(path.join(__dirname)));
