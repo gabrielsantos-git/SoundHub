@@ -1,12 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const supabase = require('../supabase');
 const { requireAuth } = require('../middleware/auth');
 const { logAudit, getIp } = require('../utils/audit');
 const codes = require('../utils/codeStore');
 const { sendPasswordCode, sendEmailOldCode, sendEmailNewCode } = require('../utils/email');
 const router = express.Router();
+
+const codeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas solicitações de código. Aguarde 10 minutos.' }
+});
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -62,16 +71,23 @@ router.post('/photo', requireAuth, upload.single('foto'), async (req, res) => {
   const { error: upErr } = await supabase.storage
     .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
 
-  if (upErr) return res.status(500).json({ error: 'Erro ao enviar foto' });
+    if (upErr) {
+      console.error('Supabase storage upload error:', upErr);
+      return res.status(500).json({ error: 'Erro ao enviar foto' });
+    }
 
-  await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
+    await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
 
-  const { data: urlData } = await supabase.storage.from('avatars').createSignedUrl(filePath, 3600);
-  res.json({ foto_url: urlData?.signedUrl });
+    const { data: urlData } = await supabase.storage.from('avatars').createSignedUrl(filePath, 3600);
+    res.json({ foto_url: urlData?.signedUrl });
+  } catch (e) {
+    console.error('Photo upload exception:', e);
+    res.status(500).json({ error: 'Erro ao enviar foto' });
+  }
 });
 
 // POST /api/profile/send-password-code
-router.post('/send-password-code', requireAuth, async (req, res) => {
+router.post('/send-password-code', requireAuth, codeLimiter, async (req, res) => {
   const { data: user } = await supabase.from('users').select('email').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
@@ -105,7 +121,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
 });
 
 // POST /api/profile/send-email-old-code
-router.post('/send-email-old-code', requireAuth, async (req, res) => {
+router.post('/send-email-old-code', requireAuth, codeLimiter, async (req, res) => {
   const { data: user } = await supabase.from('users').select('email').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 

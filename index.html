@@ -207,6 +207,10 @@
             filesContainer.innerHTML = html;
         }
 
+        function escapeHtml(str) {
+            return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        }
+
         // Função auxiliar para manter o layout do item original
         function renderFileItem(file) {
             const fileType = file.tipo.includes('image') ? 'image' : file.tipo.includes('video') ? 'video' : 'pdf';
@@ -220,19 +224,21 @@
             });
 
             const canDelete = currentUser && (currentUser.cargo === 'ADMIN' || currentUser.cargo === 'DIRETOR');
+            const nomeEsc = escapeHtml(file.nome);
+            const usuarioEsc = escapeHtml(file.usuario_nome);
 
             return `
                 <div class="file-item" id="file-item-${file.id}">
                     <div class="file-info">
-                        <h3>${file.nome}</h3>
-                        <p>${formattedDate} • ${file.usuario_nome}</p>
+                        <h3>${nomeEsc}</h3>
+                        <p>${formattedDate} • ${usuarioEsc}</p>
                         <span class="file-type ${typeClass}">${typeName}</span>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-secondary" onclick="downloadFile(${file.id}, '${file.nome}')">
+                        <button class="btn btn-secondary" onclick="downloadFile(${file.id}, ${JSON.stringify(file.nome)})">
                             Baixar
                         </button>
-                        ${canDelete ? `<button class="btn btn-danger" onclick="deleteFile(${file.id}, '${file.nome.replace(/'/g, "\\'")}')">Excluir</button>` : ''}
+                        ${canDelete ? `<button class="btn btn-danger" onclick="deleteFile(${file.id}, ${JSON.stringify(file.nome)})">Excluir</button>` : ''}
                     </div>
                 </div>`;
         }

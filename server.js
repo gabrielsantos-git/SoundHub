@@ -72,7 +72,10 @@ initializeDatabase().catch(error => {
   console.error('❌ Erro ao inicializar banco de dados:', error);
 });
 
-app.use(cors());
+const allowedOrigin = process.env.FRONTEND_URL || process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : null;
+app.use(cors(allowedOrigin ? { origin: allowedOrigin } : {}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -126,10 +129,7 @@ app.use((req, res, next) => {
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
   console.error('Erro no servidor:', err);
-  res.status(500).json({ 
-    error: 'Erro interno do servidor',
-    message: err.message 
-  });
+  res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
 // Servir páginas HTML estáticas
@@ -223,10 +223,7 @@ app.use((req, res) => {
   
   // Para API, retornar erro JSON
   if (req.path.startsWith('/api/')) {
-    return res.status(404).json({
-      error: 'Rota não encontrada',
-      message: `A rota ${req.method} ${req.path} não existe`
-    });
+    return res.status(404).json({ error: 'Rota não encontrada' });
   }
   
   // Para outros casos, retornar erro HTML
