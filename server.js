@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
@@ -72,9 +74,28 @@ initializeDatabase().catch(error => {
   console.error('❌ Erro ao inicializar banco de dados:', error);
 });
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Headers de segurança HTTP (anti-clickjacking, MIME sniff, XSS, HSTS, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // desativado: o app usa inline scripts nas páginas HTML
+  crossOriginEmbedderPolicy: false // desativado: permite carregar recursos externos (Supabase storage)
+}));
+
+const allowedOrigin = process.env.FRONTEND_URL || process.env.VERCEL_URL
+  ? `https://${process.env.VERCEL_URL}`
+  : null;
+app.use(cors(allowedOrigin ? { origin: allowedOrigin } : {}));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Rate limit global para todas as rotas /api (proteção DoS)
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em instantes.' }
+});
+app.use('/api/', apiLimiter);
 
 // Serve os arquivos da pasta raiz (onde estão os HTMLs e JS)
 app.use(express.static(path.join(__dirname)));
@@ -106,15 +127,12 @@ app.get('/favicon.ico', (req, res) => {
   }
 });
 
-// Serve arquivos JS estáticos
+// Serve apenas arquivos JS de frontend (whitelist explícita)
+const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js']);
 app.get('/:filename.js', (req, res) => {
   const filename = req.params.filename + '.js';
-  const filePath = path.join(__dirname, filename);
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).json({ error: 'File not found' });
-  }
+  if (!PUBLIC_JS.has(filename)) return res.status(404).end();
+  res.sendFile(path.join(__dirname, filename));
 });
 
 // Middleware de logging para debug
@@ -126,10 +144,7 @@ app.use((req, res, next) => {
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
   console.error('Erro no servidor:', err);
-  res.status(500).json({ 
-    error: 'Erro interno do servidor',
-    message: err.message 
-  });
+  res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
 // Servir páginas HTML estáticas
@@ -223,10 +238,7 @@ app.use((req, res) => {
   
   // Para API, retornar erro JSON
   if (req.path.startsWith('/api/')) {
-    return res.status(404).json({
-      error: 'Rota não encontrada',
-      message: `A rota ${req.method} ${req.path} não existe`
-    });
+    return res.status(404).json({ error: 'Rota não encontrada' });
   }
   
   // Para outros casos, retornar erro HTML

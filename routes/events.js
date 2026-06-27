@@ -157,7 +157,7 @@ router.post('/', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (req, re
 
         if (insertError || !insertedEvent) {
             console.error('Erro Supabase ao criar evento:', insertError);
-            return res.status(500).json({ error: 'Erro ao criar evento', detail: insertError?.message });
+            return res.status(500).json({ error: 'Erro ao criar evento' });
         }
 
         const eventoId = insertedEvent.id;

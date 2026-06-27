@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const rateLimit = require('express-rate-limit');
 const supabase = require('../supabase');
 const { getJwtSecret } = require('../config/jwt');
 const { logAudit, getIp } = require('../utils/audit');
@@ -8,21 +9,31 @@ const codes = require('../utils/codeStore');
 const { sendRegisterCode, sendAccountPending } = require('../utils/email');
 const router = express.Router();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' }
+});
+
+const codeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas solicitações de código. Aguarde 10 minutos.' }
+});
+
 // Login
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
-    console.error('=== LOGIN REQUEST ===');
-    console.error('Body:', req.body);
     const { email, senha } = req.body;
-    console.error('Email:', email);
-    console.error('Senha:', senha ? '***' : undefined);
 
     if (!email || !senha) {
-      console.error('Email ou senha não fornecidos');
       return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     }
 
-    // Buscar usuário no Supabase
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -30,27 +41,14 @@ router.post('/login', async (req, res) => {
       .eq('status', 'APPROVED')
       .single();
 
-    if (error) {
-      console.error('Erro ao buscar usuário:', error);
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    if (!user) {
-      console.error('Usuário não encontrado');
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    // Verificar senha
-    if (!user.senha) {
-      console.error('Usuário não tem senha');
+    if (error || !user || !user.senha) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
     let validPassword = false;
     try {
       validPassword = await bcrypt.compare(senha, user.senha);
-    } catch (error) {
-      console.error('Erro ao comparar senha:', error);
+    } catch (e) {
       validPassword = false;
     }
 
@@ -58,13 +56,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Credenciais inválidas' });
     }
 
-    // Gerar token JWT
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        cargo: user.cargo 
-      },
+      { id: user.id, email: user.email, cargo: user.cargo },
       getJwtSecret(),
       { expiresIn: '24h' }
     );
@@ -74,17 +67,11 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Login successful',
       token,
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        cargo: user.cargo
-      }
+      user: { id: user.id, nome: user.nome, email: user.email, cargo: user.cargo }
     });
 
   } catch (error) {
     console.error('Erro no login:', error);
-    console.error('Stack:', error.stack);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -93,54 +80,39 @@ router.post('/login', async (req, res) => {
 router.get('/me', async (req, res) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
-    
+
     if (!token) {
       return res.status(401).json({ error: 'Token não fornecido' });
     }
 
     const decoded = jwt.verify(token, getJwtSecret());
-    
-    // Buscar usuário no Supabase
+
     const { data: user, error } = await supabase
       .from('users')
       .select('id, nome, email, cargo')
       .eq('id', decoded.id)
       .eq('status', 'APPROVED')
       .single();
-    
-    if (error) {
-      console.error('Erro ao buscar usuário:', error);
-      return res.status(401).json({ error: 'Usuário não encontrado' });
-    }
-    
-    if (!user) {
+
+    if (error || !user) {
       return res.status(401).json({ error: 'Usuário não encontrado' });
     }
 
-    res.json({
-      user: {
-        id: user.id,
-        nome: user.nome,
-        email: user.email,
-        cargo: user.cargo
-      }
-    });
+    res.json({ user: { id: user.id, nome: user.nome, email: user.email, cargo: user.cargo } });
 
   } catch (error) {
-    console.error('Erro ao verificar token:', error);
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ error: 'Token inválido' });
     }
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ error: 'Token expirado' });
     }
-    
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
 // Enviar código de verificação para cadastro
-router.post('/send-register-code', async (req, res) => {
+router.post('/send-register-code', codeLimiter, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -174,6 +146,18 @@ router.post('/register', async (req, res) => {
     if (!nome || !email || !senha) {
       return res.status(400).json({ error: 'Nome, email e senha são obrigatórios' });
     }
+    if (String(nome).trim().length < 2 || String(nome).trim().length > 100) {
+      return res.status(400).json({ error: 'Nome deve ter entre 2 e 100 caracteres' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
+      return res.status(400).json({ error: 'Email inválido' });
+    }
+    if (String(senha).length < 8) {
+      return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' });
+    }
+    if (String(senha).length > 128) {
+      return res.status(400).json({ error: 'Senha muito longa' });
+    }
     if (!consentimento) {
       return res.status(400).json({ error: 'É necessário aceitar a Política de Privacidade para criar uma conta' });
     }
@@ -181,14 +165,12 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Código de verificação obrigatório' });
     }
 
-    // Verificar código
     const entry = codes.get(`register-${email}`);
     if (!entry || entry.code !== String(code)) {
       return res.status(400).json({ error: 'Código inválido ou expirado' });
     }
     codes.del(`register-${email}`);
 
-    // Verificar se email já existe
     const { data: existingUser, error: checkError } = await supabase
       .from('users').select('id').eq('email', email).single();
     if (checkError && checkError.code !== 'PGRST116') {

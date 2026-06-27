@@ -1,12 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
+const rateLimit = require('express-rate-limit');
 const supabase = require('../supabase');
 const { requireAuth } = require('../middleware/auth');
 const { logAudit, getIp } = require('../utils/audit');
 const codes = require('../utils/codeStore');
 const { sendPasswordCode, sendEmailOldCode, sendEmailNewCode } = require('../utils/email');
 const router = express.Router();
+
+const codeLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas solicitações de código. Aguarde 10 minutos.' }
+});
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
@@ -52,35 +61,33 @@ router.post('/photo', requireAuth, upload.single('foto'), async (req, res) => {
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(req.file.mimetype))
     return res.status(400).json({ error: 'Formato inválido. Use JPG, PNG ou WebP.' });
 
-  try {
-    const userId = req.user.id;
-    const ext = req.file.mimetype.split('/')[1] === 'jpeg' ? 'jpg' : req.file.mimetype.split('/')[1];
-    const filePath = `${userId}/avatar.${ext}`;
+  const userId = req.user.id;
+  const ext = req.file.mimetype.split('/')[1] === 'jpeg' ? 'jpg' : req.file.mimetype.split('/')[1];
+  const filePath = `${userId}/avatar.${ext}`;
 
-    const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
-    if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
+  const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
+  if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
 
-    const { error: upErr } = await supabase.storage
-      .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+  const { error: upErr } = await supabase.storage
+    .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
 
     if (upErr) {
       console.error('Supabase storage upload error:', upErr);
-      return res.status(500).json({ error: 'Erro ao enviar foto', detail: upErr.message });
+      return res.status(500).json({ error: 'Erro ao enviar foto' });
     }
 
-    const { error: dbErr } = await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
-    if (dbErr) console.error('DB update foto_perfil error:', dbErr);
+    await supabase.from('users').update({ foto_perfil: filePath }).eq('id', userId);
 
     const { data: urlData } = await supabase.storage.from('avatars').createSignedUrl(filePath, 3600);
     res.json({ foto_url: urlData?.signedUrl });
   } catch (e) {
     console.error('Photo upload exception:', e);
-    res.status(500).json({ error: 'Erro ao enviar foto', detail: e.message });
+    res.status(500).json({ error: 'Erro ao enviar foto' });
   }
 });
 
 // POST /api/profile/send-password-code
-router.post('/send-password-code', requireAuth, async (req, res) => {
+router.post('/send-password-code', requireAuth, codeLimiter, async (req, res) => {
   const { data: user } = await supabase.from('users').select('email').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
@@ -100,7 +107,8 @@ router.post('/send-password-code', requireAuth, async (req, res) => {
 router.post('/change-password', requireAuth, async (req, res) => {
   const { code, novaSenha } = req.body;
   if (!code || !novaSenha) return res.status(400).json({ error: 'Código e nova senha são obrigatórios' });
-  if (novaSenha.length < 6) return res.status(400).json({ error: 'A senha deve ter pelo menos 6 caracteres' });
+  if (novaSenha.length < 8) return res.status(400).json({ error: 'A senha deve ter pelo menos 8 caracteres' });
+  if (novaSenha.length > 128) return res.status(400).json({ error: 'Senha muito longa' });
 
   const entry = codes.get(`pwd-${req.user.id}`);
   if (!entry || entry.code !== code) return res.status(400).json({ error: 'Código inválido ou expirado' });
@@ -114,7 +122,7 @@ router.post('/change-password', requireAuth, async (req, res) => {
 });
 
 // POST /api/profile/send-email-old-code
-router.post('/send-email-old-code', requireAuth, async (req, res) => {
+router.post('/send-email-old-code', requireAuth, codeLimiter, async (req, res) => {
   const { data: user } = await supabase.from('users').select('email').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
 
