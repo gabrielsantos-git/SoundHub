@@ -65,11 +65,12 @@ router.post('/photo', requireAuth, upload.single('foto'), async (req, res) => {
   const ext = req.file.mimetype.split('/')[1] === 'jpeg' ? 'jpg' : req.file.mimetype.split('/')[1];
   const filePath = `${userId}/avatar.${ext}`;
 
-  const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
-  if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
+  try {
+    const { data: existing } = await supabase.from('users').select('foto_perfil').eq('id', userId).single();
+    if (existing?.foto_perfil) await supabase.storage.from('avatars').remove([existing.foto_perfil]);
 
-  const { error: upErr } = await supabase.storage
-    .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+    const { error: upErr } = await supabase.storage
+      .from('avatars').upload(filePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
 
     if (upErr) {
       console.error('Supabase storage upload error:', upErr);

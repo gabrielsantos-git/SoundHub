@@ -80,9 +80,8 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false // desativado: permite carregar recursos externos (Supabase storage)
 }));
 
-const allowedOrigin = process.env.FRONTEND_URL || process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : null;
+app.set('trust proxy', 1);
+const allowedOrigin = process.env.FRONTEND_URL || null;
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : {}));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
