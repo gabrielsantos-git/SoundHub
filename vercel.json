@@ -5,6 +5,7 @@
       "src": "server.js",
       "use": "@vercel/node",
       "config": {
+        "nodeVersion": "20.x",
         "includeFiles": [
           "css/**",
           "assets/**",
