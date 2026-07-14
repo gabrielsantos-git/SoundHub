@@ -125,7 +125,8 @@
 
             // Push notifications
             setTimeout(() => {
-                if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
+                const t = localStorage.getItem('token');
+                if (t && typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(t);
             }, 6000);
         }
         
