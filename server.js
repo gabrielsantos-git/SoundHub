@@ -19,6 +19,7 @@ const scheduleRoutes = require('./routes/schedules');
 const eventRoutes = require('./routes/events');
 const cleanupRoutes = require('./routes/cleanup');
 const profileRoutes = require('./routes/profile');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const isVercel = !!process.env.VERCEL;
@@ -74,6 +75,12 @@ initializeDatabase().catch(error => {
   console.error('❌ Erro ao inicializar banco de dados:', error);
 });
 
+// Iniciar cron jobs de notificação (não rodar na Vercel — serverless não mantém processos)
+if (!isVercel) {
+  const { iniciarScheduler } = require('./utils/scheduler');
+  iniciarScheduler();
+}
+
 // Headers de segurança HTTP (anti-clickjacking, MIME sniff, XSS, HSTS, etc.)
 app.use(helmet({
   contentSecurityPolicy: false, // desativado: o app usa inline scripts nas páginas HTML
@@ -110,6 +117,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/cleanup', cleanupRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve arquivos estáticos (HTML, JS, CSS, imagens)
 app.get('/receive', (req, res) => {
@@ -127,7 +135,7 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 // Serve apenas arquivos JS de frontend (whitelist explícita)
-const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js']);
+const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js', 'service-worker.js']);
 app.get('/:filename.js', (req, res) => {
   const filename = req.params.filename + '.js';
   if (!PUBLIC_JS.has(filename)) return res.status(404).end();

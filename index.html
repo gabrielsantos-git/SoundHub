@@ -121,6 +121,11 @@
             
             // Sidebar gerenciada pelo sidebar.js
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+
+            // Push notifications
+            if (typeof window.iniciarPushNotifications === 'function') {
+                window.iniciarPushNotifications(token);
+            }
         }
         
         let _loadingFilesList = false;

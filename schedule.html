@@ -260,6 +260,7 @@
             
             // Sidebar gerenciada pelo sidebar.js
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+            if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
         }
 
         function getCargoDisplay(cargo) {

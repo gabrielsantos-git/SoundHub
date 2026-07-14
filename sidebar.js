@@ -363,4 +363,65 @@
     if (storedUser) {
         try { window.updateSidebar(JSON.parse(storedUser)); } catch {}
     }
+
+    // ── PWA: manifest ──────────────────────────────────────────────
+    if (!document.querySelector('link[rel="manifest"]')) {
+        const manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        manifestLink.href = '/manifest.json';
+        document.head.appendChild(manifestLink);
+    }
+
+    if (!document.querySelector('meta[name="theme-color"]')) {
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.content = '#4f46e5';
+        document.head.appendChild(meta);
+    }
+
+    // ── PWA: Service Worker + Push Notifications ───────────────────
+    if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.register('/service-worker.js').then(reg => {
+            window._swRegistration = reg;
+        }).catch(() => {});
+    }
+
+    // Pede permissão e inscreve para push assim que o usuário logar
+    window.iniciarPushNotifications = async function(token) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        try {
+            const reg = window._swRegistration || await navigator.serviceWorker.ready;
+
+            // Busca chave pública VAPID
+            const keyRes = await fetch('/api/notifications/vapid-public-key');
+            const { key } = await keyRes.json();
+
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(key)
+            });
+
+            await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(sub.toJSON())
+            });
+        } catch (e) {
+            console.warn('Push subscription falhou:', e);
+        }
+    };
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = atob(base64);
+        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
 })();

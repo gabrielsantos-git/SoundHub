@@ -221,6 +221,7 @@
             currentUser = await res.json();
             renderProfile(currentUser);
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+            if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
         } catch (e) {
             window.location.href = '/auth';
         }

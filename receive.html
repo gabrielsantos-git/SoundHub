@@ -101,6 +101,7 @@
 
                     loadPendingFiles();
                     _startAutoRefresh();
+                    if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
                 } else {
                     localStorage.removeItem('token');
                     showAuthRequired();
