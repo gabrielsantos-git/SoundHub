@@ -142,44 +142,28 @@ async function checkGroupSelection() {
 
 async function checkAuthentication() {
     const token = localStorage.getItem('token');
-    
+
     if (!token) {
-        // Em modo de teste, não redirecionar
-        console.log('Token nao encontrado, mas continuando em modo teste');
-        AppState.currentUser = {
-            nome: 'Usuario Teste',
-            cargo: 'DIRETOR'
-        };
-        updateUserInterface();
+        window.location.href = '/auth';
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/me', {
-            headers: {
-                'Authorization': 'Bearer ' + token
-            }
+            headers: { 'Authorization': 'Bearer ' + token }
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             AppState.currentUser = data.user;
             updateUserInterface();
         } else {
-            console.log('API falhou, usando usuario teste');
-            AppState.currentUser = {
-                nome: 'Usuario Teste',
-                cargo: 'DIRETOR'
-            };
-            updateUserInterface();
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/auth';
         }
     } catch (error) {
-        console.error('Erro na autenticacao, usando usuario teste:', error);
-        AppState.currentUser = {
-            nome: 'Usuario Teste',
-            cargo: 'DIRETOR'
-        };
-        updateUserInterface();
+        window.location.href = '/auth';
     }
 }
 

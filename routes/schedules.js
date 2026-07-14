@@ -319,19 +319,26 @@ async function garantirEscalaDeMes(ano, mesIdx, adminId, users) {
         .limit(1);
 
     if (existing && existing.length > 0) {
-        // Verificar se os dias estão corretos (só sabado/domingo/quarta)
         const escalaId = existing[0].id;
         const diasPermitidos = ['sabado', 'domingo', 'quarta'];
         const { data: diasAtual } = await supabase
             .from('escala_dias')
-            .select('id, dia_semana')
+            .select('id, dia_semana, usuario_id')
             .eq('escala_id', escalaId);
 
         const temDiaErrado = diasAtual && diasAtual.some(d => !diasPermitidos.includes(d.dia_semana));
         const semDias = !diasAtual || diasAtual.length === 0;
-        if (!temDiaErrado && !semDias) return; // dados corretos, nada a fazer
 
-        // Limpar e regenerar
+        // Verificar se o conjunto de usuários mudou desde a geração da escala
+        const userIdsEsperados = new Set(users.map(u => String(u.id)));
+        const userIdsNaEscala  = new Set((diasAtual || []).map(d => String(d.usuario_id)).filter(Boolean));
+        const usuariosNovos    = [...userIdsEsperados].some(id => !userIdsNaEscala.has(id));
+        const usuariosRemovidos = [...userIdsNaEscala].some(id => !userIdsEsperados.has(id));
+        const usuariosMudaram  = usuariosNovos || usuariosRemovidos;
+
+        if (!temDiaErrado && !semDias && !usuariosMudaram) return; // nada a fazer
+
+        // Limpar e regenerar com a lista de usuários atual
         await supabase.from('escala_dias').delete().eq('escala_id', escalaId);
         const datasEscala = gerarDatasEscala(mesStr, diasPermitidos, users, ano);
         if (datasEscala.length > 0) {

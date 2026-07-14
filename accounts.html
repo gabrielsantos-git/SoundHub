@@ -202,10 +202,16 @@
                             <td>${u.nome}</td>
                             <td>${u.email}</td>
                             <td>${new Date(u.data_cadastro).toLocaleDateString('pt-BR')}</td>
-                            <td><div class="actions">
-                                <button class="btn btn-success" onclick="approveUser(${u.id})">Aprovar</button>
-                                <button class="btn btn-danger" onclick="rejectUser(${u.id})">Recusar</button>
-                            </div></td>
+                            <td>
+                                <select id="cargo-${u.id}" class="cargo-select" style="padding:0.3rem 0.5rem;border:1px solid #e5e7eb;border-radius:0.375rem;font-size:0.875rem;margin-bottom:0.4rem;width:100%;">
+                                    <option value="SONOPLASTA" ${u.cargo === 'SONOPLASTA' ? 'selected' : ''}>Sonoplasta</option>
+                                    <option value="DIRETOR" ${u.cargo === 'DIRETOR' ? 'selected' : ''}>Diretor</option>
+                                </select>
+                                <div class="actions">
+                                    <button class="btn btn-success" onclick="approveUser(${u.id})">Aprovar</button>
+                                    <button class="btn btn-danger" onclick="rejectUser(${u.id})">Recusar</button>
+                                </div>
+                            </td>
                         </tr>`).join('');
                 })
                 .catch(() => {
@@ -240,7 +246,20 @@
 
         async function approveUser(userId) {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/users/${userId}/approve`, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+            const cargoSelect = document.getElementById(`cargo-${userId}`);
+            const cargo = cargoSelect ? cargoSelect.value : 'SONOPLASTA';
+
+            // Atualizar cargo antes de aprovar (caso o admin tenha mudado)
+            await fetch(`/api/users/${userId}/cargo`, {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cargo })
+            });
+
+            const res = await fetch(`/api/users/${userId}/approve`, {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
             if (res.ok) { loadPendingUsers(); loadUsers(); }
         }
 
