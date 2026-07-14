@@ -1,3 +1,13 @@
+// Força a ativação imediata para substituir versões antigas
+self.addEventListener('install', () => self.skipWaiting());
+
+// Limpa caches antigos ao ativar (sem clients.claim para não interromper navegações)
+self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))))
+    );
+});
+
 // Recebe e exibe notificações push
 self.addEventListener('push', event => {
     if (!event.data) return;
