@@ -134,6 +134,12 @@ app.get('/favicon.ico', (req, res) => {
   }
 });
 
+// Serve arquivos PWA explicitamente
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+
 // Serve apenas arquivos JS de frontend (whitelist explícita)
 const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js', 'service-worker.js']);
 app.get('/:filename.js', (req, res) => {
