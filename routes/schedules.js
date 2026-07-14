@@ -458,62 +458,55 @@ function gerarDatasEscala(mes, dias, users, ano) {
     return result;
 }
 
-// Reajusta as escalas ativas incluindo um novo usuário
-// Encontra o sonoplasta com mais dias e cede um dia futuro para o novo usuário
-async function reajustarEscalasParaNovoUsuario(userId) {
+// Recria completamente os dias das escalas ativas (mês atual + próximo)
+// com a lista de usuários atualizada. Chamado ao aprovar ou excluir um sonoplasta.
+async function recriarEscalasAtivas() {
     const hoje = new Date();
-    const anoAtual = hoje.getFullYear();
-    const mesAtual = hoje.getMonth() + 1;
-    const mesProximo = mesAtual === 12 ? 1 : mesAtual + 1;
-    const anoProximo = mesAtual === 12 ? anoAtual + 1 : anoAtual;
+    const anoAtual  = hoje.getFullYear();
+    const mesAtual  = hoje.getMonth() + 1;
+    const mesProx   = mesAtual === 12 ? 1 : mesAtual + 1;
+    const anoProx   = mesAtual === 12 ? anoAtual + 1 : anoAtual;
 
-    const dataAtual   = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`;
-    const dataProximo = `${anoProximo}-${String(mesProximo).padStart(2, '0')}-01`;
+    const dataAtual  = `${anoAtual}-${String(mesAtual).padStart(2,'0')}-01`;
+    const dataProx   = `${anoProx}-${String(mesProx).padStart(2,'0')}-01`;
 
+    // Buscar escalas ativas
     const { data: escalas } = await supabase
         .from('escalas')
-        .select('id')
-        .in('data_inicio', [dataAtual, dataProximo]);
+        .select('id, data_inicio')
+        .in('data_inicio', [dataAtual, dataProx]);
 
     if (!escalas || escalas.length === 0) return;
 
-    const hojeStr = hoje.toISOString().split('T')[0];
+    // Lista atual de sonoplastas e diretores aprovados
+    const { data: users } = await supabase
+        .from('users')
+        .select('id, nome')
+        .eq('status', 'APPROVED')
+        .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+    if (!users || users.length === 0) return;
+
+    const dias = ['sabado', 'domingo', 'quarta'];
 
     for (const escala of escalas) {
-        const { data: dias } = await supabase
-            .from('escala_dias')
-            .select('id, usuario_id, data_especifica')
-            .eq('escala_id', escala.id)
-            .order('data_especifica', { ascending: true });
+        const dataInicio = escala.data_inicio; // "YYYY-MM-01"
+        const [ano, mes] = dataInicio.split('-');
 
-        if (!dias || dias.length === 0) continue;
+        // Apagar todos os dias da escala e regenerar com usuários atuais
+        await supabase.from('escala_dias').delete().eq('escala_id', escala.id);
 
-        // Contar dias por usuário
-        const contagem = {};
-        for (const dia of dias) {
-            if (dia.usuario_id) {
-                contagem[dia.usuario_id] = (contagem[dia.usuario_id] || 0) + 1;
-            }
+        const datasEscala = gerarDatasEscala(mes, dias, users, parseInt(ano));
+        if (datasEscala.length > 0) {
+            await supabase.from('escala_dias').insert(
+                datasEscala.map(d => ({
+                    escala_id: escala.id,
+                    dia_semana: d.dia_semana,
+                    data_especifica: d.data_especifica,
+                    usuario_id: d.usuario_id
+                }))
+            );
         }
-
-        // Usuário com mais dias
-        const maisAtarefadoId = Object.entries(contagem)
-            .sort((a, b) => b[1] - a[1])[0]?.[0];
-
-        if (!maisAtarefadoId) continue;
-
-        // Primeiro dia futuro desse usuário
-        const diaParaCeder = dias.find(d =>
-            String(d.usuario_id) === String(maisAtarefadoId) &&
-            d.data_especifica >= hojeStr
-        );
-
-        if (!diaParaCeder) continue;
-
-        await supabase
-            .from('escala_dias')
-            .update({ usuario_id: userId })
-            .eq('id', diaParaCeder.id);
     }
 }
 
@@ -577,4 +570,4 @@ async function _enviarEmailsEscalaById(escalaId) {
 }
 
 module.exports = router;
-module.exports.reajustarEscalasParaNovoUsuario = reajustarEscalasParaNovoUsuario;
+module.exports.recriarEscalasAtivas = recriarEscalasAtivas;
