@@ -102,7 +102,7 @@
 
                     loadPendingFiles();
                     _startAutoRefresh();
-                    if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
+                    setTimeout(() => { if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token); }, 6000);
                 } else {
                     localStorage.removeItem('token');
                     showAuthRequired();

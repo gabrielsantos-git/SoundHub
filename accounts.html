@@ -135,7 +135,7 @@
                 }
 
                 if (typeof updateSidebar === 'function') updateSidebar(currentUser);
-                if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
+                setTimeout(() => { if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token); }, 6000);
                 loadUsers();
                 _startAutoRefresh();
             } catch (e) {

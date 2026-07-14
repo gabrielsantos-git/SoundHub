@@ -124,9 +124,9 @@
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
 
             // Push notifications
-            if (typeof window.iniciarPushNotifications === 'function') {
-                window.iniciarPushNotifications(token);
-            }
+            setTimeout(() => {
+                if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token);
+            }, 6000);
         }
         
         let _loadingFilesList = false;

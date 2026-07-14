@@ -382,10 +382,13 @@
             document.head.appendChild(meta);
         }
 
+        // Registra SW com delay para não interferir no checkAuth inicial
         if ('serviceWorker' in navigator && 'PushManager' in window) {
-            navigator.serviceWorker.register('/service-worker.js').then(reg => {
-                window._swRegistration = reg;
-            }).catch(() => {});
+            setTimeout(() => {
+                navigator.serviceWorker.register('/service-worker.js').then(reg => {
+                    window._swRegistration = reg;
+                }).catch(() => {});
+            }, 5000);
         }
     }
 

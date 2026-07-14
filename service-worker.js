@@ -1,5 +1,5 @@
-// Força a ativação imediata para substituir versões antigas
-self.addEventListener('install', () => self.skipWaiting());
+// Sem skipWaiting: ativa normalmente quando não há mais abas com o SW antigo
+self.addEventListener('install', () => { /* aguarda ativação natural */ });
 
 // Limpa caches antigos ao ativar (sem clients.claim para não interromper navegações)
 self.addEventListener('activate', event => {
