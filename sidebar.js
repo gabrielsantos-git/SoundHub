@@ -364,26 +364,29 @@
         try { window.updateSidebar(JSON.parse(storedUser)); } catch {}
     }
 
-    // ── PWA: manifest ──────────────────────────────────────────────
-    if (!document.querySelector('link[rel="manifest"]')) {
-        const manifestLink = document.createElement('link');
-        manifestLink.rel = 'manifest';
-        manifestLink.href = '/manifest.json';
-        document.head.appendChild(manifestLink);
-    }
+    // ── PWA: manifest + SW (apenas fora das páginas de auth/register) ──
+    const _pwaExcluded = ['/auth', '/register', '/privacidade'].includes(window.location.pathname);
 
-    if (!document.querySelector('meta[name="theme-color"]')) {
-        const meta = document.createElement('meta');
-        meta.name = 'theme-color';
-        meta.content = '#4f46e5';
-        document.head.appendChild(meta);
-    }
+    if (!_pwaExcluded) {
+        if (!document.querySelector('link[rel="manifest"]')) {
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = '/manifest.json';
+            document.head.appendChild(manifestLink);
+        }
 
-    // ── PWA: Service Worker + Push Notifications ───────────────────
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.register('/service-worker.js').then(reg => {
-            window._swRegistration = reg;
-        }).catch(() => {});
+        if (!document.querySelector('meta[name="theme-color"]')) {
+            const meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            meta.content = '#4f46e5';
+            document.head.appendChild(meta);
+        }
+
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.register('/service-worker.js').then(reg => {
+                window._swRegistration = reg;
+            }).catch(() => {});
+        }
     }
 
     // Pede permissão e inscreve para push assim que o usuário logar
