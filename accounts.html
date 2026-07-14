@@ -136,6 +136,7 @@
 
                 if (typeof updateSidebar === 'function') updateSidebar(currentUser);
                 loadUsers();
+                _startAutoRefresh();
             } catch (e) {
                 window.location.href = '/auth';
             }
@@ -156,10 +157,14 @@
             else loadUsers();
         }
 
-        function loadUsers() {
+        let _loadingUsers = false;
+
+        function loadUsers(silent = false) {
+            if (_loadingUsers) return;
+            _loadingUsers = true;
             const token = localStorage.getItem('token');
             const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div></td></tr>`;
+            if (!silent) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div></td></tr>`;
 
             fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.json())
@@ -181,14 +186,19 @@
                         </tr>`).join('');
                 })
                 .catch(() => {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar os usuários.</p><button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button></div></td></tr>`;
-                });
+                    if (!silent) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar os usuários.</p><button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button></div></td></tr>`;
+                })
+                .finally(() => { _loadingUsers = false; });
         }
 
-        function loadPendingUsers() {
+        let _loadingPending = false;
+
+        function loadPendingUsers(silent = false) {
+            if (_loadingPending) return;
+            _loadingPending = true;
             const token = localStorage.getItem('token');
             const tbody = document.getElementById('pendingUsersTableBody');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div></td></tr>`;
+            if (!silent) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div></td></tr>`;
 
             fetch('/api/users/pending', { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.json())
@@ -215,8 +225,19 @@
                         </tr>`).join('');
                 })
                 .catch(() => {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar as contas pendentes.</p><button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button></div></td></tr>`;
-                });
+                    if (!silent) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar as contas pendentes.</p><button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button></div></td></tr>`;
+                })
+                .finally(() => { _loadingPending = false; });
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.show, .modal.open')) return;
+                const active = document.querySelector('.tab-btn.active');
+                if (active?.id === 'pendingTab') loadPendingUsers(true);
+                else loadUsers(true);
+            }, 10000);
         }
 
         function editUser(userId) {

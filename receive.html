@@ -100,6 +100,7 @@
                     }
 
                     loadPendingFiles();
+                    _startAutoRefresh();
                 } else {
                     localStorage.removeItem('token');
                     showAuthRequired();
@@ -238,41 +239,48 @@
             }, 1000); // Verificar a cada segundo
         }
         
-        async function loadPendingFiles() {
+        let _loadingFiles = false;
+
+        async function loadPendingFiles(silent = false) {
+            if (_loadingFiles) return;
+            _loadingFiles = true;
             const pendingContainer = document.getElementById('pendingContainer');
-            
+
             try {
                 const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
+                if (!token) { showAuthRequired(); return; }
+
                 const response = await fetch('/api/files/pending', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (response.ok) {
                     const files = await response.json();
                     displayPendingFiles(files);
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
-                } else {
-                    throw new Error('Erro ao carregar arquivos');
                 }
             } catch (error) {
-                pendingContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>❌ Erro ao Carregar</h3>
-                        <p>Não foi possível carregar os arquivos pendentes.</p>
-                        <button class="btn btn-primary" onclick="refreshFiles()">Tentar Novamente</button>
-                    </div>
-                `;
+                if (!silent) {
+                    pendingContainer.innerHTML = `
+                        <div class="empty-state">
+                            <h3>❌ Erro ao Carregar</h3>
+                            <p>Não foi possível carregar os arquivos pendentes.</p>
+                            <button class="btn btn-primary" onclick="refreshFiles()">Tentar Novamente</button>
+                        </div>`;
+                }
+            } finally {
+                _loadingFiles = false;
             }
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.open, .modal.show')) return;
+                loadPendingFiles(true);
+            }, 5000);
         }
         
         function displayPendingFiles(files) {

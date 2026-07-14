@@ -233,6 +233,7 @@
                     loadSchedules();
                     loadEvents();
                     loadAvailableUsers();
+                    _startAutoRefresh();
                 } else {
                     localStorage.removeItem('token');
                     window.location.href = '/auth';
@@ -315,44 +316,55 @@
         }
 
         // Funções de Carregamento
-        async function loadSchedules() {
+        let _loadingSchedules = false;
+        let _loadingEvents = false;
+
+        async function loadSchedules(silent = false) {
+            if (_loadingSchedules) return;
+            _loadingSchedules = true;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/schedules', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const schedules = await response.json();
                     displaySchedules(schedules);
-                } else {
-                    console.error('Erro ao carregar escalas:', response.status);
                 }
             } catch (error) {
-                console.error('Erro ao carregar escalas:', error);
+                // falha silenciosa no auto-refresh
+            } finally {
+                _loadingSchedules = false;
             }
         }
 
-        async function loadEvents() {
+        async function loadEvents(silent = false) {
+            if (_loadingEvents) return;
+            _loadingEvents = true;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/events', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const events = await response.json();
                     displayEvents(events);
-                } else {
-                    console.error('Erro ao carregar eventos:', response.status);
                 }
             } catch (error) {
-                console.error('Erro ao carregar eventos:', error);
+                // falha silenciosa no auto-refresh
+            } finally {
+                _loadingEvents = false;
             }
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.open, .modal.show')) return;
+                const activeTab = document.querySelector('.tab-btn.active');
+                if (activeTab?.id === 'eventsTab') loadEvents(true);
+                else loadSchedules(true);
+            }, 15000);
         }
 
         async function loadAvailableUsers() {
