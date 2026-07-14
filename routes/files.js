@@ -278,7 +278,7 @@ router.get('/approved', requireAuth, async (req, res) => {
 });
 
 // Aprovar arquivo
-router.patch('/:id/approve', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (req, res) => {
+router.patch('/:id/approve', requireAuth, requireRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN']), async (req, res) => {
   try {
     const fileId = parseInt(req.params.id);
 
@@ -308,7 +308,7 @@ router.patch('/:id/approve', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), as
 });
 
 // Rejeitar arquivo
-router.patch('/:id/reject', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (req, res) => {
+router.patch('/:id/reject', requireAuth, requireRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN']), async (req, res) => {
   try {
     const fileId = parseInt(req.params.id);
 
