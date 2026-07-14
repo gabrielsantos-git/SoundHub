@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 const { recriarEscalasAtivas } = require('./schedules');
+const { recriarDiasEventosFuturos } = require('./events');
 const { logAudit, getIp } = require('../utils/audit');
 const { sendAccountApproved, sendAccountDeleted } = require('../utils/email');
 const router = express.Router();
@@ -211,6 +212,7 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
     // Recriar escalas ativas com o novo usuário incluído
     if (data.cargo === 'SONOPLASTA' || data.cargo === 'DIRETOR') {
       recriarEscalasAtivas().catch(() => {});
+      recriarDiasEventosFuturos().catch(() => {});
     }
 
     res.json({ message: 'Usuário aprovado com sucesso' });
@@ -297,6 +299,7 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
     // Recriar escalas ativas sem o usuário removido
     if (existing.cargo === 'SONOPLASTA' || existing.cargo === 'DIRETOR') {
       recriarEscalasAtivas().catch(() => {});
+      recriarDiasEventosFuturos().catch(() => {});
     }
 
     res.json({ message: 'Usuário excluído com sucesso' });

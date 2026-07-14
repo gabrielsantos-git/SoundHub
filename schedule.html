@@ -304,8 +304,9 @@
             document.getElementById('createEventForm').reset();
         }
 
-        function openEditScheduleModal(scheduleId) {
+        async function openEditScheduleModal(scheduleId) {
             currentSchedule = scheduleId;
+            await loadAvailableUsers();
             document.getElementById('editScheduleModal').classList.add('open');
             loadScheduleForEdit(scheduleId);
         }
@@ -364,6 +365,8 @@
                 const activeTab = document.querySelector('.tab-btn.active');
                 if (activeTab?.id === 'eventsTab') loadEvents(true);
                 else loadSchedules(true);
+                // Manter lista de usuários sempre atualizada
+                loadAvailableUsers();
             }, 15000);
         }
 
@@ -371,18 +374,17 @@
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/users', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const users = await response.json();
-                    availableUsers = users.filter(user => user.status === 'APPROVED');
+                    // Apenas sonoplastas e diretores aparecem nas escalas
+                    availableUsers = users.filter(u =>
+                        u.status === 'APPROVED' &&
+                        (u.cargo === 'SONOPLASTA' || u.cargo === 'DIRETOR')
+                    );
                 }
-            } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
-            }
+            } catch (error) {}
         }
 
         // Funções de Exibição
@@ -769,7 +771,8 @@
             }
         }
 
-        function openEditEventModal(eventId) {
+        async function openEditEventModal(eventId) {
+            await loadAvailableUsers();
             document.getElementById('editEventModal').classList.add('open');
             loadEventForEdit(eventId);
         }

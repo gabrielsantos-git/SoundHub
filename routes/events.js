@@ -74,47 +74,61 @@ router.get('/:id/days', requireAuth, async (req, res) => {
             return res.status(500).json({ error: 'Erro ao obter dias do evento' });
         }
 
-        // Backfill: se não há dias, gera agora
-        if (!days || days.length === 0) {
+        // Buscar usuários ativos para checar se a lista mudou
+        const { data: usersAtivos } = await supabase
+            .from('users')
+            .select('id, nome')
+            .eq('status', 'APPROVED')
+            .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+        const semDias = !days || days.length === 0;
+        const userIdsEsperados = new Set((usersAtivos || []).map(u => String(u.id)));
+        const userIdsNaDias = new Set((days || []).map(d => String(d.usuario_id)).filter(Boolean));
+        const usuariosMudaram = [...userIdsEsperados].some(id => !userIdsNaDias.has(id)) ||
+                                [...userIdsNaDias].some(id => !userIdsEsperados.has(id));
+
+        if (semDias || usuariosMudaram) {
             const { data: evento } = await supabase
                 .from('eventos')
                 .select('data_inicio, data_fim')
                 .eq('id', id)
                 .single();
 
-            if (evento) {
-                const { data: users } = await supabase
-                    .from('users')
-                    .select('id, nome')
-                    .eq('status', 'APPROVED')
-                    .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+            if (evento && usersAtivos && usersAtivos.length > 0) {
+                const hoje = new Date().toISOString().split('T')[0];
+                const dataInicio = evento.data_inicio > hoje ? evento.data_inicio : hoje;
 
-                if (users && users.length > 0) {
-                    const diasGerados = generateEventDays(
-                        new Date(evento.data_inicio + 'T00:00:00'),
-                        new Date(evento.data_fim + 'T00:00:00'),
-                        users
+                // Remover dias futuros e regenerar (preserva dias passados com atribuição manual)
+                await supabase
+                    .from('escala_dias')
+                    .delete()
+                    .eq('escala_id', id)
+                    .gte('data_especifica', dataInicio);
+
+                const diasGerados = generateEventDays(
+                    new Date(dataInicio + 'T00:00:00'),
+                    new Date(evento.data_fim + 'T00:00:00'),
+                    usersAtivos
+                );
+
+                if (diasGerados.length > 0) {
+                    await supabase.from('escala_dias').insert(
+                        diasGerados.map(d => ({
+                            escala_id: id,
+                            dia_semana: d.dia_semana,
+                            data_especifica: d.data_especifica,
+                            usuario_id: d.usuario_id
+                        }))
                     );
-
-                    if (diasGerados.length > 0) {
-                        await supabase.from('escala_dias').insert(
-                            diasGerados.map(d => ({
-                                escala_id: id,
-                                dia_semana: d.dia_semana,
-                                data_especifica: d.data_especifica,
-                                usuario_id: d.usuario_id
-                            }))
-                        );
-
-                        const { data: novosDias } = await supabase
-                            .from('escala_dias')
-                            .select('*')
-                            .eq('escala_id', id)
-                            .order('data_especifica', { ascending: true });
-
-                        days = novosDias || [];
-                    }
                 }
+
+                const { data: novosDias } = await supabase
+                    .from('escala_dias')
+                    .select('*')
+                    .eq('escala_id', id)
+                    .order('data_especifica', { ascending: true });
+
+                days = novosDias || [];
             }
         }
 
@@ -294,4 +308,52 @@ function getDayOfWeek(dayNumber) {
     return days[dayNumber];
 }
 
+// Regenera dias futuros de todos os eventos ativos quando a lista de usuários muda
+async function recriarDiasEventosFuturos() {
+    const hoje = new Date().toISOString().split('T')[0];
+
+    const { data: eventos } = await supabase
+        .from('eventos')
+        .select('id, data_inicio, data_fim')
+        .gte('data_fim', hoje);
+
+    if (!eventos || eventos.length === 0) return;
+
+    const { data: users } = await supabase
+        .from('users')
+        .select('id, nome')
+        .eq('status', 'APPROVED')
+        .in('cargo', ['SONOPLASTA', 'DIRETOR']);
+
+    if (!users || users.length === 0) return;
+
+    for (const evento of eventos) {
+        const dataInicio = evento.data_inicio > hoje ? evento.data_inicio : hoje;
+
+        await supabase
+            .from('escala_dias')
+            .delete()
+            .eq('escala_id', evento.id)
+            .gte('data_especifica', dataInicio);
+
+        const dias = generateEventDays(
+            new Date(dataInicio + 'T00:00:00'),
+            new Date(evento.data_fim + 'T00:00:00'),
+            users
+        );
+
+        if (dias.length > 0) {
+            await supabase.from('escala_dias').insert(
+                dias.map(d => ({
+                    escala_id: evento.id,
+                    dia_semana: d.dia_semana,
+                    data_especifica: d.data_especifica,
+                    usuario_id: d.usuario_id
+                }))
+            );
+        }
+    }
+}
+
 module.exports = router;
+module.exports.recriarDiasEventosFuturos = recriarDiasEventosFuturos;
