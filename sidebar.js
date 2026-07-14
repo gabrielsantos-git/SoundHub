@@ -234,13 +234,16 @@
     });
 
     window.logout = function() {
+        // Limpar apenas dados da sessão; manter cache de foto do usuário atual
+        const user = (() => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } })();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        // Remover chave legada sem ID
         localStorage.removeItem('userFoto');
         window.location.href = '/auth';
     };
 
-    function setSidebarPhoto(url) {
+    window.setSidebarPhoto = function setSidebarPhoto(url) {
         const img     = document.getElementById('sidebarAvatarImg');
         const initial = document.getElementById('userInitial');
         if (img && url) {
@@ -266,10 +269,12 @@
         if (userRole)    userRole.textContent    = user.cargo || 'Cargo';
         if (userInitial) userInitial.textContent = (user.nome || 'U').charAt(0).toUpperCase();
 
-        // Foto de perfil: usa a da resposta da API ou o cache do localStorage
-        const fotoUrl = user.foto_url || localStorage.getItem('userFoto');
+        // Foto de perfil: cache por ID de usuário para não vazar entre contas
+        const fotoKey = user.id ? `userFoto_${user.id}` : null;
+        const fotoUrl = user.foto_url || (fotoKey ? localStorage.getItem(fotoKey) : null);
         setSidebarPhoto(fotoUrl || null);
-        if (user.foto_url) localStorage.setItem('userFoto', user.foto_url);
+        if (fotoKey && user.foto_url) localStorage.setItem(fotoKey, user.foto_url);
+        else if (fotoKey && !user.foto_url) setSidebarPhoto(null); // sem foto — não herdar de outra conta
 
         const show = el => { if (el) el.style.display = 'flex'; };
         const hide = el => { if (el) el.style.display = 'none'; };

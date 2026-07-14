@@ -278,6 +278,10 @@
             document.getElementById('avatarImg').src = data.foto_url;
             document.getElementById('avatarImg').style.display = 'block';
             document.getElementById('avatarInitial').style.display = 'none';
+            // Atualizar cache de foto com chave por usuário
+            if (currentUser?.id) localStorage.setItem(`userFoto_${currentUser.id}`, data.foto_url);
+            // Atualizar foto na sidebar
+            if (typeof setSidebarPhoto === 'function') setSidebarPhoto(data.foto_url);
             showToast('Foto atualizada!', 'success');
         } catch { showToast('Erro ao enviar foto', 'error'); }
         input.value = '';
