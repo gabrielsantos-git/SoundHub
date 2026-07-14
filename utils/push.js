@@ -1,13 +1,21 @@
 const webpush = require('web-push');
 const supabase = require('../supabase');
 
-webpush.setVapidDetails(
-    process.env.VAPID_EMAIL,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+let _vapidSet = false;
+function ensureVapid() {
+    if (_vapidSet) return true;
+    if (!process.env.VAPID_EMAIL || !process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return false;
+    webpush.setVapidDetails(
+        process.env.VAPID_EMAIL,
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+    _vapidSet = true;
+    return true;
+}
 
 async function sendPush(sub, payload) {
+    if (!ensureVapid()) return;
     try {
         await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
