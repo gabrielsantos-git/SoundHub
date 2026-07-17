@@ -81,7 +81,9 @@ async function initializeApp() {
         await loadMedia();
         console.log('5. Midias OK, verificando seleção de grupo...');
         await checkGroupSelection();
-        console.log('6. Seleção OK, atualizando UI...');
+        console.log('6. Seleção OK, detectando telas...');
+        initScreenDetection();
+        console.log('7. Telas OK, atualizando UI...');
         updateUI();
         console.log('=== APLICACAO INICIADA COM SUCESSO ===');
     } catch (error) {
@@ -91,6 +93,7 @@ async function initializeApp() {
         setupEventListeners();
         await loadMedia();
         await checkGroupSelection();
+        initScreenDetection();
         updateUI();
         console.log('=== APLICACAO INICIADA EM MODO TESTE ===');
     }
@@ -368,158 +371,200 @@ function refreshOrderBadges() {
 function updateProjectionButton() {
     const button = document.getElementById('projectBtn');
     const hasSelection = AppState.selectedMedia.length > 0;
-    const hasScreen = AppState.selectedScreen !== null;
-    
-    button.disabled = !hasSelection || !hasScreen || AppState.isProjecting;
-    
+
+    button.disabled = !hasSelection || AppState.isProjecting;
+
     if (AppState.isProjecting) {
         button.textContent = 'Projetando...';
         button.className = 'btn btn-secondary';
-    } else if (hasSelection && hasScreen) {
-        button.textContent = 'Projetar';
-        button.className = 'btn btn-primary';
     } else {
         button.textContent = 'Projetar';
         button.className = 'btn btn-primary';
     }
 }
 
-async function detectScreens() {
-    const container = document.getElementById('screenContainer');
-    
-    container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Detectando telas...</div></div>';
-    
+// ─── Window Management API ────────────────────────────────────────────────────
+
+async function initScreenDetection() {
+    if (!('getScreenDetails' in window)) {
+        renderScreenUnsupported();
+        return;
+    }
+
     try {
-        // Tenta usar Window Management API primeiro
-        if ('getScreenDetails' in window) {
-            console.log('Tentando Window Management API...');
-            try {
-                const screenDetails = await window.getScreenDetails();
-                const screens = screenDetails.screens;
-                
-                AppState.availableScreens = screens.map(function(screen) {
-                    return {
-                        id: screen.id || screens.indexOf(screen),
-                        label: screen.label || 'Monitor ' + (screens.indexOf(screen) + 1),
-                        width: screen.width,
-                        height: screen.height,
-                        availLeft: screen.availLeft || 0,
-                        availTop: screen.availTop || 0,
-                        availWidth: screen.availWidth || screen.width,
-                        availHeight: screen.availHeight || screen.height,
-                        isPrimary: screen.isPrimary || false
-                    };
-                });
-                
-                console.log('Telas detectadas via API:', AppState.availableScreens);
-                renderScreens();
-                return;
-            } catch (apiError) {
-                console.log('Window Management API falhou, usando fallback:', apiError);
-            }
-        }
-        
-        // Fallback: Cria telas simuladas para testes
-        console.log('Usando fallback de telas simuladas...');
-        AppState.availableScreens = createSimulatedScreens();
-        renderScreens();
-        
-    } catch (error) {
-        console.error('Erro ao detectar telas:', error);
-        // Mesmo em caso de erro, usa fallback
-        AppState.availableScreens = createSimulatedScreens();
-        renderScreens();
+        const perm = await navigator.permissions.query({ name: 'window-management' });
+        perm.onchange = () => handlePermissionChange(perm.state);
+        handlePermissionChange(perm.state);
+    } catch (e) {
+        // Navegador não implementa query para window-management — tenta direto
+        renderScreenPermissionPrompt();
     }
 }
 
-function createSimulatedScreens() {
-    const screens = [];
-    
-    // Tela primária
-    screens.push({
-        id: 'screen-0',
-        label: 'Monitor Principal',
-        width: screen.width,
-        height: screen.height,
-        availLeft: screen.availLeft || 0,
-        availTop: screen.availTop || 0,
-        availWidth: screen.availWidth || screen.width,
-        availHeight: screen.availHeight || screen.height,
-        isPrimary: true
+function handlePermissionChange(state) {
+    if (state === 'granted') {
+        detectScreensWithAPI();
+    } else if (state === 'denied') {
+        renderScreenPermissionDenied();
+    } else {
+        renderScreenPermissionPrompt();
+    }
+}
+
+async function requestScreenPermission() {
+    try {
+        await detectScreensWithAPI();
+    } catch (e) {
+        if (e.name === 'NotAllowedError') {
+            renderScreenPermissionDenied();
+        } else {
+            console.error('Erro ao solicitar permissão de tela:', e);
+        }
+    }
+}
+
+async function detectScreensWithAPI() {
+    const container = document.getElementById('screenContainer');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div><div>Detectando telas...</div></div>';
+
+    // Deregistra listener anterior se existir
+    if (AppState._screenDetailsRef) {
+        AppState._screenDetailsRef.removeEventListener('screenschange', onScreensChange);
+    }
+
+    const screenDetails = await window.getScreenDetails();
+    AppState._screenDetailsRef = screenDetails;
+    screenDetails.addEventListener('screenschange', onScreensChange);
+
+    applyScreenDetails(screenDetails.screens);
+}
+
+function onScreensChange() {
+    applyScreenDetails(AppState._screenDetailsRef.screens);
+}
+
+function applyScreenDetails(screens) {
+    AppState.availableScreens = screens.map(function(s, i) {
+        return {
+            id: i,
+            label: s.label || (s.isPrimary ? 'Monitor Principal' : 'Projetor ' + i),
+            width: s.width,
+            height: s.height,
+            availLeft: s.availLeft,
+            availTop: s.availTop,
+            availWidth: s.availWidth,
+            availHeight: s.availHeight,
+            isPrimary: s.isPrimary,
+        };
     });
-    
-    // Tela secundária (simulada)
-    screens.push({
-        id: 'screen-1',
-        label: 'Monitor Secundário',
-        width: 1920,
-        height: 1080,
-        availLeft: screen.width + 100,
-        availTop: 0,
-        availWidth: 1920,
-        availHeight: 1080,
-        isPrimary: false
-    });
-    
-    console.log('Telas simuladas criadas:', screens);
-    return screens;
+
+    // Auto-seleciona a tela não-primária (projetor); mantém seleção manual se ainda existir
+    const currentId = AppState.selectedScreen ? AppState.selectedScreen.id : null;
+    const stillExists = currentId !== null && AppState.availableScreens.some(s => s.id === currentId);
+    if (!stillExists) {
+        AppState.selectedScreen =
+            AppState.availableScreens.find(s => !s.isPrimary) ||
+            AppState.availableScreens[0] ||
+            null;
+    }
+
+    renderScreens();
+    updateProjectionButton();
+}
+
+function selectScreen(screenId) {
+    AppState.selectedScreen = AppState.availableScreens.find(s => s.id === screenId) || null;
+    document.querySelectorAll('.monitor-item').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById('screen-' + screenId);
+    if (el) el.classList.add('selected');
+    updateProjectionButton();
 }
 
 function renderScreens() {
     const container = document.getElementById('screenContainer');
-    
+
     if (AppState.availableScreens.length === 0) {
-        container.innerHTML = '<div class="empty-state"><h3> Nenhuma Tela</h3><p>Nenhuma tela detectada.</p></div>';
+        container.innerHTML = '<p style="color:#64748b;font-size:0.875rem">Nenhuma tela detectada.</p>';
         return;
     }
-    
-    if (AppState.availableScreens.length === 1) {
-        container.innerHTML = '<div class="empty-state"><h3> Apenas 1 Tela</h3><p>E necessario pelo menos 2 telas para projecao.</p></div>';
-        return;
-    }
-    
+
     let html = '<div class="monitor-grid">';
-    
-    AppState.availableScreens.forEach(function(screen) {
-        const primaryBadge = screen.isPrimary ? '<span class="primary-badge">PRIMARIO</span>' : '';
-        const selectedClass = AppState.selectedScreen?.id === screen.id ? 'selected' : '';
-        
-        html += '<div class="monitor-item ' + selectedClass + '" onclick="selectScreen(\'' + screen.id + '\')" id="screen-' + screen.id + '">' +
-            '<div class="monitor-name">' + screen.label + ' ' + primaryBadge + '</div>' +
-            '<div class="monitor-resolution">' + screen.width + ' × ' + screen.height + '</div>' +
+    AppState.availableScreens.forEach(function(s) {
+        const badge = s.isPrimary
+            ? '<span class="primary-badge">PRINCIPAL</span>'
+            : '<span class="primary-badge" style="background:#7c3aed">PROJETOR</span>';
+        const selectedClass = AppState.selectedScreen && AppState.selectedScreen.id === s.id ? 'selected' : '';
+        html +=
+            '<div class="monitor-item ' + selectedClass + '" onclick="selectScreen(' + s.id + ')" id="screen-' + s.id + '">' +
+            '<div class="monitor-name">' + s.label + ' ' + badge + '</div>' +
+            '<div class="monitor-resolution">' + s.availWidth + ' × ' + s.availHeight + '</div>' +
             '</div>';
     });
-    
     html += '</div>';
+
+    if (AppState.availableScreens.length === 1) {
+        html += '<p style="color:#f59e0b;font-size:0.8rem;margin-top:0.5rem">⚠️ Apenas 1 tela detectada. Conecte o projetor.</p>';
+    }
+
     container.innerHTML = html;
 }
 
-function selectScreen(screenId) {
-    AppState.selectedScreen = AppState.availableScreens.find(function(screen) {
-        return screen.id == screenId;
-    });
-    
-    document.querySelectorAll('.monitor-item').forEach(function(item) {
-        item.classList.remove('selected');
-    });
-    document.getElementById('screen-' + screenId).classList.add('selected');
-    
-    updateProjectionButton();
-    console.log('Tela selecionada:', AppState.selectedScreen);
+function renderScreenPermissionPrompt() {
+    document.getElementById('screenContainer').innerHTML =
+        '<div class="screen-permission">' +
+        '<p>O SoundHub precisa de permissão para detectar e gerenciar telas externas.</p>' +
+        '<button class="btn btn-primary" onclick="requestScreenPermission()">Autorizar acesso às telas</button>' +
+        '</div>';
+}
+
+function renderScreenPermissionDenied() {
+    document.getElementById('screenContainer').innerHTML =
+        '<div class="screen-permission screen-permission--denied">' +
+        '<p>Permissão negada. Para usar o projetor, clique no ícone 🔒 na barra de endereços, ' +
+        'encontre "Gerenciamento de janelas" e altere para "Permitir".</p>' +
+        '<button class="btn btn-secondary" onclick="requestScreenPermission()">Tentar novamente</button>' +
+        '</div>';
+}
+
+function renderScreenUnsupported() {
+    document.getElementById('screenContainer').innerHTML =
+        '<div class="screen-permission screen-permission--denied">' +
+        '<p>Seu navegador não suporta a Window Management API. Use o Google Chrome 100+ para detectar o projetor automaticamente.</p>' +
+        '</div>';
 }
 
 async function startProjection() {
-    if (AppState.selectedMedia.length === 0 || !AppState.selectedScreen) {
-        showError('Selecione mídias e uma tela primeiro.');
+    if (AppState.selectedMedia.length === 0) {
+        showError('Selecione ao menos uma mídia primeiro.');
+        return;
+    }
+
+    // Se a tela ainda não foi detectada, solicita permissão agora (user gesture ativo)
+    if (!AppState.selectedScreen) {
+        try {
+            await detectScreensWithAPI();
+        } catch (e) {
+            showError('Permissão de gerenciamento de telas necessária para projetar.');
+            return;
+        }
+    }
+
+    if (!AppState.selectedScreen) {
+        showError('Nenhuma tela disponível para projeção.');
         return;
     }
 
     try {
         const selectedMediaList = AppState.selectedMedia.map(id => AppState.allMedia.find(m => m.id === id)).filter(Boolean);
-        
-        // Configurações da janela baseadas na tela selecionada
-        const { availLeft, availTop, width, height } = AppState.selectedScreen;
-        const features = `left=${availLeft},top=${availTop},width=${width},height=${height},menubar=no,toolbar=no,location=no,status=no`;
+
+        const { availLeft, availTop, availWidth, availHeight } = AppState.selectedScreen;
+        const features = [
+            'left=' + availLeft,
+            'top=' + availTop,
+            'width=' + availWidth,
+            'height=' + availHeight,
+            'menubar=no,toolbar=no,location=no,status=no,scrollbars=no'
+        ].join(',');
         
         // Abre a janela
         AppState.projectionWindow = window.open('projection.html', 'SoundHub-Screen', features);
