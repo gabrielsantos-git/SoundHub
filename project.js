@@ -230,6 +230,45 @@ function renderMediaByDate() {
     });
 
     container.innerHTML = html;
+    generateAllVideoThumbnails();
+}
+
+function generateAllVideoThumbnails() {
+    AppState.allMedia.forEach(function(media) {
+        if (media.tipo === 'video') generateVideoThumbnail(media);
+    });
+}
+
+function generateVideoThumbnail(media) {
+    var canvas = document.getElementById('vthumb-' + media.id);
+    var fallback = document.getElementById('vfallback-' + media.id);
+    if (!canvas) return;
+
+    var srcUrl = (media.isChunked && media.chunkUrls && media.chunkUrls[0])
+        ? media.chunkUrls[0]
+        : media.url;
+    if (!srcUrl) return;
+
+    var video = document.createElement('video');
+    video.muted = true;
+    video.preload = 'metadata';
+    video.crossOrigin = 'anonymous';
+
+    video.addEventListener('loadedmetadata', function() {
+        video.currentTime = video.duration > 1 ? 1 : video.duration * 0.5;
+    });
+
+    video.addEventListener('seeked', function() {
+        try {
+            canvas.width = canvas.offsetWidth || 320;
+            canvas.height = canvas.offsetHeight || 120;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            if (fallback) fallback.style.display = 'none';
+        } catch (e) { /* CORS - mantém o ícone */ }
+        video.src = '';
+    });
+
+    video.src = srcUrl;
 }
 
 function groupMediaByDate(mediaList) {
@@ -277,12 +316,16 @@ function createMediaItem(media) {
     const typeText = media.tipo === 'image' ? 'Imagem' : 'Video';
     const badgeHtml = isSelected ? '<div class="order-badge">' + (orderIndex + 1) + '</div>' : '';
 
+    const mediaThumbnail = media.tipo === 'image'
+        ? '<img src="' + media.url + '" alt="' + media.nome + '" class="media-thumbnail" loading="lazy">'
+        : '<div class="video-thumb-container">' +
+              '<canvas class="video-thumb-canvas" id="vthumb-' + media.id + '"></canvas>' +
+              '<div class="video-thumb-fallback" id="vfallback-' + media.id + '"><span style="font-size:2rem;opacity:0.6">🎥</span></div>' +
+          '</div>';
+
     return '<div class="media-item ' + selectedClass + '" onclick="toggleMediaSelection(\'' + media.id + '\')" id="media-' + media.id + '" data-media-id="' + media.id + '">' +
         badgeHtml +
-        (media.tipo === 'image' ?
-            '<img src="' + media.url + '" alt="' + media.nome + '" class="media-thumbnail" loading="lazy">' :
-            '<div style="background: #f1f5f9; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; margin-bottom: 0.5rem;"><span style="font-size: 2rem;">' + typeIcon + '</span></div>'
-        ) +
+        mediaThumbnail +
         '<div class="media-name">' + media.nome + '</div>' +
         '<span class="media-type">' + typeText + '</span>' +
         '</div>';
