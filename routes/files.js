@@ -59,7 +59,12 @@ router.post('/request-upload', async (req, res) => {
   const verifyResult = qrStore.verify(qrToken);
   if (!verifyResult.valid) return res.status(400).json({ error: verifyResult.reason || 'QR Code inválido ou expirado' });
 
-  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi', 'video/mov', 'application/pdf']);
+  const allowedTypes = new Set([
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'video/mp4', 'video/avi', 'video/mov', 'video/quicktime',
+    'video/x-msvideo', 'video/x-matroska', 'video/webm',
+    'application/pdf'
+  ]);
   const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
 
   try {
