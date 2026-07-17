@@ -97,18 +97,18 @@ body {
 
 .video-controls {
     position: absolute;
-    bottom: 120px;
+    bottom: 30px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    padding: 1rem;
-    border-radius: 0.5rem;
+    background: rgba(0, 0, 0, 0.75);
+    padding: 0.75rem 1.25rem;
+    border-radius: 2rem;
     display: none;
     align-items: center;
     gap: 1rem;
     backdrop-filter: blur(10px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s ease;
+    min-width: 480px;
 }
 
 .video-controls.show {
@@ -116,8 +116,35 @@ body {
     opacity: 1;
 }
 
+.video-controls.fading {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.play-pause-btn {
+    background: #3b82f6;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 1rem;
+    flex-shrink: 0;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.play-pause-btn:hover {
+    background: #2563eb;
+    transform: scale(1.1);
+}
+
 .progress-bar {
-    width: 300px;
+    flex: 1;
+    min-width: 200px;
     height: 6px;
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
@@ -157,6 +184,42 @@ body {
 .error-message p {
     font-size: 1rem;
     color: rgba(255, 255, 255, 0.8);
+}
+
+.fullscreen-prompt {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    cursor: pointer;
+}
+
+.fullscreen-prompt-content {
+    text-align: center;
+    color: #fff;
+    pointer-events: none;
+}
+
+.fullscreen-prompt-content h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.fullscreen-prompt-content p {
+    font-size: 1.125rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.fullscreen-prompt-content kbd {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-family: monospace;
+    font-size: 1rem;
 }
 
 :fullscreen { background: #000; }

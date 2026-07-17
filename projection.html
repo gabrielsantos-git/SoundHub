@@ -8,6 +8,13 @@
     <link rel="stylesheet" href="/css/projection.css">
 </head>
 <body>
+    <div class="fullscreen-prompt" id="fullscreenPrompt">
+        <div class="fullscreen-prompt-content">
+            <h2>🎥 SoundHub</h2>
+            <p>Clique aqui ou pressione <kbd>F</kbd> para abrir em tela cheia</p>
+        </div>
+    </div>
+
     <div class="projection-container">
         <div class="media-container" id="mediaContainer">
             <div class="loading">
@@ -17,9 +24,10 @@
             </div>
         </div>
 
-        <!-- Controles de vídeo -->
+        <!-- Controles de vídeo (aparece só quando projeta vídeo) -->
         <div class="video-controls" id="videoControls">
-            <div class="progress-bar" onclick="seekVideo(event)">
+            <button id="playPauseBtn" class="play-pause-btn" onclick="togglePlayPause()" title="Play / Pause">▶</button>
+            <div class="progress-bar" onclick="seekVideo(event)" title="Clique para navegar">
                 <div class="progress-fill" id="progressFill"></div>
             </div>
             <div class="time-display" id="timeDisplay">00:00 / 00:00</div>
@@ -53,6 +61,32 @@
             ProjectionState.broadcastChannel.onmessage = handleControlMessage;
             ProjectionState.broadcastChannel.postMessage({ type: 'PROJECTION_READY' });
             setupKeyboardControls();
+            document.addEventListener('mousemove', revealVideoControls);
+
+            // Fullscreen prompt: click overlay to enter fullscreen
+            const prompt = document.getElementById('fullscreenPrompt');
+            prompt.addEventListener('click', () => {
+                requestFullscreen();
+                prompt.style.display = 'none';
+            });
+
+            // Hide prompt automatically if fullscreen is granted without click
+            document.addEventListener('fullscreenchange', () => {
+                prompt.style.display = document.fullscreenElement ? 'none' : 'flex';
+            });
+
+            // Try auto-fullscreen; browser may allow it on fresh window open
+            requestFullscreen();
+        }
+
+        function revealVideoControls() {
+            const controls = document.getElementById('videoControls');
+            if (!controls.classList.contains('show')) return;
+            controls.classList.remove('fading');
+            clearTimeout(ProjectionState.controlsTimeout);
+            ProjectionState.controlsTimeout = setTimeout(() => {
+                controls.classList.add('fading');
+            }, 3000);
         }
 
         function handleControlMessage(event) {
@@ -145,10 +179,13 @@
             video.onloadedmetadata = () => {
                 console.log('Vídeo carregado:', media.nome);
                 document.getElementById('mediaContainer').appendChild(video);
-                document.getElementById('videoControls').classList.add('show');
+                const controls = document.getElementById('videoControls');
+                controls.classList.add('show');
+                controls.classList.remove('fading');
                 setupVideoEvents(video);
                 startProgressUpdate(video);
                 showMediaInfo();
+                ProjectionState.controlsTimeout = setTimeout(() => controls.classList.add('fading'), 3000);
             };
 
             video.onerror = () => {
@@ -201,13 +238,7 @@
         }
 
         function startProgressUpdate(video) {
-            const updateInterval = setInterval(() => {
-                if (video && !video.paused && !video.ended) {
-                    updateVideoProgress(video);
-                } else {
-                    clearInterval(updateInterval);
-                }
-            }, 100);
+            video.addEventListener('timeupdate', () => updateVideoProgress(video));
         }
 
         function updateVideoProgress(video) {
@@ -296,8 +327,7 @@
 
         function updatePlayPauseButton() {
             const btn = document.getElementById('playPauseBtn');
-            btn.textContent = ProjectionState.isPlaying ? '⏸️ Pausar' : '▶️ Play';
-            btn.className = ProjectionState.isPlaying ? 'control-btn active' : 'control-btn';
+            btn.textContent = ProjectionState.isPlaying ? '⏸' : '▶';
         }
 
         function seekVideo(event) {
