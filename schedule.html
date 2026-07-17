@@ -208,6 +208,7 @@
             
             try {
                 const response = await fetch('/api/auth/me', {
+                    cache: 'no-store',
                     headers: {
                         'Authorization': 'Bearer ' + token
                     }
@@ -233,6 +234,7 @@
                     loadSchedules();
                     loadEvents();
                     loadAvailableUsers();
+                    _startAutoRefresh();
                 } else {
                     localStorage.removeItem('token');
                     window.location.href = '/auth';
@@ -259,6 +261,7 @@
             
             // Sidebar gerenciada pelo sidebar.js
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+            setTimeout(() => { if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token); }, 6000);
         }
 
         function getCargoDisplay(cargo) {
@@ -303,8 +306,9 @@
             document.getElementById('createEventForm').reset();
         }
 
-        function openEditScheduleModal(scheduleId) {
+        async function openEditScheduleModal(scheduleId) {
             currentSchedule = scheduleId;
+            await loadAvailableUsers();
             document.getElementById('editScheduleModal').classList.add('open');
             loadScheduleForEdit(scheduleId);
         }
@@ -315,62 +319,74 @@
         }
 
         // Funções de Carregamento
-        async function loadSchedules() {
+        let _loadingSchedules = false;
+        let _loadingEvents = false;
+
+        async function loadSchedules(silent = false) {
+            if (_loadingSchedules) return;
+            _loadingSchedules = true;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/schedules', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const schedules = await response.json();
                     displaySchedules(schedules);
-                } else {
-                    console.error('Erro ao carregar escalas:', response.status);
                 }
             } catch (error) {
-                console.error('Erro ao carregar escalas:', error);
+                // falha silenciosa no auto-refresh
+            } finally {
+                _loadingSchedules = false;
             }
         }
 
-        async function loadEvents() {
+        async function loadEvents(silent = false) {
+            if (_loadingEvents) return;
+            _loadingEvents = true;
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/events', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const events = await response.json();
                     displayEvents(events);
-                } else {
-                    console.error('Erro ao carregar eventos:', response.status);
                 }
             } catch (error) {
-                console.error('Erro ao carregar eventos:', error);
+                // falha silenciosa no auto-refresh
+            } finally {
+                _loadingEvents = false;
             }
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.open, .modal.show')) return;
+                const activeTab = document.querySelector('.tab-btn.active');
+                if (activeTab?.id === 'eventsTab') loadEvents(true);
+                else loadSchedules(true);
+                // Manter lista de usuários sempre atualizada
+                loadAvailableUsers();
+            }, 15000);
         }
 
         async function loadAvailableUsers() {
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/users', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
                 if (response.ok) {
                     const users = await response.json();
-                    availableUsers = users.filter(user => user.status === 'APPROVED');
+                    // Apenas sonoplastas e diretores aparecem nas escalas
+                    availableUsers = users.filter(u =>
+                        u.status === 'APPROVED' &&
+                        (u.cargo === 'SONOPLASTA' || u.cargo === 'DIRETOR')
+                    );
                 }
-            } catch (error) {
-                console.error('Erro ao carregar usuários:', error);
-            }
+            } catch (error) {}
         }
 
         // Funções de Exibição
@@ -757,7 +773,8 @@
             }
         }
 
-        function openEditEventModal(eventId) {
+        async function openEditEventModal(eventId) {
+            await loadAvailableUsers();
             document.getElementById('editEventModal').classList.add('open');
             loadEventForEdit(eventId);
         }

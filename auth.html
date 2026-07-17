@@ -103,6 +103,13 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Desregistra service workers na página de login para evitar loop de navegação
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(regs => {
+                    regs.forEach(r => r.unregister());
+                });
+            }
+
             const token = localStorage.getItem('token');
             if (token) {
                 fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })

@@ -19,6 +19,7 @@ const scheduleRoutes = require('./routes/schedules');
 const eventRoutes = require('./routes/events');
 const cleanupRoutes = require('./routes/cleanup');
 const profileRoutes = require('./routes/profile');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 const isVercel = !!process.env.VERCEL;
@@ -74,6 +75,12 @@ initializeDatabase().catch(error => {
   console.error('❌ Erro ao inicializar banco de dados:', error);
 });
 
+// Iniciar cron jobs de notificação (não rodar na Vercel — serverless não mantém processos)
+if (!isVercel) {
+  const { iniciarScheduler } = require('./utils/scheduler');
+  iniciarScheduler();
+}
+
 // Headers de segurança HTTP (anti-clickjacking, MIME sniff, XSS, HSTS, etc.)
 app.use(helmet({
   contentSecurityPolicy: false, // desativado: o app usa inline scripts nas páginas HTML
@@ -85,6 +92,13 @@ const allowedOrigin = process.env.FRONTEND_URL || null;
 app.use(cors(allowedOrigin ? { origin: allowedOrigin } : {}));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// Desabilita ETags e cache em todas as rotas /api (evita respostas 304 que quebram auth)
+app.use('/api/', (req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
+  next();
+});
 
 // Rate limit global para todas as rotas /api (proteção DoS)
 const apiLimiter = rateLimit({
@@ -110,6 +124,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/cleanup', cleanupRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve arquivos estáticos (HTML, JS, CSS, imagens)
 app.get('/receive', (req, res) => {
@@ -126,8 +141,14 @@ app.get('/favicon.ico', (req, res) => {
   }
 });
 
+// Serve arquivos PWA explicitamente
+app.get('/manifest.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/manifest+json');
+  res.sendFile(path.join(__dirname, 'manifest.json'));
+});
+
 // Serve apenas arquivos JS de frontend (whitelist explícita)
-const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js']);
+const PUBLIC_JS = new Set(['sidebar.js', 'navigation.js', 'project.js', 'service-worker.js']);
 app.get('/:filename.js', (req, res) => {
   const filename = req.params.filename + '.js';
   if (!PUBLIC_JS.has(filename)) return res.status(404).end();

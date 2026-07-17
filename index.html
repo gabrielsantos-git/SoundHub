@@ -80,47 +80,31 @@
         });
         
         async function checkAuth() {
-            console.log('Verificando autenticação...');
             const token = localStorage.getItem('token');
-            const authOverlay = document.getElementById('authOverlay');
-            const filesContainer = document.getElementById('filesContainer');
-            
-            console.log('Token encontrado:', token ? 'SIM' : 'NÃO');
-            console.log('Token completo:', token);
-            
+
             if (!token) {
-                console.log('Token não encontrado, redirecionando para /auth');
-                // Redirecionar automaticamente para página de autenticação
                 window.location.href = '/auth';
                 return;
             }
-            
+
             try {
-                console.log('Enviando requisição para /api/auth/me...');
                 const response = await fetch('/api/auth/me', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    cache: 'no-store'
                 });
-                
-                console.log('Status da resposta:', response.status);
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Usuário autenticado:', data.user);
                     currentUser = data.user;
                     updateUserInterface();
                     loadFiles();
                     loadMySchedule();
+                    _startAutoRefresh();
                 } else {
-                    console.log('Falha na autenticação, status:', response.status);
-                    const errorData = await response.json();
-                    console.log('Erro:', errorData);
                     localStorage.removeItem('token');
                     showAuthRequired();
                 }
             } catch (error) {
-                console.log('Erro na requisição:', error);
                 showAuthRequired();
             }
         }
@@ -138,43 +122,56 @@
             
             // Sidebar gerenciada pelo sidebar.js
             if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+
+            // Push notifications
+            setTimeout(() => {
+                const t = localStorage.getItem('token');
+                if (t && typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(t);
+            }, 6000);
         }
         
-        async function loadFiles() {
+        let _loadingFilesList = false;
+
+        async function loadFiles(silent = false) {
+            if (_loadingFilesList) return;
+            _loadingFilesList = true;
             const filesContainer = document.getElementById('filesContainer');
-            
+
             try {
                 const token = localStorage.getItem('token');
-                if (!token) {
-                    showAuthRequired();
-                    return;
-                }
-                
+                if (!token) { showAuthRequired(); return; }
+
                 const response = await fetch('/api/files/approved', {
-                    headers: {
-                        'Authorization': 'Bearer ' + token,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: { 'Authorization': 'Bearer ' + token }
                 });
-                
+
                 if (response.ok) {
                     const files = await response.json();
                     displayFiles(files);
                 } else if (response.status === 401 || response.status === 403) {
                     localStorage.removeItem('token');
                     showAuthRequired();
-                } else {
-                    throw new Error('Erro ao carregar arquivos');
                 }
             } catch (error) {
-                filesContainer.innerHTML = `
-                    <div class="empty-state">
-                        <h3>Erro ao Carregar</h3>
-                        <p>Não foi possível carregar os arquivos.</p>
-                        <button class="btn btn-primary" onclick="refreshFiles()">Tentar Novamente</button>
-                    </div>
-                `;
+                if (!silent) {
+                    filesContainer.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Erro ao Carregar</h3>
+                            <p>Não foi possível carregar os arquivos.</p>
+                            <button class="btn btn-primary" onclick="refreshFiles()">Tentar Novamente</button>
+                        </div>`;
+                }
+            } finally {
+                _loadingFilesList = false;
             }
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.open, .modal.show')) return;
+                loadFiles(true);
+            }, 10000);
         }
         
         function displayFiles(files) {

@@ -202,7 +202,7 @@
                 if (res.ok) {
                     pendingData = { nome: data.nome, email: data.email, senha: data.senha };
                     document.getElementById('step1').style.display = 'none';
-                    document.getElementById('step2').style.display = '';
+                    document.getElementById('step2').style.display = 'block';
                     document.getElementById('maskedEmail').textContent = maskEmail(data.email);
                     document.getElementById('codeInput').focus();
                     showMessage('Código enviado para o seu email.', 'success');

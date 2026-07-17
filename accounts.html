@@ -123,7 +123,7 @@
             if (!token) { window.location.href = '/auth'; return; }
 
             try {
-                const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+                const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store' });
                 if (!res.ok) { localStorage.removeItem('token'); window.location.href = '/auth'; return; }
 
                 const data = await res.json();
@@ -135,7 +135,9 @@
                 }
 
                 if (typeof updateSidebar === 'function') updateSidebar(currentUser);
+                setTimeout(() => { if (typeof window.iniciarPushNotifications === 'function') window.iniciarPushNotifications(token); }, 6000);
                 loadUsers();
+                _startAutoRefresh();
             } catch (e) {
                 window.location.href = '/auth';
             }
@@ -156,10 +158,14 @@
             else loadUsers();
         }
 
-        function loadUsers() {
+        let _loadingUsers = false;
+
+        function loadUsers(silent = false) {
+            if (_loadingUsers) return;
+            _loadingUsers = true;
             const token = localStorage.getItem('token');
             const tbody = document.getElementById('usersTableBody');
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div></td></tr>`;
+            if (!silent) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando usuários...</div></div></td></tr>`;
 
             fetch('/api/users', { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.json())
@@ -181,14 +187,19 @@
                         </tr>`).join('');
                 })
                 .catch(() => {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar os usuários.</p><button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button></div></td></tr>`;
-                });
+                    if (!silent) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar os usuários.</p><button class="btn btn-primary" onclick="loadUsers()">Tentar Novamente</button></div></td></tr>`;
+                })
+                .finally(() => { _loadingUsers = false; });
         }
 
-        function loadPendingUsers() {
+        let _loadingPending = false;
+
+        function loadPendingUsers(silent = false) {
+            if (_loadingPending) return;
+            _loadingPending = true;
             const token = localStorage.getItem('token');
             const tbody = document.getElementById('pendingUsersTableBody');
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div></td></tr>`;
+            if (!silent) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="loading"><div class="spinner"></div><div>Carregando pendências...</div></div></td></tr>`;
 
             fetch('/api/users/pending', { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.json())
@@ -202,15 +213,32 @@
                             <td>${u.nome}</td>
                             <td>${u.email}</td>
                             <td>${new Date(u.data_cadastro).toLocaleDateString('pt-BR')}</td>
-                            <td><div class="actions">
-                                <button class="btn btn-success" onclick="approveUser(${u.id})">Aprovar</button>
-                                <button class="btn btn-danger" onclick="rejectUser(${u.id})">Recusar</button>
-                            </div></td>
+                            <td>
+                                <select id="cargo-${u.id}" class="cargo-select" style="padding:0.3rem 0.5rem;border:1px solid #e5e7eb;border-radius:0.375rem;font-size:0.875rem;margin-bottom:0.4rem;width:100%;">
+                                    <option value="SONOPLASTA" ${u.cargo === 'SONOPLASTA' ? 'selected' : ''}>Sonoplasta</option>
+                                    <option value="DIRETOR" ${u.cargo === 'DIRETOR' ? 'selected' : ''}>Diretor</option>
+                                </select>
+                                <div class="actions">
+                                    <button class="btn btn-success" onclick="approveUser(${u.id})">Aprovar</button>
+                                    <button class="btn btn-danger" onclick="rejectUser(${u.id})">Recusar</button>
+                                </div>
+                            </td>
                         </tr>`).join('');
                 })
                 .catch(() => {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar as contas pendentes.</p><button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button></div></td></tr>`;
-                });
+                    if (!silent) tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;"><div class="empty-state"><h3>Erro ao Carregar</h3><p>Não foi possível carregar as contas pendentes.</p><button class="btn btn-primary" onclick="loadPendingUsers()">Tentar Novamente</button></div></td></tr>`;
+                })
+                .finally(() => { _loadingPending = false; });
+        }
+
+        function _startAutoRefresh() {
+            setInterval(() => {
+                if (document.hidden) return;
+                if (document.querySelector('.modal.show, .modal.open')) return;
+                const active = document.querySelector('.tab-btn.active');
+                if (active?.id === 'pendingTab') loadPendingUsers(true);
+                else loadUsers(true);
+            }, 10000);
         }
 
         function editUser(userId) {
@@ -240,7 +268,20 @@
 
         async function approveUser(userId) {
             const token = localStorage.getItem('token');
-            const res = await fetch(`/api/users/${userId}/approve`, { method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token } });
+            const cargoSelect = document.getElementById(`cargo-${userId}`);
+            const cargo = cargoSelect ? cargoSelect.value : 'SONOPLASTA';
+
+            // Atualizar cargo antes de aprovar (caso o admin tenha mudado)
+            await fetch(`/api/users/${userId}/cargo`, {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cargo })
+            });
+
+            const res = await fetch(`/api/users/${userId}/approve`, {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
             if (res.ok) { loadPendingUsers(); loadUsers(); }
         }
 

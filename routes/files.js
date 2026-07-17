@@ -7,6 +7,7 @@ const archiver = require('archiver');
 const qrStore = require('../qrStore');
 const { requireAuth, requireRoles } = require('../middleware/auth');
 const { logAudit, getIp } = require('../utils/audit');
+const { sendPushToRoles } = require('../utils/push');
 const router = express.Router();
 
 // Configuração do multer usando memory storage para Vercel serverless
@@ -256,6 +257,14 @@ router.post('/upload', upload.array('arquivos'), async (req, res) => {
 
     qrStore.markUsed(qrToken);
 
+    // Notificar sonoplastas e diretores sobre nova mídia pendente
+    sendPushToRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN'], {
+      title: 'Nova mídia pendente — SoundHub',
+      body: `${savedFiles.length} arquivo(s) aguardando aprovação.`,
+      tag: 'midia-pendente',
+      url: '/receive'
+    }).catch(() => {});
+
     res.json({
       message: `${savedFiles.length} arquivo(s) enviado(s) com sucesso! Aguarde aprovação.`,
       files: savedFiles
@@ -358,7 +367,7 @@ router.get('/approved', requireAuth, async (req, res) => {
 });
 
 // Aprovar arquivo
-router.patch('/:id/approve', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (req, res) => {
+router.patch('/:id/approve', requireAuth, requireRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN']), async (req, res) => {
   try {
     const fileId = parseInt(req.params.id);
 
@@ -388,7 +397,7 @@ router.patch('/:id/approve', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), as
 });
 
 // Rejeitar arquivo
-router.patch('/:id/reject', requireAuth, requireRoles(['DIRETOR', 'ADMIN']), async (req, res) => {
+router.patch('/:id/reject', requireAuth, requireRoles(['SONOPLASTA', 'DIRETOR', 'ADMIN']), async (req, res) => {
   try {
     const fileId = parseInt(req.params.id);
 

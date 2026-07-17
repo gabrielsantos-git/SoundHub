@@ -2,7 +2,8 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const supabase = require('../supabase');
 const { requireAuth, requireRoles } = require('../middleware/auth');
-const { reajustarEscalasParaNovoUsuario } = require('./schedules');
+const { recriarEscalasAtivas } = require('./schedules');
+const { recriarDiasEventosFuturos } = require('./events');
 const { logAudit, getIp } = require('../utils/audit');
 const { sendAccountApproved, sendAccountDeleted } = require('../utils/email');
 const router = express.Router();
@@ -208,9 +209,10 @@ router.patch('/:id/approve', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), as
     logAudit({ usuarioId: req.user.id, acao: 'USER_APPROVED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
     sendAccountApproved(data.email, data.nome).catch(() => {});
 
-    // Reajustar escalas ativas para incluir o novo SONOPLASTA ou DIRETOR
+    // Recriar escalas ativas com o novo usuário incluído
     if (data.cargo === 'SONOPLASTA' || data.cargo === 'DIRETOR') {
-      reajustarEscalasParaNovoUsuario(userId).catch(() => {});
+      recriarEscalasAtivas().catch(() => {});
+      recriarDiasEventosFuturos().catch(() => {});
     }
 
     res.json({ message: 'Usuário aprovado com sucesso' });
@@ -248,7 +250,7 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
   try {
     const userId = parseInt(req.params.id);
 
-    const { data: existing } = await supabase.from('users').select('id, nome, email').eq('id', userId).single();
+    const { data: existing } = await supabase.from('users').select('id, nome, email, cargo').eq('id', userId).single();
     if (!existing) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
@@ -293,6 +295,12 @@ router.delete('/:id', requireAuth, requireRoles(['ADMIN', 'DIRETOR']), async (re
 
     logAudit({ usuarioId: req.user.id, acao: 'USER_DELETED', recurso: 'users', recursoId: userId, ip: getIp(req) }).catch(() => {});
     sendAccountDeleted(existing.email, existing.nome).catch(() => {});
+
+    // Recriar escalas ativas sem o usuário removido
+    if (existing.cargo === 'SONOPLASTA' || existing.cargo === 'DIRETOR') {
+      recriarEscalasAtivas().catch(() => {});
+      recriarDiasEventosFuturos().catch(() => {});
+    }
 
     res.json({ message: 'Usuário excluído com sucesso' });
   } catch (error) {

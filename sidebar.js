@@ -234,13 +234,16 @@
     });
 
     window.logout = function() {
+        // Limpar apenas dados da sessão; manter cache de foto do usuário atual
+        const user = (() => { try { return JSON.parse(localStorage.getItem('user')); } catch { return null; } })();
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        // Remover chave legada sem ID
         localStorage.removeItem('userFoto');
         window.location.href = '/auth';
     };
 
-    function setSidebarPhoto(url) {
+    window.setSidebarPhoto = function setSidebarPhoto(url) {
         const img     = document.getElementById('sidebarAvatarImg');
         const initial = document.getElementById('userInitial');
         if (img && url) {
@@ -266,10 +269,12 @@
         if (userRole)    userRole.textContent    = user.cargo || 'Cargo';
         if (userInitial) userInitial.textContent = (user.nome || 'U').charAt(0).toUpperCase();
 
-        // Foto de perfil: usa a da resposta da API ou o cache do localStorage
-        const fotoUrl = user.foto_url || localStorage.getItem('userFoto');
+        // Foto de perfil: cache por ID de usuário para não vazar entre contas
+        const fotoKey = user.id ? `userFoto_${user.id}` : null;
+        const fotoUrl = user.foto_url || (fotoKey ? localStorage.getItem(fotoKey) : null);
         setSidebarPhoto(fotoUrl || null);
-        if (user.foto_url) localStorage.setItem('userFoto', user.foto_url);
+        if (fotoKey && user.foto_url) localStorage.setItem(fotoKey, user.foto_url);
+        else if (fotoKey && !user.foto_url) setSidebarPhoto(null); // sem foto — não herdar de outra conta
 
         const show = el => { if (el) el.style.display = 'flex'; };
         const hide = el => { if (el) el.style.display = 'none'; };
@@ -357,5 +362,72 @@
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
         try { window.updateSidebar(JSON.parse(storedUser)); } catch {}
+    }
+
+    // ── PWA: manifest + SW (apenas fora das páginas de auth/register) ──
+    const _pwaExcluded = ['/auth', '/register', '/privacidade'].includes(window.location.pathname);
+
+    if (!_pwaExcluded) {
+        if (!document.querySelector('link[rel="manifest"]')) {
+            const manifestLink = document.createElement('link');
+            manifestLink.rel = 'manifest';
+            manifestLink.href = '/manifest.json';
+            document.head.appendChild(manifestLink);
+        }
+
+        if (!document.querySelector('meta[name="theme-color"]')) {
+            const meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            meta.content = '#4f46e5';
+            document.head.appendChild(meta);
+        }
+
+        // Registra SW com delay para não interferir no checkAuth inicial
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            setTimeout(() => {
+                navigator.serviceWorker.register('/service-worker.js').then(reg => {
+                    window._swRegistration = reg;
+                }).catch(() => {});
+            }, 5000);
+        }
+    }
+
+    // Pede permissão e inscreve para push assim que o usuário logar
+    window.iniciarPushNotifications = async function(token) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return;
+
+        try {
+            const reg = window._swRegistration || await navigator.serviceWorker.ready;
+
+            // Busca chave pública VAPID
+            const keyRes = await fetch('/api/notifications/vapid-public-key');
+            const { key } = await keyRes.json();
+
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(key)
+            });
+
+            await fetch('/api/notifications/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify(sub.toJSON())
+            });
+        } catch (e) {
+            console.warn('Push subscription falhou:', e);
+        }
+    };
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+        const raw = atob(base64);
+        return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
     }
 })();
