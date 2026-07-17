@@ -192,10 +192,29 @@ body {
     cursor: pointer;
     transition: all 0.2s ease;
     text-align: center;
+    position: relative;
 }
 
 .media-item:hover { border-color: #3b82f6; background: #f8fafc; }
 .media-item.selected { border-color: #3b82f6; background: #dbeafe; }
+
+.order-badge {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 1;
+}
 
 .media-thumbnail {
     width: 100%;

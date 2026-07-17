@@ -2,7 +2,7 @@
 const AppState = {
     currentUser: null,
     allMedia: [],
-    selectedMedia: new Set(),
+    selectedMedia: [],
     availableScreens: [],
     selectedScreen: null,
     isProjecting: false,
@@ -118,8 +118,8 @@ async function checkGroupSelection() {
             
             ids.forEach(id => {
                 const media = AppState.allMedia.find(m => m.id === id.toString());
-                if (media) {
-                    AppState.selectedMedia.add(media.id);
+                if (media && !AppState.selectedMedia.includes(media.id)) {
+                    AppState.selectedMedia.push(media.id);
                     selectedCount++;
                 }
             });
@@ -270,13 +270,16 @@ function formatDate(dateString) {
 }
 
 function createMediaItem(media) {
-    const isSelected = AppState.selectedMedia.has(media.id);
+    const orderIndex = AppState.selectedMedia.indexOf(media.id);
+    const isSelected = orderIndex !== -1;
     const selectedClass = isSelected ? 'selected' : '';
     const typeIcon = media.tipo === 'image' ? '' : '';
     const typeText = media.tipo === 'image' ? 'Imagem' : 'Video';
-    
-    return '<div class="media-item ' + selectedClass + '" onclick="toggleMediaSelection(\'' + media.id + '\')" id="media-' + media.id + '" data-media-id="' + media.id + '">' + 
-        (media.tipo === 'image' ? 
+    const badgeHtml = isSelected ? '<div class="order-badge">' + (orderIndex + 1) + '</div>' : '';
+
+    return '<div class="media-item ' + selectedClass + '" onclick="toggleMediaSelection(\'' + media.id + '\')" id="media-' + media.id + '" data-media-id="' + media.id + '">' +
+        badgeHtml +
+        (media.tipo === 'image' ?
             '<img src="' + media.url + '" alt="' + media.nome + '" class="media-thumbnail" loading="lazy">' :
             '<div style="background: #f1f5f9; height: 120px; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; margin-bottom: 0.5rem;"><span style="font-size: 2rem;">' + typeIcon + '</span></div>'
         ) +
@@ -287,22 +290,37 @@ function createMediaItem(media) {
 
 function toggleMediaSelection(mediaId) {
     const mediaItem = document.getElementById('media-' + mediaId);
-    
-    if (AppState.selectedMedia.has(mediaId)) {
-        AppState.selectedMedia.delete(mediaId);
+    const idx = AppState.selectedMedia.indexOf(mediaId);
+
+    if (idx !== -1) {
+        AppState.selectedMedia.splice(idx, 1);
         mediaItem.classList.remove('selected');
+        const badge = mediaItem.querySelector('.order-badge');
+        if (badge) badge.remove();
+        // Numbers of remaining items shift, refresh all badges
+        refreshOrderBadges();
     } else {
-        AppState.selectedMedia.add(mediaId);
+        AppState.selectedMedia.push(mediaId);
         mediaItem.classList.add('selected');
+        const badge = document.createElement('div');
+        badge.className = 'order-badge';
+        badge.textContent = AppState.selectedMedia.length;
+        mediaItem.appendChild(badge);
     }
-    
+
     updateProjectionButton();
-    console.log('Midias selecionadas:', Array.from(AppState.selectedMedia));
+}
+
+function refreshOrderBadges() {
+    AppState.selectedMedia.forEach(function(id, i) {
+        const badge = document.querySelector('#media-' + id + ' .order-badge');
+        if (badge) badge.textContent = i + 1;
+    });
 }
 
 function updateProjectionButton() {
     const button = document.getElementById('projectBtn');
-    const hasSelection = AppState.selectedMedia.size > 0;
+    const hasSelection = AppState.selectedMedia.length > 0;
     const hasScreen = AppState.selectedScreen !== null;
     
     button.disabled = !hasSelection || !hasScreen || AppState.isProjecting;
@@ -444,13 +462,13 @@ function selectScreen(screenId) {
 }
 
 async function startProjection() {
-    if (AppState.selectedMedia.size === 0 || !AppState.selectedScreen) {
+    if (AppState.selectedMedia.length === 0 || !AppState.selectedScreen) {
         showError('Selecione mídias e uma tela primeiro.');
         return;
     }
 
     try {
-        const selectedMediaList = AppState.allMedia.filter(m => AppState.selectedMedia.has(m.id));
+        const selectedMediaList = AppState.selectedMedia.map(id => AppState.allMedia.find(m => m.id === id)).filter(Boolean);
         
         // Configurações da janela baseadas na tela selecionada
         const { availLeft, availTop, width, height } = AppState.selectedScreen;
@@ -544,9 +562,9 @@ function renderMediaList(mediaList) {
 }
 
 function updatePreviews() {
-    const selectedMediaList = AppState.allMedia.filter(function(media) {
-        return AppState.selectedMedia.has(media.id);
-    });
+    const selectedMediaList = AppState.selectedMedia.map(function(id) {
+        return AppState.allMedia.find(function(m) { return m.id === id; });
+    }).filter(Boolean);
     
     const currentPreview = document.getElementById('currentPreview');
     const currentMedia = selectedMediaList[AppState.currentMediaIndex];
@@ -573,9 +591,9 @@ function updatePreviews() {
 }
 
 function nextMedia() {
-    const selectedMediaList = AppState.allMedia.filter(function(media) {
-        return AppState.selectedMedia.has(media.id);
-    });
+    const selectedMediaList = AppState.selectedMedia.map(function(id) {
+        return AppState.allMedia.find(function(m) { return m.id === id; });
+    }).filter(Boolean);
     
     AppState.currentMediaIndex = (AppState.currentMediaIndex + 1) % selectedMediaList.length;
     
@@ -596,9 +614,9 @@ function nextMedia() {
 }
 
 function previousMedia() {
-    const selectedMediaList = AppState.allMedia.filter(function(media) {
-        return AppState.selectedMedia.has(media.id);
-    });
+    const selectedMediaList = AppState.selectedMedia.map(function(id) {
+        return AppState.allMedia.find(function(m) { return m.id === id; });
+    }).filter(Boolean);
     
     AppState.currentMediaIndex = AppState.currentMediaIndex === 0 ? 
         selectedMediaList.length - 1 : AppState.currentMediaIndex - 1;
@@ -625,9 +643,9 @@ function jumpToMedia(index) {
     updateMediaListSelection();
     updatePreviews();
     
-    const selectedMediaList = AppState.allMedia.filter(function(media) {
-        return AppState.selectedMedia.has(media.id);
-    });
+    const selectedMediaList = AppState.selectedMedia.map(function(id) {
+        return AppState.allMedia.find(function(m) { return m.id === id; });
+    }).filter(Boolean);
     
     try {
         AppState.broadcastChannel.postMessage({
