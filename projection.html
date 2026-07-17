@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/projection.css">
 </head>
 <body>
-    <div class="fullscreen-prompt" id="fullscreenPrompt">
+    <div class="fullscreen-prompt" id="fullscreenPrompt" style="display:none">
         <div class="fullscreen-prompt-content">
             <h2>🎥 SoundHub</h2>
             <p>Clique aqui ou pressione <kbd>F</kbd> para abrir em tela cheia</p>
@@ -63,20 +63,21 @@
             setupKeyboardControls();
             document.addEventListener('mousemove', revealVideoControls);
 
-            // Fullscreen prompt: click overlay to enter fullscreen
             const prompt = document.getElementById('fullscreenPrompt');
-            prompt.addEventListener('click', () => {
-                requestFullscreen();
-                prompt.style.display = 'none';
-            });
 
-            // Hide prompt automatically if fullscreen is granted without click
+            // Show prompt again if user exits fullscreen manually
             document.addEventListener('fullscreenchange', () => {
-                prompt.style.display = document.fullscreenElement ? 'none' : 'flex';
+                if (!document.fullscreenElement) prompt.style.display = 'flex';
             });
 
-            // Try auto-fullscreen; browser may allow it on fresh window open
-            requestFullscreen();
+            prompt.addEventListener('click', () => {
+                requestFullscreen().then(() => { prompt.style.display = 'none'; });
+            });
+
+            // Try auto-fullscreen immediately while the window still has user-gesture context
+            requestFullscreen().catch(() => {
+                prompt.style.display = 'flex';
+            });
         }
 
         function revealVideoControls() {
@@ -118,7 +119,6 @@
 
             if (mediaList.length > 0) {
                 loadMedia(mediaList[currentIndex]);
-                requestFullscreen();
             } else {
                 showError('Nenhuma mídia disponível para projeção.');
             }
@@ -178,7 +178,8 @@
 
             video.onloadedmetadata = () => {
                 console.log('Vídeo carregado:', media.nome);
-                document.getElementById('mediaContainer').appendChild(video);
+                const c = document.getElementById('mediaContainer');
+                if (!c.contains(video)) c.appendChild(video);
                 const controls = document.getElementById('videoControls');
                 controls.classList.add('show');
                 controls.classList.remove('fading');
@@ -206,27 +207,24 @@
 
         async function loadChunkedVideo(video, media) {
             const container = document.getElementById('mediaContainer');
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'loading';
-            loadingDiv.innerHTML = '<div class="spinner"></div><p>Carregando vídeo...</p>';
-            container.appendChild(loadingDiv);
+            container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando vídeo...</p></div>';
 
             try {
                 const blobs = [];
                 for (let i = 0; i < media.chunkUrls.length; i++) {
-                    loadingDiv.querySelector('p').textContent =
+                    container.querySelector('p').textContent =
                         'Carregando parte ' + (i + 1) + ' de ' + media.chunkUrls.length + '...';
                     const resp = await fetch(media.chunkUrls[i]);
                     if (!resp.ok) throw new Error('Falha ao baixar parte ' + (i + 1));
                     blobs.push(await resp.blob());
                 }
-                const combined = new Blob(blobs, { type: media.mimeType });
-                video.src = URL.createObjectURL(combined);
+                const combined = new Blob(blobs, { type: media.tipo });
+                container.innerHTML = '';      // remove loading screen
+                container.appendChild(video); // add video element
+                video.src = URL.createObjectURL(combined); // triggers onloadedmetadata
             } catch (e) {
                 console.error('Erro ao carregar vídeo fragmentado:', e);
                 showError('Erro ao carregar vídeo: ' + media.nome);
-            } finally {
-                if (container.contains(loadingDiv)) container.removeChild(loadingDiv);
             }
         }
 
@@ -353,14 +351,10 @@
 
         function requestFullscreen() {
             const elem = document.documentElement;
-            
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen();
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
+            if (elem.requestFullscreen) return elem.requestFullscreen();
+            if (elem.webkitRequestFullscreen) return elem.webkitRequestFullscreen();
+            if (elem.msRequestFullscreen) return elem.msRequestFullscreen();
+            return Promise.resolve();
         }
 
         function exitFullscreen() {
