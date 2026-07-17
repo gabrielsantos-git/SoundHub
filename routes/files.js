@@ -48,6 +48,8 @@ router.use((error, req, res, next) => {
   next();
 });
 
+const CHUNK_SIZE = 40 * 1024 * 1024; // 40 MB por fragmento (free tier Supabase limita a 50 MB por objeto)
+
 // POST /api/files/request-upload — gera URLs assinadas para upload direto ao Supabase
 router.post('/request-upload', async (req, res) => {
   const { token: qrToken, files } = req.body;
@@ -73,13 +75,27 @@ router.post('/request-upload', async (req, res) => {
       if (!allowedTypes.has(file.type)) return res.status(400).json({ error: `Tipo não permitido: ${file.type}` });
       if (file.size > MAX_FILE_SIZE) return res.status(400).json({ error: `Arquivo muito grande: ${file.name}` });
 
-      const ext = path.extname(file.name || '') || '';
-      const filePath = `uploads/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      const ext  = path.extname(file.name || '') || '';
+      const uuid = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
-      const { data, error } = await supabase.storage.from('files').createSignedUploadUrl(filePath);
-      if (error) return res.status(500).json({ error: 'Erro ao preparar upload' });
-
-      uploads.push({ signedUrl: data.signedUrl, filePath, originalName: file.name, type: file.type, size: file.size });
+      if (file.size <= CHUNK_SIZE) {
+        // Arquivo pequeno: upload único
+        const filePath = `uploads/${uuid}${ext}`;
+        const { data, error } = await supabase.storage.from('files').createSignedUploadUrl(filePath);
+        if (error) return res.status(500).json({ error: 'Erro ao preparar upload' });
+        uploads.push({ isChunked: false, signedUrl: data.signedUrl, filePath, originalName: file.name, type: file.type, size: file.size });
+      } else {
+        // Arquivo grande: dividir em fragmentos de CHUNK_SIZE
+        const numChunks = Math.ceil(file.size / CHUNK_SIZE);
+        const chunks = [];
+        for (let i = 0; i < numChunks; i++) {
+          const chunkPath = `uploads/${uuid}/parte-${i}.part`;
+          const { data, error } = await supabase.storage.from('files').createSignedUploadUrl(chunkPath);
+          if (error) return res.status(500).json({ error: 'Erro ao preparar upload dos fragmentos' });
+          chunks.push({ signedUrl: data.signedUrl, filePath: chunkPath });
+        }
+        uploads.push({ isChunked: true, filePath: `uploads/${uuid}`, chunks, originalName: file.name, type: file.type, size: file.size });
+      }
     }
 
     res.json({ uploads });
@@ -102,23 +118,31 @@ router.post('/confirm-upload', async (req, res) => {
   try {
     const savedFiles = [];
     for (const file of files) {
+      const insertData = {
+        nome: file.originalName,
+        caminho: file.filePath,
+        tipo: file.type,
+        tamanho: file.size,
+        usuario_nome: nome.trim(),
+        descricao: descricao || '',
+        status: 'PENDING',
+        data_upload: new Date().toISOString(),
+        is_chunked: file.isChunked || false,
+        chunk_paths: file.isChunked ? (file.chunks || []).map(c => c.filePath) : []
+      };
+
       const { data: inserted, error } = await supabase
         .from('files')
-        .insert({
-          nome: file.originalName,
-          caminho: file.filePath,
-          tipo: file.type,
-          tamanho: file.size,
-          usuario_nome: nome.trim(),
-          descricao: descricao || '',
-          status: 'PENDING',
-          data_upload: new Date().toISOString()
-        })
+        .insert(insertData)
         .select('id, nome, status')
         .single();
 
       if (error) {
-        await supabase.storage.from('files').remove([file.filePath]);
+        if (file.isChunked && file.chunks) {
+          await supabase.storage.from('files').remove(file.chunks.map(c => c.filePath));
+        } else {
+          await supabase.storage.from('files').remove([file.filePath]);
+        }
         return res.status(500).json({ error: 'Erro ao salvar arquivo' });
       }
 

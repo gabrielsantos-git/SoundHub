@@ -96,6 +96,7 @@
         let selectedFiles = [];
 
         const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
+        const CHUNK_SIZE    = 40 * 1024 * 1024;        // 40 MB por fragmento
         const ALLOWED_TYPES = ['image/', 'video/', 'application/pdf'];
 
         if (!token) {
@@ -198,8 +199,8 @@
             return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
         }
 
-        // Upload direto para URL assinada do Supabase via XHR (com progresso)
-        function uploadToSignedUrl(file, signedUrl, onProgress) {
+        // Upload de um blob (arquivo inteiro ou fragmento) para URL assinada do Supabase via XHR
+        function uploadToSignedUrl(blob, signedUrl, contentType, onProgress) {
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
                 xhr.upload.addEventListener('progress', function (e) {
@@ -210,15 +211,15 @@
                         resolve();
                     } else {
                         console.error('Supabase upload error - status:', xhr.status, '| response:', xhr.responseText);
-                        reject(new Error('Erro ' + xhr.status + ' ao enviar ' + file.name));
+                        reject(new Error('Erro ' + xhr.status + ' no envio'));
                     }
                 });
                 xhr.addEventListener('error', function () {
-                    reject(new Error('Falha de rede ao enviar ' + file.name));
+                    reject(new Error('Falha de rede no envio'));
                 });
                 xhr.open('PUT', signedUrl);
-                xhr.setRequestHeader('Content-Type', file.type);
-                xhr.send(file);
+                xhr.setRequestHeader('Content-Type', contentType);
+                xhr.send(blob);
             });
         }
 
@@ -257,20 +258,38 @@
                 var totalBytes = selectedFiles.reduce(function (s, f) { return s + f.size; }, 0);
                 var fileLoaded = selectedFiles.map(function () { return 0; });
 
-                // 2. Enviar cada arquivo diretamente ao Supabase
+                function updateProgress() {
+                    var total = fileLoaded.reduce(function (a, b) { return a + b; }, 0);
+                    progressFill.style.width = Math.min(100, Math.round(total / totalBytes * 100)) + '%';
+                }
+
+                // 2. Enviar cada arquivo diretamente ao Supabase (com suporte a fragmentos)
                 for (var i = 0; i < selectedFiles.length; i++) {
-                    loadingMsg.textContent = 'Enviando arquivo ' + (i + 1) + ' de ' + selectedFiles.length + '...';
+                    var file   = selectedFiles[i];
+                    var upload = uploads[i];
 
-                    await uploadToSignedUrl(selectedFiles[i], uploads[i].signedUrl, (function (idx) {
-                        return function (loaded) {
-                            fileLoaded[idx] = loaded;
-                            var total = fileLoaded.reduce(function (a, b) { return a + b; }, 0);
-                            var pct   = Math.min(100, Math.round(total / totalBytes * 100));
-                            progressFill.style.width = pct + '%';
-                        };
-                    })(i));
-
-                    fileLoaded[i] = selectedFiles[i].size;
+                    if (!upload.isChunked) {
+                        loadingMsg.textContent = 'Enviando arquivo ' + (i + 1) + ' de ' + selectedFiles.length + '...';
+                        await uploadToSignedUrl(file, upload.signedUrl, file.type, (function (idx) {
+                            return function (loaded) { fileLoaded[idx] = loaded; updateProgress(); };
+                        })(i));
+                        fileLoaded[i] = file.size;
+                        updateProgress();
+                    } else {
+                        for (var j = 0; j < upload.chunks.length; j++) {
+                            loadingMsg.textContent = 'Enviando parte ' + (j + 1) + '/' + upload.chunks.length +
+                                ' do arquivo ' + (i + 1) + ' de ' + selectedFiles.length + '...';
+                            var start = j * CHUNK_SIZE;
+                            var end   = Math.min(start + CHUNK_SIZE, file.size);
+                            var blob  = file.slice(start, end);
+                            await uploadToSignedUrl(blob, upload.chunks[j].signedUrl, 'application/octet-stream',
+                                (function (idx, base) {
+                                    return function (loaded) { fileLoaded[idx] = base + loaded; updateProgress(); };
+                                })(i, start));
+                            fileLoaded[i] = end;
+                            updateProgress();
+                        }
+                    }
                 }
 
                 progressFill.style.width = '100%';
@@ -285,7 +304,17 @@
                         nome: nome,
                         descricao: descricao,
                         files: uploads.map(function (u) {
-                            return { filePath: u.filePath, originalName: u.originalName, type: u.type, size: u.size };
+                            if (u.isChunked) {
+                                return {
+                                    isChunked: true,
+                                    filePath: u.filePath,
+                                    originalName: u.originalName,
+                                    type: u.type,
+                                    size: u.size,
+                                    chunks: u.chunks.map(function (c) { return { filePath: c.filePath }; })
+                                };
+                            }
+                            return { isChunked: false, filePath: u.filePath, originalName: u.originalName, type: u.type, size: u.size };
                         })
                     })
                 });
