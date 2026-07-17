@@ -209,6 +209,7 @@
                     if (xhr.status >= 200 && xhr.status < 300) {
                         resolve();
                     } else {
+                        console.error('Supabase upload error - status:', xhr.status, '| response:', xhr.responseText);
                         reject(new Error('Erro ' + xhr.status + ' ao enviar ' + file.name));
                     }
                 });
