@@ -47,7 +47,87 @@ router.use((error, req, res, next) => {
   next();
 });
 
-// Upload de múltiplos arquivos
+// POST /api/files/request-upload — gera URLs assinadas para upload direto ao Supabase
+router.post('/request-upload', async (req, res) => {
+  const { token: qrToken, files } = req.body;
+
+  if (!qrToken) return res.status(400).json({ error: 'Token do QR Code é obrigatório' });
+  if (!Array.isArray(files) || files.length === 0) return res.status(400).json({ error: 'Nenhum arquivo informado' });
+  if (files.length > 10) return res.status(400).json({ error: 'Máximo de 10 arquivos por envio' });
+
+  const verifyResult = qrStore.verify(qrToken);
+  if (!verifyResult.valid) return res.status(400).json({ error: verifyResult.reason || 'QR Code inválido ou expirado' });
+
+  const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/avi', 'video/mov', 'application/pdf']);
+  const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
+
+  try {
+    const uploads = [];
+    for (const file of files) {
+      if (!allowedTypes.has(file.type)) return res.status(400).json({ error: `Tipo não permitido: ${file.type}` });
+      if (file.size > MAX_FILE_SIZE) return res.status(400).json({ error: `Arquivo muito grande: ${file.name}` });
+
+      const ext = path.extname(file.name || '') || '';
+      const filePath = `uploads/${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
+      const { data, error } = await supabase.storage.from('files').createSignedUploadUrl(filePath);
+      if (error) return res.status(500).json({ error: 'Erro ao preparar upload' });
+
+      uploads.push({ signedUrl: data.signedUrl, filePath, originalName: file.name, type: file.type, size: file.size });
+    }
+
+    res.json({ uploads });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// POST /api/files/confirm-upload — salva metadados após upload direto ao Supabase
+router.post('/confirm-upload', async (req, res) => {
+  const { token: qrToken, nome, descricao, files } = req.body;
+
+  if (!qrToken) return res.status(400).json({ error: 'Token do QR Code é obrigatório' });
+  if (!nome?.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
+  if (!Array.isArray(files) || files.length === 0) return res.status(400).json({ error: 'Nenhum arquivo informado' });
+
+  const lockResult = qrStore.lock(qrToken);
+  if (!lockResult.valid) return res.status(400).json({ error: lockResult.reason || 'QR Code inválido ou expirado' });
+
+  try {
+    const savedFiles = [];
+    for (const file of files) {
+      const { data: inserted, error } = await supabase
+        .from('files')
+        .insert({
+          nome: file.originalName,
+          caminho: file.filePath,
+          tipo: file.type,
+          tamanho: file.size,
+          usuario_nome: nome.trim(),
+          descricao: descricao || '',
+          status: 'PENDING',
+          data_upload: new Date().toISOString()
+        })
+        .select('id, nome, status')
+        .single();
+
+      if (error) {
+        await supabase.storage.from('files').remove([file.filePath]);
+        return res.status(500).json({ error: 'Erro ao salvar arquivo' });
+      }
+
+      savedFiles.push({ id: inserted.id, nome: inserted.nome, status: inserted.status });
+    }
+
+    qrStore.markUsed(qrToken);
+    res.json({ message: `${savedFiles.length} arquivo(s) enviado(s) com sucesso! Aguarde aprovação.`, files: savedFiles });
+  } catch (e) {
+    qrStore.unlock(qrToken);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
+// Upload de múltiplos arquivos (rota legada — mantida para compatibilidade)
 router.post('/upload', upload.array('arquivos'), async (req, res) => {
   const qrToken = req.body?.token;
   

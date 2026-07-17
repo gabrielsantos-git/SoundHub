@@ -54,7 +54,7 @@
                             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
                             <div>Clique para selecionar arquivos</div>
                             <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                                Imagens, vídeos ou PDF (máx 50MB por arquivo)
+                                Imagens, vídeos ou PDF (máx 5GB por arquivo)
                             </div>
                         </div>
                     </label>
@@ -68,7 +68,7 @@
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
-                Enviando arquivos...
+                <span id="loadingMsg">Enviando arquivos...</span>
             </div>
 
             <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
@@ -80,328 +80,228 @@
     </div>
 
     <script>
-        // === FUNÇÕES QR CODE ===
-        const urlParams = new URLSearchParams(window.location.search);
-        const token = urlParams.get('token');
-        
-        if (!token) {
-            document.getElementById('message').innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
-            document.getElementById('submitBtn').disabled = true;
-        }
+        const urlParams  = new URLSearchParams(window.location.search);
+        const token      = urlParams.get('token');
 
-        async function verifyQRCode() {
-            if (!token) return;
-            
-            try {
-                const response = await fetch(`/api/qr/verify/${token}`);
-                const data = await response.json();
-                
-                if (!data.valid) {
-                    document.getElementById('message').innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
-                    document.getElementById('submitBtn').disabled = true;
-                } else {
-                    document.getElementById('message').innerHTML = '<div class="success">QR Code válido! Você pode enviar seus arquivos.</div>';
-                }
-            } catch (error) {
-                console.error('Erro ao verificar QR Code:', error);
-                document.getElementById('message').innerHTML = '<div class="error">Erro ao verificar QR Code</div>';
-                document.getElementById('submitBtn').disabled = true;
-            }
-        }
+        const fileInput    = document.getElementById('arquivo');
+        const fileLabel    = document.getElementById('fileLabel');
+        const fileList     = document.getElementById('fileList');
+        const submitBtn    = document.getElementById('submitBtn');
+        const msgEl        = document.getElementById('message');
+        const loadingEl    = document.getElementById('loading');
+        const loadingMsg   = document.getElementById('loadingMsg');
+        const progressBar  = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
 
-        // Verificar QR code ao carregar
-        verifyQRCode();
-
-        // Manipulação de arquivos (múltiplos)
-        const fileInput = document.getElementById('arquivo');
-        const fileLabel = document.getElementById('fileLabel');
-        const fileList = document.getElementById('fileList');
-        const submitBtn = document.getElementById('submitBtn');
         let selectedFiles = [];
 
-        fileInput.addEventListener('change', function(e) {
-            const files = Array.from(e.target.files);
-            selectedFiles = [];
-            
-            if (files.length === 0) {
-                resetFileSelection();
-                return;
-            }
-            
-            // Validar todos os arquivos
-            const maxSize = 50 * 1024 * 1024;
-            const allowedTypes = ['image/', 'video/', 'application/pdf'];
-            let invalidFiles = [];
-            
-            files.forEach(file => {
-                if (file.size > maxSize) {
-                    invalidFiles.push(`${file.name} (muito grande)`);
+        const MAX_FILE_SIZE = 5 * 1024 * 1024 * 1024; // 5 GB
+        const ALLOWED_TYPES = ['image/', 'video/', 'application/pdf'];
+
+        if (!token) {
+            msgEl.innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
+            submitBtn.disabled = true;
+        }
+
+        // Verificar QR ao carregar
+        (async () => {
+            if (!token) return;
+            try {
+                const res  = await fetch('/api/qr/verify/' + token);
+                const data = await res.json();
+                if (!data.valid) {
+                    msgEl.innerHTML = '<div class="error">QR Code inválido ou expirado</div>';
+                    submitBtn.disabled = true;
                 } else {
-                    const isAllowed = allowedTypes.some(type => file.type.startsWith(type));
-                    if (!isAllowed) {
-                        invalidFiles.push(`${file.name} (tipo não permitido)`);
-                    } else {
-                        selectedFiles.push(file);
-                    }
+                    msgEl.innerHTML = '<div class="success">QR Code válido! Você pode enviar seus arquivos.</div>';
+                }
+            } catch (e) {
+                msgEl.innerHTML = '<div class="error">Erro ao verificar QR Code</div>';
+                submitBtn.disabled = true;
+            }
+        })();
+
+        // Seleção de arquivos
+        fileInput.addEventListener('change', function (e) {
+            const files   = Array.from(e.target.files);
+            selectedFiles = [];
+            const invalid = [];
+
+            files.forEach(function (file) {
+                if (file.size > MAX_FILE_SIZE) {
+                    invalid.push(file.name + ' (muito grande)');
+                } else if (!ALLOWED_TYPES.some(function (t) { return file.type.startsWith(t); })) {
+                    invalid.push(file.name + ' (tipo não permitido)');
+                } else {
+                    selectedFiles.push(file);
                 }
             });
-            
-            if (invalidFiles.length > 0) {
-                document.getElementById('message').innerHTML = `<div class="error">Arquivos inválidos: ${invalidFiles.join(', ')}</div>`;
-                if (selectedFiles.length === 0) {
-                    resetFileSelection();
-                    return;
-                }
+
+            if (invalid.length) {
+                msgEl.innerHTML = '<div class="error">Arquivos ignorados: ' + invalid.join(', ') + '</div>';
+            } else {
+                msgEl.innerHTML = '';
             }
-            
-            // Atualizar UI
+
             updateFileList();
-            submitBtn.disabled = selectedFiles.length === 0;
+            checkFormValidity();
         });
+
+        document.getElementById('nome').addEventListener('input', checkFormValidity);
+
+        function checkFormValidity() {
+            submitBtn.disabled = !(document.getElementById('nome').value.trim() && selectedFiles.length > 0 && token);
+        }
 
         function resetFileSelection() {
             selectedFiles = [];
             fileLabel.classList.remove('has-file');
-            fileLabel.innerHTML = `
-                <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-                    <div>Clique para selecionar arquivos</div>
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                        Imagens, vídeos ou PDF (máx 50MB por arquivo)
-                    </div>
-                </div>
-            `;
+            fileLabel.innerHTML = '<div><div style="font-size:2rem;margin-bottom:.5rem">📁</div><div>Clique para selecionar arquivos</div><div style="font-size:.875rem;color:#6b7280;margin-top:.5rem">Imagens, vídeos ou PDF (máx 5GB por arquivo)</div></div>';
             fileList.style.display = 'none';
             submitBtn.disabled = true;
         }
 
         function updateFileList() {
-            if (selectedFiles.length === 0) {
+            if (!selectedFiles.length) {
                 fileList.style.display = 'none';
                 return;
             }
-            
-            // Atualizar label
+
             fileLabel.classList.add('has-file');
-            fileLabel.innerHTML = `
-                <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📁</div>
-                    <div>${selectedFiles.length} arquivo(s) selecionado(s)</div>
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                        Clique para alterar seleção
-                    </div>
-                </div>
-            `;
-            
-            // Criar lista de arquivos
-            let html = '';
-            selectedFiles.forEach((file, index) => {
-                html += `
-                    <div class="file-item">
-                        <div class="file-icon">${getFileIcon(file.type)}</div>
-                        <div class="file-info">
-                            <div class="file-name">${file.name}</div>
-                            <div class="file-size">${formatFileSize(file.size)}</div>
-                        </div>
-                        <button type="button" class="file-remove" onclick="removeFile(${index})">Remover</button>
-                    </div>
-                `;
-            });
-            
-            fileList.innerHTML = html;
+            fileLabel.innerHTML = '<div><div style="font-size:2rem;margin-bottom:.5rem">📁</div><div>' + selectedFiles.length + ' arquivo(s) selecionado(s)</div><div style="font-size:.875rem;color:#6b7280;margin-top:.5rem">Clique para alterar seleção</div></div>';
+
+            fileList.innerHTML = selectedFiles.map(function (f, i) {
+                return '<div class="file-item"><div class="file-icon">' + getFileIcon(f.type) + '</div><div class="file-info"><div class="file-name">' + f.name + '</div><div class="file-size">' + formatFileSize(f.size) + '</div></div><button type="button" class="file-remove" onclick="removeFile(' + i + ')">Remover</button></div>';
+            }).join('');
             fileList.style.display = 'block';
         }
 
         function removeFile(index) {
             selectedFiles.splice(index, 1);
-            
-            // Atualizar o input file
-            const dataTransfer = new DataTransfer();
-            selectedFiles.forEach(file => dataTransfer.items.add(file));
-            fileInput.files = dataTransfer.files;
-            
+            var dt = new DataTransfer();
+            selectedFiles.forEach(function (f) { dt.items.add(f); });
+            fileInput.files = dt.files;
             updateFileList();
-            submitBtn.disabled = selectedFiles.length === 0;
-        }
-
-        function getFileIcon(fileType) {
-            if (fileType.startsWith('image/')) return '🖼️';
-            if (fileType.startsWith('video/')) return '🎥';
-            if (fileType === 'application/pdf') return '📄';
-            return '📁';
-        }
-
-        function formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function resetFileInput() {
-            fileLabel.classList.remove('has-file');
-            fileLabel.innerHTML = `
-                <div>
-                    <div style="font-size: 2rem; margin-bottom: 0.5rem;"></div>
-                    <div>Clique para selecionar um arquivo</div>
-                    <div style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">
-                        Imagens, vídeos ou PDF (máx 50MB)
-                    </div>
-                </div>
-            `;
-            fileList.style.display = 'none';
             checkFormValidity();
         }
 
-        function checkFormValidity() {
-            const nome = document.getElementById('nome').value.trim();
-            
-            submitBtn.disabled = !(nome && selectedFiles.length > 0 && token);
+        function getFileIcon(type) {
+            if (type.startsWith('image/')) return '🖼️';
+            if (type.startsWith('video/')) return '🎥';
+            return '📄';
         }
 
-        // Verificar validade do formulário
-        document.getElementById('nome').addEventListener('input', checkFormValidity);
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 Bytes';
+            var k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i];
+        }
+
+        // Upload direto para URL assinada do Supabase via XHR (com progresso)
+        function uploadToSignedUrl(file, signedUrl, onProgress) {
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', function (e) {
+                    if (e.lengthComputable) onProgress(e.loaded);
+                });
+                xhr.addEventListener('load', function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve();
+                    } else {
+                        reject(new Error('Erro ' + xhr.status + ' ao enviar ' + file.name));
+                    }
+                });
+                xhr.addEventListener('error', function () {
+                    reject(new Error('Falha de rede ao enviar ' + file.name));
+                });
+                xhr.open('PUT', signedUrl);
+                xhr.setRequestHeader('Content-Type', file.type);
+                xhr.send(file);
+            });
+        }
 
         // Envio do formulário
-        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        document.getElementById('uploadForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            
-            if (!token) {
-                document.getElementById('message').innerHTML = '<div class="error">QR Code inválido</div>';
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('nome', document.getElementById('nome').value);
-            formData.append('descricao', document.getElementById('descricao').value);
-            formData.append('token', token);
-            
-            // Adicionar múltiplos arquivos
-            selectedFiles.forEach(file => {
-                formData.append('arquivos', file);
-            });
-            
-            // Mostrar loading
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('progressBar').style.display = 'block';
-            submitBtn.disabled = true;
-            document.getElementById('message').innerHTML = '';
-            
+            if (!token) { msgEl.innerHTML = '<div class="error">QR Code inválido</div>'; return; }
+
+            var nome      = document.getElementById('nome').value.trim();
+            var descricao = document.getElementById('descricao').value.trim();
+
+            loadingEl.style.display   = 'block';
+            progressBar.style.display = 'block';
+            progressFill.style.width  = '0%';
+            submitBtn.disabled        = true;
+            msgEl.innerHTML           = '';
+
             try {
-                const xhr = new XMLHttpRequest();
-                
-                // Progress upload
-                xhr.upload.addEventListener('progress', function(e) {
-                    try {
-                        if (e.lengthComputable) {
-                            const percentComplete = (e.loaded / e.total) * 100;
-                            const progressFill = document.getElementById('progressFill');
-                            if (progressFill) {
-                                progressFill.style.width = percentComplete + '%';
-                            }
-                        }
-                    } catch (progressError) {
-                        console.warn('Erro no progresso do upload:', progressError);
-                    }
+                // 1. Solicitar URLs assinadas ao servidor
+                loadingMsg.textContent = 'Preparando envio...';
+
+                var reqRes = await fetch('/api/files/request-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        files: selectedFiles.map(function (f) {
+                            return { name: f.name, type: f.type, size: f.size };
+                        })
+                    })
                 });
-                
-                xhr.addEventListener('load', function() {
-                    try {
-                        const loading = document.getElementById('loading');
-                        const progressBar = document.getElementById('progressBar');
-                        if (loading) loading.style.display = 'none';
-                        if (progressBar) progressBar.style.display = 'none';
-                        
-                        if (xhr.status === 200) {
-                            try {
-                                const response = JSON.parse(xhr.responseText);
-                                const message = document.getElementById('message');
-                                if (message) {
-                                    message.innerHTML = `<div class="success">${response.message || 'Arquivos enviados com sucesso! Aguardando aprovação.'}</div>`;
-                                }
-                                
-                                const uploadForm = document.getElementById('uploadForm');
-                                if (uploadForm) uploadForm.reset();
-                                resetFileInput();
-                                
-                                // Limpar seleção de arquivos
-                                selectedFiles = [];
-                                updateFileList();
-                                if (submitBtn) submitBtn.disabled = true;
-                            } catch (parseError) {
-                                console.error('Erro ao parsear resposta sucesso:', parseError);
-                                const message = document.getElementById('message');
-                                if (message) {
-                                    message.innerHTML = '<div class="error">Erro ao processar resposta do servidor</div>';
-                                }
-                                if (submitBtn) submitBtn.disabled = false;
-                            }
-                        } else {
-                            try {
-                                const error = JSON.parse(xhr.responseText);
-                                const message = document.getElementById('message');
-                                if (message) {
-                                    message.innerHTML = `<div class="error">${error.error || 'Erro ao enviar arquivos'}</div>`;
-                                }
-                            } catch (parseError) {
-                                console.error('Erro ao parsear resposta erro:', parseError);
-                                const message = document.getElementById('message');
-                                if (message) {
-                                    message.innerHTML = '<div class="error">Erro ao enviar arquivos</div>';
-                                }
-                            }
-                            if (submitBtn) submitBtn.disabled = false;
-                        }
-                    } catch (loadError) {
-                        console.error('Erro no listener de load:', loadError);
-                        const loading = document.getElementById('loading');
-                        const progressBar = document.getElementById('progressBar');
-                        if (loading) loading.style.display = 'none';
-                        if (progressBar) progressBar.style.display = 'none';
-                        if (submitBtn) submitBtn.disabled = false;
-                    }
+                var reqData = await reqRes.json();
+                if (!reqRes.ok) throw new Error(reqData.error || 'Erro ao preparar upload');
+
+                var uploads    = reqData.uploads;
+                var totalBytes = selectedFiles.reduce(function (s, f) { return s + f.size; }, 0);
+                var fileLoaded = selectedFiles.map(function () { return 0; });
+
+                // 2. Enviar cada arquivo diretamente ao Supabase
+                for (var i = 0; i < selectedFiles.length; i++) {
+                    loadingMsg.textContent = 'Enviando arquivo ' + (i + 1) + ' de ' + selectedFiles.length + '...';
+
+                    await uploadToSignedUrl(selectedFiles[i], uploads[i].signedUrl, (function (idx) {
+                        return function (loaded) {
+                            fileLoaded[idx] = loaded;
+                            var total = fileLoaded.reduce(function (a, b) { return a + b; }, 0);
+                            var pct   = Math.min(100, Math.round(total / totalBytes * 100));
+                            progressFill.style.width = pct + '%';
+                        };
+                    })(i));
+
+                    fileLoaded[i] = selectedFiles[i].size;
+                }
+
+                progressFill.style.width = '100%';
+                loadingMsg.textContent   = 'Finalizando...';
+
+                // 3. Confirmar metadados no servidor
+                var confirmRes = await fetch('/api/files/confirm-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: token,
+                        nome: nome,
+                        descricao: descricao,
+                        files: uploads.map(function (u) {
+                            return { filePath: u.filePath, originalName: u.originalName, type: u.type, size: u.size };
+                        })
+                    })
                 });
-                
-                xhr.addEventListener('error', function() {
-                    try {
-                        const loading = document.getElementById('loading');
-                        const progressBar = document.getElementById('progressBar');
-                        const message = document.getElementById('message');
-                        
-                        if (loading) loading.style.display = 'none';
-                        if (progressBar) progressBar.style.display = 'none';
-                        if (message) {
-                            message.innerHTML = '<div class="error">Erro de conexão. Tente novamente.</div>';
-                        }
-                        if (submitBtn) submitBtn.disabled = false;
-                    } catch (errorError) {
-                        console.error('Erro no listener de error:', errorError);
-                        if (submitBtn) submitBtn.disabled = false;
-                    }
-                });
-                
-                // Adicionar listener para abort para limpeza completa
-                xhr.addEventListener('abort', function() {
-                    try {
-                        const loading = document.getElementById('loading');
-                        const progressBar = document.getElementById('progressBar');
-                        
-                        if (loading) loading.style.display = 'none';
-                        if (progressBar) progressBar.style.display = 'none';
-                        if (submitBtn) submitBtn.disabled = false;
-                    } catch (abortError) {
-                        console.error('Erro no listener de abort:', abortError);
-                    }
-                });
-                
-                xhr.open('POST', '/api/files/upload');
-                xhr.send(formData);
-                
-            } catch (error) {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('progressBar').style.display = 'none';
-                document.getElementById('message').innerHTML = '<div class="error">Erro ao enviar arquivo</div>';
+                var confirmData = await confirmRes.json();
+                if (!confirmRes.ok) throw new Error(confirmData.error || 'Erro ao confirmar envio');
+
+                loadingEl.style.display   = 'none';
+                progressBar.style.display = 'none';
+                msgEl.innerHTML = '<div class="success">' + (confirmData.message || 'Arquivos enviados! Aguardando aprovação.') + '</div>';
+
+                document.getElementById('uploadForm').reset();
+                resetFileSelection();
+
+            } catch (err) {
+                loadingEl.style.display   = 'none';
+                progressBar.style.display = 'none';
+                msgEl.innerHTML = '<div class="error">' + (err.message || 'Erro ao enviar arquivos') + '</div>';
                 submitBtn.disabled = false;
             }
         });
