@@ -235,13 +235,17 @@ function renderMediaByDate() {
 
 function generateAllVideoThumbnails() {
     AppState.allMedia.forEach(function(media) {
-        if (media.tipo === 'video') generateVideoThumbnail(media);
+        if (media.tipo === 'video') {
+            generateVideoThumbnail(
+                media,
+                document.getElementById('vthumb-' + media.id),
+                document.getElementById('vfallback-' + media.id)
+            );
+        }
     });
 }
 
-function generateVideoThumbnail(media) {
-    var canvas = document.getElementById('vthumb-' + media.id);
-    var fallback = document.getElementById('vfallback-' + media.id);
+function generateVideoThumbnail(media, canvas, fallback) {
     if (!canvas) return;
 
     var srcUrl = (media.isChunked && media.chunkUrls && media.chunkUrls[0])
@@ -261,7 +265,7 @@ function generateVideoThumbnail(media) {
     video.addEventListener('seeked', function() {
         try {
             canvas.width = canvas.offsetWidth || 320;
-            canvas.height = canvas.offsetHeight || 120;
+            canvas.height = canvas.offsetHeight || 150;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             if (fallback) fallback.style.display = 'none';
         } catch (e) { /* CORS - mantém o ícone */ }
@@ -613,23 +617,35 @@ function updatePreviews() {
     const currentMedia = selectedMediaList[AppState.currentMediaIndex];
     
     if (currentMedia) {
-        if (currentMedia.tipo === 'image') {
-            currentPreview.innerHTML = '<img src="' + currentMedia.url + '" alt="' + currentMedia.nome + '" style="width: 100%; height: 100%; object-fit: contain;">';
-        } else {
-            currentPreview.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 150px; color: #64748b;"><span style="font-size: 2rem;">🎥</span><span style="font-size: 0.75rem; margin-top: 0.5rem;">' + currentMedia.nome + '</span></div>';
-        }
+        setPreviewContent(currentPreview, currentMedia, 'vprev-current');
     }
-    
+
     const nextPreview = document.getElementById('nextPreview');
     const nextIndex = (AppState.currentMediaIndex + 1) % selectedMediaList.length;
     const nextMedia = selectedMediaList[nextIndex];
-    
+
     if (nextMedia) {
-        if (nextMedia.tipo === 'image') {
-            nextPreview.innerHTML = '<img src="' + nextMedia.url + '" alt="' + nextMedia.nome + '" style="width: 100%; height: 100%; object-fit: contain;">';
-        } else {
-            nextPreview.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 150px; color: #64748b;"><span style="font-size: 2rem;">🎥</span><span style="font-size: 0.75rem; margin-top: 0.5rem;">' + nextMedia.nome + '</span></div>';
-        }
+        setPreviewContent(nextPreview, nextMedia, 'vprev-next');
+    }
+}
+
+function setPreviewContent(container, media, canvasId) {
+    if (media.tipo === 'image') {
+        container.innerHTML = '<img src="' + media.url + '" alt="' + media.nome + '" style="width:100%;height:100%;object-fit:contain;">';
+    } else {
+        container.innerHTML =
+            '<div style="position:relative;width:100%;height:100%;background:#1e293b;border-radius:0.25rem;overflow:hidden;">' +
+                '<canvas id="' + canvasId + '" style="width:100%;height:100%;display:block;"></canvas>' +
+                '<div id="' + canvasId + '-fb" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;">' +
+                    '<span style="font-size:2rem;opacity:0.6">🎥</span>' +
+                    '<span style="font-size:0.75rem;margin-top:0.5rem">' + media.nome + '</span>' +
+                '</div>' +
+            '</div>';
+        generateVideoThumbnail(
+            media,
+            document.getElementById(canvasId),
+            document.getElementById(canvasId + '-fb')
+        );
     }
 }
 
