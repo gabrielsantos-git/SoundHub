@@ -41,6 +41,8 @@ async function loadMedia() {
                 tipo: file.tipo.includes('image/') ? 'image' : file.tipo.includes('video/') ? 'video' : 'pdf',
                 mimeType: file.tipo,
                 url: file.caminho,
+                isChunked: file.is_chunked || false,
+                chunkUrls: file.chunk_urls || null,
                 dataUpload: new Date(file.data_upload)
             }));
             
@@ -843,6 +845,7 @@ function logout() {
 
 function updateStatus(message) {
     const statusEl = document.getElementById('projectionStatus');
+    if (!statusEl) return;
     statusEl.textContent = message;
     
     statusEl.className = 'status';

@@ -137,49 +137,60 @@
 
         function loadVideo(media) {
             const video = document.createElement('video');
-            video.src = media.url;
             video.className = 'media-video';
             video.controls = false;
             video.autoplay = true;
             video.loop = false;
-            
+
             video.onloadedmetadata = () => {
                 console.log('Vídeo carregado:', media.nome);
                 document.getElementById('mediaContainer').appendChild(video);
-                
-                // Mostrar controles de vídeo
                 document.getElementById('videoControls').classList.add('show');
-                
-                // Configurar eventos do vídeo
                 setupVideoEvents(video);
-                
-                // Iniciar atualização do progresso
                 startProgressUpdate(video);
-                
                 showMediaInfo();
             };
-            
+
             video.onerror = () => {
-                console.error('Erro ao carregar vídeo:', media.url);
+                console.error('Erro ao carregar vídeo:', media.url || '(fragmentado)');
                 showError('Erro ao carregar vídeo: ' + media.nome);
             };
-            
-            video.onplay = () => {
-                ProjectionState.isPlaying = true;
-                updatePlayPauseButton();
-            };
-            
-            video.onpause = () => {
-                ProjectionState.isPlaying = false;
-                updatePlayPauseButton();
-            };
-            
-            video.onended = () => {
-                // Avançar automaticamente para próxima mídia
-                setTimeout(() => {
-                    nextMedia();
-                }, 1000);
-            };
+
+            video.onplay  = () => { ProjectionState.isPlaying = true;  updatePlayPauseButton(); };
+            video.onpause = () => { ProjectionState.isPlaying = false; updatePlayPauseButton(); };
+            video.onended = () => { setTimeout(() => { nextMedia(); }, 1000); };
+
+            if (media.isChunked && Array.isArray(media.chunkUrls) && media.chunkUrls.length > 0) {
+                loadChunkedVideo(video, media);
+            } else {
+                video.src = media.url;
+            }
+        }
+
+        async function loadChunkedVideo(video, media) {
+            const container = document.getElementById('mediaContainer');
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerHTML = '<div class="spinner"></div><p>Carregando vídeo...</p>';
+            container.appendChild(loadingDiv);
+
+            try {
+                const blobs = [];
+                for (let i = 0; i < media.chunkUrls.length; i++) {
+                    loadingDiv.querySelector('p').textContent =
+                        'Carregando parte ' + (i + 1) + ' de ' + media.chunkUrls.length + '...';
+                    const resp = await fetch(media.chunkUrls[i]);
+                    if (!resp.ok) throw new Error('Falha ao baixar parte ' + (i + 1));
+                    blobs.push(await resp.blob());
+                }
+                const combined = new Blob(blobs, { type: media.mimeType });
+                video.src = URL.createObjectURL(combined);
+            } catch (e) {
+                console.error('Erro ao carregar vídeo fragmentado:', e);
+                showError('Erro ao carregar vídeo: ' + media.nome);
+            } finally {
+                if (container.contains(loadingDiv)) container.removeChild(loadingDiv);
+            }
         }
 
         function setupVideoEvents(video) {

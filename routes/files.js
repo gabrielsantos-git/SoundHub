@@ -324,6 +324,13 @@ router.get('/', requireAuth, async (req, res) => {
     }
 
     const filesWithUrls = await Promise.all((files || []).map(async file => {
+      if (file.is_chunked && Array.isArray(file.chunk_paths) && file.chunk_paths.length > 0) {
+        const chunkUrls = await Promise.all(file.chunk_paths.map(async (chunkPath) => {
+          const { data } = await supabase.storage.from('files').createSignedUrl(chunkPath, 3600);
+          return data?.signedUrl || null;
+        }));
+        return { ...file, caminho: null, chunk_urls: chunkUrls.filter(Boolean) };
+      }
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('files')
         .createSignedUrl(file.caminho, 3600);
@@ -379,6 +386,13 @@ router.get('/approved', requireAuth, async (req, res) => {
     }
     
     const filesWithUrls = await Promise.all((files || []).map(async file => {
+      if (file.is_chunked && Array.isArray(file.chunk_paths) && file.chunk_paths.length > 0) {
+        const chunkUrls = await Promise.all(file.chunk_paths.map(async (chunkPath) => {
+          const { data } = await supabase.storage.from('files').createSignedUrl(chunkPath, 3600);
+          return data?.signedUrl || null;
+        }));
+        return { ...file, caminho: null, chunk_urls: chunkUrls.filter(Boolean) };
+      }
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('files')
         .createSignedUrl(file.caminho, 3600);
